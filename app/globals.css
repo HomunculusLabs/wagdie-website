@@ -2,15 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
+@layer components {
+  /* Button styles */
+  .btn-primary {
+    @apply px-4 py-2 bg-blood hover:bg-ember text-bone font-semibold rounded-md transition-colors duration-200;
+  }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  .btn-secondary {
+    @apply px-4 py-2 bg-midnight hover:bg-shadow text-bone rounded-md border border-ash transition-colors duration-200;
+  }
+
+  /* Navigation link styles */
+  .nav-link {
+    @apply text-ash hover:text-bone transition-colors duration-150 relative;
+  }
+
+  .nav-link.active {
+    @apply text-gold;
+  }
+
+  .nav-link.active::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-gold;
+  }
 }
 
 @layer utilities {
