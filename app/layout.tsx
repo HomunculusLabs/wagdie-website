@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: 'WAGDIE - We Are All Going to Die',
   description: 'WAGDIE NFT Community Platform - Connect your wallet to explore characters, lore, and participate in the dark fantasy world where your choices shape the narrative.',
   keywords: ['WAGDIE', 'NFT', 'Ethereum', 'Dark Fantasy', 'Community', 'Web3', 'Gaming'],
