@@ -1,21 +1,25 @@
 /**
  * Spread Page
  * Burn corpses for mushrooms, spread infections, or target specific characters
+ * Uses clean architecture: presentation layer only
  */
 
 'use client'
 
 import { useState } from 'react'
-import { useAccount } from 'wagmi'
 import toast from 'react-hot-toast'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { DialogBurnCorpseApproval } from '@/components/spread/DialogBurnCorpseApproval'
 import { DialogSpreadingApproval } from '@/components/spread/DialogSpreadingApproval'
 import { SpreadInfect } from '@/components/spread/SpreadInfect'
+import { useWallet } from '@/hooks/useWallet'
+import { useBurnCorpses, useSpreadInfections } from '@/hooks/useContractWrite'
 import { CONTRACTS } from '@/lib/services/wallet-service'
 
 export default function SpreadPage() {
-  const { address, isConnected } = useAccount()
+  const { address, isConnected } = useWallet()
+  const burnCorpses = useBurnCorpses()
+  const spreadInfections = useSpreadInfections()
 
   // State
   const [mushroomBalance, setMushroomBalance] = useState(0)
@@ -77,12 +81,8 @@ export default function SpreadPage() {
       setShowBurnModal(false)
       toast.loading('Burning corpses...')
 
-      // TODO: Implement actual burn transaction with wagmi
-      // const tx = await burnCorpses(amount)
-      // await tx.wait()
-
-      // Mock success after 3 seconds
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Use contract write hook
+      await burnCorpses.write([amount])
 
       // Update balances
       setCorpseBalance(prev => prev - amount)
@@ -101,12 +101,8 @@ export default function SpreadPage() {
     try {
       toast.loading('Releasing spores...')
 
-      // TODO: Implement actual spread transaction with wagmi
-      // const tx = await spreadInfections(amount)
-      // await tx.wait()
-
-      // Mock success after 3 seconds
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Use contract write hook
+      await spreadInfections.write([amount])
 
       // Update balance
       setMushroomBalance(prev => prev - amount)

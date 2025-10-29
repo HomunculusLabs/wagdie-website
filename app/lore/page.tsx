@@ -1,18 +1,19 @@
 /**
  * Lore Page
  * Display official WAGDIE tweets with filters and infinite scroll
+ * Uses clean architecture: presentation layer only
  */
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TweetFilterBar } from '@/components/lore/TweetFilterBar'
 import { CustomTweet } from '@/components/lore/CustomTweet'
 import { InfiniteScroll } from '@/components/shared/InfiniteScroll'
-import type { Tweet, TweetFilterTab, SortOrder } from '@/types/tweet'
+import { useTweets } from '@/hooks/useTweets'
+import type { TweetFilterTab, SortOrder } from '@/types/tweet'
 
 export default function LorePage() {
   const searchParams = useSearchParams()
@@ -22,11 +23,21 @@ export default function LorePage() {
   const tab = (searchParams.get('tab') || 'all') as TweetFilterTab
   const sort = (searchParams.get('sort') || 'desc') as SortOrder
 
-  // State
-  const [tweets, setTweets] = useState<Tweet[]>([])
-  const [hasMore, setHasMore] = useState(true)
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  // Local UI state
   const [translationEnabled, setTranslationEnabled] = useState(false)
+
+  // Fetch tweets using custom hook with React Query
+  const {
+    tweets,
+    hasMore,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useTweets({
+    tab,
+    sort,
+    refetchInterval: 20000, // Auto-refresh every 20 seconds
+  })
 
   // Update URL when filters change
   const updateURL = useCallback((newTab: TweetFilterTab, newSort: SortOrder) => {
@@ -41,66 +52,18 @@ export default function LorePage() {
   // Handle filter changes
   const handleTabChange = (newTab: TweetFilterTab) => {
     if (newTab === tab) return
-    setTweets([])
-    setNextCursor(null)
-    setHasMore(true)
     updateURL(newTab, sort)
   }
 
   const handleSortChange = (newSort: SortOrder) => {
     if (newSort === sort) return
-    setTweets([])
-    setNextCursor(null)
-    setHasMore(true)
     updateURL(tab, newSort)
   }
 
-  // Fetch tweets with React Query (auto-refresh every 20 seconds)
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['tweets', tab, sort, nextCursor],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        tab,
-        sort,
-        perPage: '25'
-      })
-
-      if (nextCursor) {
-        params.set('startAt', nextCursor)
-      }
-
-      const response = await fetch(`/api/tweets?${params.toString()}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch tweets')
-      }
-
-      return response.json()
-    },
-    refetchInterval: 20000, // Auto-refresh every 20 seconds
-  })
-
-  // Update tweets when data changes
-  useEffect(() => {
-    if (data) {
-      setTweets(prev => nextCursor ? [...prev, ...data.tweets] : data.tweets)
-      setHasMore(data.hasMore)
-      setNextCursor(data.nextCursor)
-    }
-  }, [data, nextCursor])
-
-  // Reset tweets when filters change
-  useEffect(() => {
-    setTweets([])
-    setNextCursor(null)
-    setHasMore(true)
-  }, [tab, sort])
-
   // Load more handler
   const handleLoadMore = () => {
-    if (data?.nextCursor) {
-      setNextCursor(data.nextCursor)
-      refetch()
+    if (!isFetchingNextPage && hasMore) {
+      fetchNextPage()
     }
   }
 
@@ -132,7 +95,7 @@ export default function LorePage() {
         ) : (
           <InfiniteScroll
             hasMore={hasMore}
-            isLoading={isLoading}
+            isLoading={isLoading || isFetchingNextPage}
             onLoadMore={handleLoadMore}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

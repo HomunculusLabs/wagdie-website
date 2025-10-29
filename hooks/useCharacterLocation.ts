@@ -37,13 +37,13 @@ export function useCharacterLocation(tokenId: number | null): UseCharacterLocati
           .from('characters')
           .select('location_id')
           .eq('token_id', tokenId)
-          .single()
+          .single<{ location_id: string | null }>()
 
         if (charError) {
           throw new Error(`Failed to fetch character location: ${charError.message}`)
         }
 
-        if (!character?.location_id) {
+        if (!character || !character.location_id) {
           setLocation(null)
           return
         }
@@ -53,7 +53,7 @@ export function useCharacterLocation(tokenId: number | null): UseCharacterLocati
           .from('locations')
           .select('*')
           .eq('id', character.location_id)
-          .single()
+          .single<Location>()
 
         if (locError) {
           throw new Error(`Failed to fetch location details: ${locError.message}`)

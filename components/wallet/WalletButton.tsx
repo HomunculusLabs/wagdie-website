@@ -1,12 +1,13 @@
 'use client'
 
-import { useWalletAuth } from '@/hooks/useWalletAuth'
+import { useAuth } from '@/hooks/useAuth'
 
 /**
  * WalletButton Component
  *
  * Displays wallet connection status and provides connect/disconnect functionality.
  * Shows "Connect Wallet" button when disconnected, or truncated address when connected.
+ * Uses clean architecture: presentation layer only
  *
  * @component
  * @example
@@ -33,7 +34,7 @@ import { useWalletAuth } from '@/hooks/useWalletAuth'
  * - Title attribute on connected state for full address tooltip
  */
 export function WalletButton() {
-  const { address, isConnected, isConnecting, connect, disconnect } = useWalletAuth()
+  const { address, isConnected, isAuthenticating, connect, disconnect } = useAuth()
 
   /**
    * Truncate Ethereum address to "0x1234...5678" format
@@ -43,7 +44,7 @@ export function WalletButton() {
   }
 
   // Loading state
-  if (isConnecting) {
+  if (isAuthenticating) {
     return (
       <button className="btn-primary" disabled>
         <span className="flex items-center gap-2">

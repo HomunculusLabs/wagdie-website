@@ -2,55 +2,42 @@
  * Character Detail Page
  * Display character sheet with stats, story, equipment
  * Allow owners to edit and perform blockchain actions
+ * Uses clean architecture: presentation layer only
  */
 
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
 import { useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { SheetMenuBar } from '@/components/characters/SheetMenuBar'
 import { SheetTitleAndAttributes } from '@/components/characters/SheetTitleAndAttributes'
 import { SheetBackgroundStory } from '@/components/characters/SheetBackgroundStory'
 import { SheetEquipment } from '@/components/characters/SheetEquipment'
+import { useCharacterDetail, useUpdateCharacter } from '@/hooks/useCharacterDetail'
+import { useWallet } from '@/hooks/useWallet'
 import type { Character } from '@/types/character'
 
 export default function CharacterDetailPage() {
   const params = useParams()
-  const { address } = useAccount()
+  const { address } = useWallet()
   const tokenId = parseInt(params.tokenId as string, 10)
 
-  const [character, setCharacter] = useState<Character | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [editedStory, setEditedStory] = useState('')
 
-  // Fetch character data
+  // Fetch character data using custom hook
+  const { data: character, isLoading, refetch } = useCharacterDetail(tokenId)
+
+  // Update character mutation
+  const updateCharacter = useUpdateCharacter()
+
+  // Initialize edited story when character loads
   useEffect(() => {
-    const fetchCharacter = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch(`/api/characters/${tokenId}`)
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch character')
-        }
-
-        const data = await response.json()
-        setCharacter(data)
-        setEditedStory(data.background_story || '')
-      } catch (error) {
-        console.error('Error fetching character:', error)
-        toast.error('Failed to load character')
-      } finally {
-        setIsLoading(false)
-      }
+    if (character) {
+      setEditedStory(character.background_story || '')
     }
-
-    fetchCharacter()
-  }, [tokenId])
+  }, [character])
 
   // Check if user owns this character
   const isOwner = character && address
@@ -71,32 +58,18 @@ export default function CharacterDetailPage() {
     if (!character) return
 
     try {
-      setIsSaving(true)
-
-      const response = await fetch(`/api/characters/${tokenId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      await updateCharacter.mutateAsync({
+        tokenId,
+        updates: {
           background_story: editedStory,
-        }),
+        },
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save')
-      }
-
-      const updated = await response.json()
-      setCharacter(updated)
       setIsEditMode(false)
       toast.success('Character updated successfully!')
     } catch (error: any) {
       console.error('Error saving character:', error)
       toast.error(error.message || 'Failed to save changes')
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -129,13 +102,9 @@ export default function CharacterDetailPage() {
       cha: rollStat(),
     }
 
-    // Update character with new stats (this would normally call an API)
-    setCharacter({
-      ...character,
-      ...newStats,
-    })
-
-    toast.success('New stats rolled!')
+    // Note: This would normally call an API to persist stats
+    // For now, we'll just show a toast
+    toast.success(`New stats rolled! STR:${newStats.str} DEX:${newStats.dex} CON:${newStats.con}`)
   }
 
   if (isLoading) {
@@ -166,7 +135,7 @@ export default function CharacterDetailPage() {
         onEditToggle={handleEditToggle}
         onSave={handleSave}
         onRollNew={handleRollNew}
-        isSaving={isSaving}
+        isSaving={updateCharacter.isPending}
       />
 
       <div className="container mx-auto px-4 py-8 space-y-6">
@@ -191,13 +160,13 @@ export default function CharacterDetailPage() {
             <div className="flex gap-4">
               <button
                 className="px-6 py-3 bg-green-600 text-white font-bold rounded hover:bg-green-700 transition-colors"
-                onClick={() => toast.info('Cure action would trigger blockchain transaction')}
+                onClick={() => toast('Cure action would trigger blockchain transaction')}
               >
                 Cure Character
               </button>
               <button
                 className="px-6 py-3 bg-purple-600 text-white font-bold rounded hover:bg-purple-700 transition-colors"
-                onClick={() => toast.info('Sear action would trigger blockchain transaction')}
+                onClick={() => toast('Sear action would trigger blockchain transaction')}
               >
                 Sear Concord
               </button>
