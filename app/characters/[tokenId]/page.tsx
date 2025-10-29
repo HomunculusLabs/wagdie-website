@@ -14,6 +14,12 @@ import { SheetMenuBar } from '@/components/characters/SheetMenuBar'
 import { SheetTitleAndAttributes } from '@/components/characters/SheetTitleAndAttributes'
 import { SheetBackgroundStory } from '@/components/characters/SheetBackgroundStory'
 import { SheetEquipment } from '@/components/characters/SheetEquipment'
+import { OwnershipVerificationBanner } from '@/components/OwnershipVerificationBanner'
+import { TokenBalancesCard } from '@/components/TokenBalancesCard'
+import { StakingStatusCard } from '@/components/StakingStatusCard'
+import { SearingModal } from '@/components/modals/SearingModal'
+import { InfectionModal } from '@/components/modals/InfectionModal'
+import { CureModal } from '@/components/modals/CureModal'
 import type { Character } from '@/types/character'
 
 export default function CharacterDetailPage() {
@@ -26,6 +32,9 @@ export default function CharacterDetailPage() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [editedStory, setEditedStory] = useState('')
+  const [isSearingModalOpen, setIsSearingModalOpen] = useState(false)
+  const [isInfectionModalOpen, setIsInfectionModalOpen] = useState(false)
+  const [isCureModalOpen, setIsCureModalOpen] = useState(false)
 
   // Fetch character data
   useEffect(() => {
@@ -169,45 +178,117 @@ export default function CharacterDetailPage() {
         isSaving={isSaving}
       />
 
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Character Image and Attributes */}
-        <SheetTitleAndAttributes character={character} isEditMode={isEditMode} />
+      <div className="container mx-auto px-4 py-8">
+        {/* Ownership Verification Banner */}
+        <OwnershipVerificationBanner tokenId={BigInt(tokenId)} className="mb-6" />
 
-        {/* Background Story */}
-        <SheetBackgroundStory
-          story={editedStory}
-          isEditMode={isEditMode}
-          isOwner={isOwner}
-          onChange={setEditedStory}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - 2/3 width on large screens */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Character Image and Attributes */}
+            <SheetTitleAndAttributes character={character} isEditMode={isEditMode} />
 
-        {/* Equipment */}
-        <SheetEquipment equipment={character.equipment} isEditMode={isEditMode} />
+            {/* Background Story */}
+            <SheetBackgroundStory
+              story={editedStory}
+              isEditMode={isEditMode}
+              isOwner={isOwner}
+              onChange={setEditedStory}
+            />
+
+            {/* Equipment */}
+            <SheetEquipment equipment={character.equipment} isEditMode={isEditMode} />
+          </div>
+
+          {/* Sidebar - 1/3 width on large screens */}
+          <div className="space-y-6">
+            {/* Token Balances Card */}
+            <TokenBalancesCard />
+
+            {/* Staking Status Card */}
+            <StakingStatusCard tokenId={tokenId} />
+          </div>
+        </div>
 
         {/* Blockchain Actions (for owners) */}
-        {isOwner && character.infection_status === 'infected' && (
-          <div className="bg-midnight rounded-lg p-6">
-            <h3 className="text-2xl font-bold text-bone mb-4">Actions</h3>
-            <div className="flex gap-4">
+        {isOwner && (
+          <div className="bg-midnight rounded-lg p-6 mt-6">
+            <h3 className="text-2xl font-bold text-bone mb-4">Blockchain Actions</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Searing Action */}
               <button
-                className="px-6 py-3 bg-green-600 text-white font-bold rounded hover:bg-green-700 transition-colors"
-                onClick={() => toast.info('Cure action would trigger blockchain transaction')}
+                className="px-6 py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors"
+                onClick={() => setIsSearingModalOpen(true)}
               >
-                Cure Character
+                🔥 Sear Concords
               </button>
+
+              {/* Infection Action */}
               <button
-                className="px-6 py-3 bg-purple-600 text-white font-bold rounded hover:bg-purple-700 transition-colors"
-                onClick={() => toast.info('Sear action would trigger blockchain transaction')}
+                className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors"
+                onClick={() => setIsInfectionModalOpen(true)}
               >
-                Sear Concord
+                🦠 Infect Character
               </button>
+
+              {/* Cure Action (only if infected) */}
+              {character.infection_status === 'infected' && (
+                <button
+                  className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
+                  onClick={() => setIsCureModalOpen(true)}
+                >
+                  💊 Cure Character
+                </button>
+              )}
             </div>
             <p className="text-sm text-mist mt-4">
-              * These actions require wallet transactions and will be implemented with wagmi hooks
+              These actions interact with blockchain smart contracts and require wallet transactions.
             </p>
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {character && (
+        <>
+          <SearingModal
+            wagdieId={tokenId}
+            wagdieName={character.name || `Character #${tokenId}`}
+            isOpen={isSearingModalOpen}
+            onClose={() => setIsSearingModalOpen(false)}
+            onSuccess={() => {
+              toast.success('Character seared successfully!')
+              // Refresh character data
+              window.location.reload()
+            }}
+          />
+
+          <InfectionModal
+            mode="specific"
+            tokenId={BigInt(tokenId)}
+            tokenName={character.name || `Character #${tokenId}`}
+            isOpen={isInfectionModalOpen}
+            onClose={() => setIsInfectionModalOpen(false)}
+            onSuccess={() => {
+              toast.success('Character infected successfully!')
+              // Refresh character data
+              window.location.reload()
+            }}
+          />
+
+          <CureModal
+            characterId={tokenId}
+            characterName={character.name || `Character #${tokenId}`}
+            isOpen={isCureModalOpen}
+            onClose={() => setIsCureModalOpen(false)}
+            onSuccess={() => {
+              toast.success('Character cured successfully!')
+              // Refresh character data
+              window.location.reload()
+            }}
+          />
+        </>
+      )}
     </div>
   )
 }

@@ -5,27 +5,44 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import toast from 'react-hot-toast'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { DialogBurnCorpseApproval } from '@/components/spread/DialogBurnCorpseApproval'
 import { DialogSpreadingApproval } from '@/components/spread/DialogSpreadingApproval'
 import { SpreadInfect } from '@/components/spread/SpreadInfect'
+import { InfectionModal } from '@/components/modals/InfectionModal'
+import { CorpseBurningModal } from '@/components/modals/CorpseBurningModal'
+import { useSpread } from '@/hooks/useSpread'
+import { useSingleTokenBalance } from '@/hooks/useTokenBalances'
+import { useCorpseBurning } from '@/hooks/useCorpseBurning'
 import { CONTRACTS } from '@/lib/services/wallet-service'
+import { formatEther } from 'viem'
 
 export default function SpreadPage() {
   const { address, isConnected } = useAccount()
 
+  // Blockchain hooks
+  const { balance: mushroomBalance, refetch: refetchMushroom } = useSingleTokenBalance('mushroom')
+  const { balance: corpseBalance, refetch: refetchCorpse } = useSingleTokenBalance('corpse')
+  const { infectionPrice, fetchInfectionPrice } = useSpread()
+  const { corpseBalance: corpseBalanceFromHook, fetchBalances } = useCorpseBurning()
+
   // State
-  const [mushroomBalance, setMushroomBalance] = useState(0)
-  const [corpseBalance, setCorpseBalance] = useState(5) // Mock data
   const [mode, setMode] = useState<'spread' | 'infect'>('spread')
   const [showBurnModal, setShowBurnModal] = useState(false)
-  const [showApprovalModal, setShowApprovalModal] = useState(false)
-  const [isApproved, setIsApproved] = useState(false)
+  const [showInfectionModal, setShowInfectionModal] = useState(false)
 
-  const infectionPrice = '0.0025' // ETH
+  useEffect(() => {
+    if (isConnected) {
+      fetchInfectionPrice()
+      refetchMushroom()
+      refetchCorpse()
+      fetchBalances()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected])
 
   // Handle Touch Corpse (burn)
   const handleTouchCorpse = () => {
@@ -34,118 +51,23 @@ export default function SpreadPage() {
       return
     }
 
-    if (corpseBalance === 0) {
+    const balance = corpseBalance?.balance ?? 0n
+    if (balance === 0n) {
       toast.error('You have no corpses to burn')
-      return
-    }
-
-    // Check if approved
-    if (!isApproved) {
-      setShowApprovalModal(true)
       return
     }
 
     setShowBurnModal(true)
   }
 
-  // Handle Approval
-  const handleApprove = async () => {
-    try {
-      toast.loading('Approving contract...')
-      // TODO: Implement actual approval transaction with wagmi
-      // await approveContract()
-
-      // Mock success after 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      setIsApproved(true)
-      setShowApprovalModal(false)
-      toast.dismiss()
-      toast.success('Contract approved!')
-
-      // Show burn modal after approval
-      setShowBurnModal(true)
-    } catch (error: any) {
-      toast.dismiss()
-      toast.error(error.message || 'Approval failed')
-    }
-  }
-
-  // Handle Burn
-  const handleBurn = async (amount: number) => {
-    try {
-      setShowBurnModal(false)
-      toast.loading('Burning corpses...')
-
-      // TODO: Implement actual burn transaction with wagmi
-      // const tx = await burnCorpses(amount)
-      // await tx.wait()
-
-      // Mock success after 3 seconds
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
-      // Update balances
-      setCorpseBalance(prev => prev - amount)
-      setMushroomBalance(prev => prev + amount)
-
-      toast.dismiss()
-      toast.success(`Burned ${amount} corpse${amount !== 1 ? 's' : ''}! Received ${amount} mushroom${amount !== 1 ? 's' : ''}`)
-    } catch (error: any) {
-      toast.dismiss()
-      toast.error(error.message || 'Burn failed')
-    }
-  }
-
-  // Handle Spread (Random)
+  // Open infection modal for random spread
   const handleSpread = async (amount: number) => {
-    try {
-      toast.loading('Releasing spores...')
-
-      // TODO: Implement actual spread transaction with wagmi
-      // const tx = await spreadInfections(amount)
-      // await tx.wait()
-
-      // Mock success after 3 seconds
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
-      // Update balance
-      setMushroomBalance(prev => prev - amount)
-
-      toast.dismiss()
-      toast.success(`Released ${amount} spore${amount !== 1 ? 's' : ''}! Infection spreading...`)
-
-      // Reload page after success
-      setTimeout(() => window.location.reload(), 2000)
-    } catch (error: any) {
-      toast.dismiss()
-      toast.error(error.message || 'Spread failed')
-    }
+    setShowInfectionModal(true)
   }
 
-  // Handle Infect (Targeted)
+  // Open infection modal for targeted infection
   const handleInfect = async (tokenId: number) => {
-    try {
-      toast.loading(`Infecting character #${tokenId}...`)
-
-      // TODO: Implement actual infect transaction with wagmi
-      // const tx = await infectWagdie(tokenId, { value: parseEther(infectionPrice) })
-      // await tx.wait()
-
-      // Mock success after 3 seconds
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
-      // Update balance
-      setMushroomBalance(prev => prev - 1)
-
-      toast.dismiss()
-      toast.success(`Character #${tokenId} infected!`)
-
-      // Reload page after success
-      setTimeout(() => window.location.reload(), 2000)
-    } catch (error: any) {
-      toast.dismiss()
-      toast.error(error.message || 'Infection failed')
-    }
+    toast.info('Use the character detail page to infect specific characters')
   }
 
   if (!isConnected) {
@@ -181,10 +103,10 @@ export default function SpreadPage() {
 
             <button
               onClick={handleTouchCorpse}
-              disabled={corpseBalance === 0}
+              disabled={(corpseBalance?.balance ?? 0n) === 0n}
               className="px-8 py-3 bg-gold text-abyss font-bold rounded hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Touch Corpse ({corpseBalance} available)
+              Touch Corpse ({corpseBalance?.balance.toString() ?? '0'} available)
             </button>
           </div>
 
@@ -217,29 +139,37 @@ export default function SpreadPage() {
 
           {/* Step 3: Execute */}
           <SpreadInfect
-            mushroomBalance={mushroomBalance}
-            corpseBalance={corpseBalance}
+            mushroomBalance={Number(mushroomBalance?.balance ?? 0n)}
+            corpseBalance={Number(corpseBalance?.balance ?? 0n)}
             mode={mode}
             onSpread={handleSpread}
             onInfect={handleInfect}
-            infectionPrice={infectionPrice}
+            infectionPrice={infectionPrice ? formatEther(infectionPrice) : '0'}
           />
         </div>
       </div>
 
       {/* Modals */}
-      <DialogBurnCorpseApproval
+      <CorpseBurningModal
         isOpen={showBurnModal}
         onClose={() => setShowBurnModal(false)}
-        onConfirm={handleBurn}
-        availableCorpses={corpseBalance}
+        onSuccess={() => {
+          toast.success('Corpses burned successfully!')
+          refetchCorpse()
+          refetchMushroom()
+          fetchBalances()
+        }}
       />
 
-      <DialogSpreadingApproval
-        isOpen={showApprovalModal}
-        onClose={() => setShowApprovalModal(false)}
-        onApprove={handleApprove}
-        contractAddress={CONTRACTS.CORPSE}
+      <InfectionModal
+        mode="random"
+        isOpen={showInfectionModal}
+        onClose={() => setShowInfectionModal(false)}
+        onSuccess={() => {
+          toast.success('Infections spread successfully!')
+          refetchMushroom()
+          window.location.reload()
+        }}
       />
     </div>
   )

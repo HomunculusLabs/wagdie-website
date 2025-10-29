@@ -1,0 +1,153 @@
+{
+  "description": "WAGDIE Smart Contract Addresses - Source of truth for blockchain integration",
+  "version": "1.0.0",
+  "lastUpdated": "2025-10-28",
+  "networks": {
+    "mainnet": {
+      "chainId": 1,
+      "name": "Ethereum Mainnet",
+      "rpcUrl": "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}",
+      "explorerUrl": "https://etherscan.io",
+      "contracts": {
+        "wagdie": {
+          "name": "WAGDIE NFT",
+          "address": "0x659a4bdaaacc62d2bd9cb18225d9c89b5b697a5a",
+          "type": "ERC721",
+          "abiFile": "wagdie.json",
+          "verified": true,
+          "deployedBlock": 14300000,
+          "notes": "Main character NFT contract"
+        },
+        "tokensOfConcord": {
+          "name": "Tokens of Concord",
+          "address": "0x1d38150f1fd989fb89ab19518a9c4e93c5554634",
+          "type": "ERC1155",
+          "abiFile": "concord.json",
+          "verified": true,
+          "deployedBlock": 14300000,
+          "notes": "Concord tokens used for searing and other mechanics"
+        },
+        "corpse": {
+          "name": "Corpse Token",
+          "address": "0x21fc8585eee37be572a0e37c34c7ad2a15a36ee3",
+          "type": "ERC1155",
+          "abiFile": "corpse.json",
+          "verified": true,
+          "deployedBlock": 15000000,
+          "notes": "Corpse tokens for burning mechanics"
+        },
+        "mushroom": {
+          "name": "Mushroom Token (Shroom)",
+          "address": "0x171a8518A1B75F9E26ea952728d4850BEf9B87d2",
+          "type": "ERC1155",
+          "abiFile": "mushroom.json",
+          "verified": true,
+          "deployedBlock": 15000000,
+          "notes": "Mushroom/Spore tokens for infection spreading"
+        },
+        "searing": {
+          "name": "SearWagdie Contract",
+          "address": "0x5156A7F668E59119db23a264502F40407CDa076F",
+          "type": "Custom",
+          "abiFile": "searing.json",
+          "verified": true,
+          "deployedBlock": 14500000,
+          "notes": "Contract for searing characters by burning Concords"
+        },
+        "spread": {
+          "name": "Spread Contract",
+          "address": "0xaCA80514986768F88F7d8E644546AB85383ddE7e",
+          "type": "Custom",
+          "abiFile": "spread.json",
+          "verified": true,
+          "deployedBlock": 15000000,
+          "notes": "Contract for spreading infections across characters"
+        },
+        "wagdieWorld": {
+          "name": "WagdieWorld Staking Contract",
+          "address": "0x616D4635ceCf94597690Cab0Fc159c3A8231C904",
+          "type": "Custom",
+          "abiFile": "wagdie-world.json",
+          "verified": true,
+          "deployedBlock": 14500000,
+          "notes": "Main contract for character staking at locations"
+        }
+      },
+      "tokenIds": {
+        "concord": {
+          "description": "Tokens of Concord ERC1155 token ID",
+          "id": "1",
+          "notes": "Main Concord token used for searing"
+        },
+        "corpse": {
+          "description": "Corpse ERC1155 token ID",
+          "id": "1",
+          "notes": "Corpse token for burning"
+        },
+        "mushroom": {
+          "description": "Mushroom ERC1155 token ID",
+          "id": "1",
+          "notes": "Mushroom/Spore token for infection spreading"
+        }
+      }
+    },
+    "sepolia": {
+      "chainId": 11155111,
+      "name": "Sepolia Testnet",
+      "rpcUrl": "https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}",
+      "explorerUrl": "https://sepolia.etherscan.io",
+      "contracts": {
+        "wagdie": {
+          "name": "WAGDIE NFT (Testnet)",
+          "address": "0x5d3dc394D8C8310Af31e089460F7FcdC7F527604",
+          "type": "ERC721",
+          "abiFile": "wagdie.json",
+          "verified": true,
+          "notes": "Testnet deployment for development"
+        },
+        "tokensOfConcord": {
+          "name": "Tokens of Concord (Testnet)",
+          "address": "0x4FBF88AC8C15f1Ea0d0022e3BfEbf7338483aE30",
+          "type": "ERC1155",
+          "abiFile": "concord.json",
+          "verified": true,
+          "notes": "Testnet Concord tokens"
+        },
+        "wagdieWorld": {
+          "name": "WagdieWorld (Testnet)",
+          "address": "0x7E0F603BaE7c21c02Ae8a66D26B27704d2eed652",
+          "type": "Custom",
+          "abiFile": "wagdie-world.json",
+          "verified": true,
+          "notes": "Testnet staking contract"
+        },
+        "searing": {
+          "name": "SearWagdie (Testnet)",
+          "address": "0xd4f5BDF71ac7135dbB6B5FF29921848d5f1A0Fe4",
+          "type": "Custom",
+          "abiFile": "searing.json",
+          "verified": true,
+          "notes": "Testnet searing contract"
+        }
+      },
+      "tokenIds": {
+        "concord": {
+          "description": "Testnet Concord token ID",
+          "id": "1",
+          "notes": "Same ID as mainnet for consistency"
+        }
+      },
+      "notes": "Corpse, Mushroom, and Spread contracts not deployed on Sepolia testnet"
+    }
+  },
+  "usage": {
+    "description": "How to use this configuration in code",
+    "typescript": "import addresses from '@/specs/004-blockchain-integration/contracts/addresses.json'\nconst wagdieAddress = addresses.networks.mainnet.contracts.wagdie.address",
+    "environment": "Use NEXT_PUBLIC_CHAIN_ID env var to select network: mainnet (1) or sepolia (11155111)"
+  },
+  "abiSources": {
+    "original": "/Users/t3rpz/projects/web/src/typechain-types/ and /Users/t3rpz/projects/web/src/features/abi/",
+    "destination": "lib/contracts/abis/ in the simplified app",
+    "notes": "ABIs will be copied from original project and converted to JSON format if needed"
+  }
+}
