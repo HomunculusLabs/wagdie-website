@@ -26,9 +26,9 @@ npm test && npm run lint
 TypeScript 5+ (Node.js 18+ for migration scripts): Follow standard conventions
 
 ## Recent Changes
+- 004-blockchain-integration: Added TypeScript 5+, Node.js 18+
 - 003-page-wireframes: **COMPLETED 2025-10-28** - Full UI wireframe implementation with 6 major pages (Home, Characters Browse/Detail, Lore, Spread), navigation system, authentication (SIWE), and blockchain integration placeholders. Chat feature intentionally skipped to avoid Firebase dependency. See IMPLEMENTATION_NOTES.md for details.
 - 002-basic-ui-wireframe: Added TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), RainbowKit, wagmi v2, viem v2, Tailwind CSS
-- 001-migration-plan: Added TypeScript 5+ (Node.js 18+ for migration scripts) + Firebase Admin SDK, Supabase JS client, ethers.js (for address normalization)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

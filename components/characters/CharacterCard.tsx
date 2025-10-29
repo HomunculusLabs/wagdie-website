@@ -7,6 +7,7 @@
 
 import Image from 'next/image'
 import type { Character } from '@/types/character'
+import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
 
 interface CharacterCardProps {
   character: Character
@@ -31,6 +32,7 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
 
         {/* Status Badges */}
         <div className="absolute top-2 right-2 flex flex-col gap-1">
+          <OwnershipBadge tokenId={BigInt(character.token_id)} />
           {character.infection_status === 'infected' && (
             <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
               INFECTED
