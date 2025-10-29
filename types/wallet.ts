@@ -63,3 +63,30 @@ export interface UseWalletAuthReturn {
   error: WalletAuthError | null;
   clearError: () => void;
 }
+
+/**
+ * User session data (server-side iron-session)
+ */
+export interface UserSession {
+  address: string // Ethereum address (checksummed)
+  siwe: {
+    message: string // SIWE message
+    signature: string // Signature
+    nonce: string // Used nonce
+  }
+  expires: number // Session expiration (Unix timestamp)
+  selectedCharacter?: number // Currently selected token ID
+}
+
+/**
+ * Blockchain transaction receipt
+ */
+export interface TransactionReceipt {
+  transactionHash: string
+  blockNumber: number
+  from: string
+  to: string
+  status: 'success' | 'failure'
+  gasUsed: string
+  effectiveGasPrice: string
+}
