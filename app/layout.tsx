@@ -6,11 +6,29 @@ import { Footer } from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
   title: 'WAGDIE - We Are All Going to Die',
-  description: 'WAGDIE NFT Community Platform - Connect your wallet to explore characters, lore, and participate in the dark fantasy world.',
+  description: 'WAGDIE NFT Community Platform - Connect your wallet to explore characters, lore, and participate in the dark fantasy world where your choices shape the narrative.',
+  keywords: ['WAGDIE', 'NFT', 'Ethereum', 'Dark Fantasy', 'Community', 'Web3', 'Gaming'],
+  authors: [{ name: 'WAGDIE Community' }],
   openGraph: {
     title: 'WAGDIE - We Are All Going to Die',
-    description: 'Community-driven dark fantasy NFT project',
+    description: 'Community-driven dark fantasy NFT project where your choices shape the narrative',
     type: 'website',
+    siteName: 'WAGDIE',
+    images: [
+      {
+        url: '/images/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'WAGDIE - We Are All Going to Die',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'WAGDIE - We Are All Going to Die',
+    description: 'Community-driven dark fantasy NFT project',
+    images: ['/images/og-image.png'],
+    creator: '@WAGDIE_ETH',
   },
 }
 
