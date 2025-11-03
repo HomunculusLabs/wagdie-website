@@ -10,9 +10,10 @@ import { getSession } from '@/lib/auth/session'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tokenId: string } }
+  context: { params: Promise<{ tokenId: string }> }
 ) {
   try {
+    const params = await context.params
     const tokenId = parseInt(params.tokenId, 10)
 
     if (isNaN(tokenId) || tokenId < 1 || tokenId > 6666) {
@@ -43,9 +44,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { tokenId: string } }
+  context: { params: Promise<{ tokenId: string }> }
 ) {
   try {
+    const params = await context.params
     const tokenId = parseInt(params.tokenId, 10)
 
     if (isNaN(tokenId) || tokenId < 1 || tokenId > 6666) {

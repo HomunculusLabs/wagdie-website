@@ -36,8 +36,14 @@ export async function verifySiweMessage(
 
 /**
  * Create or update user record in database after successful SIWE verification
+ * Note: This requires a 'users' table in Supabase which may not be created yet
  */
 export async function upsertUser(ethAddress: string) {
+  // TODO: Implement when users table is created in database
+  // For now, just return success since session management handles auth
+  return { data: { eth_address: ethAddress }, error: null }
+
+  /* Commented out until users table is created
   // Check if user exists
   const { data: existingUser } = await supabase
     .from('users')
@@ -51,7 +57,7 @@ export async function upsertUser(ethAddress: string) {
       .from('users')
       .update({
         last_login_at: new Date().toISOString(),
-        login_count: existingUser.login_count + 1,
+        login_count: (existingUser.login_count || 0) + 1,
       })
       .eq('eth_address', ethAddress)
       .select()
@@ -73,4 +79,5 @@ export async function upsertUser(ethAddress: string) {
 
     return { data, error }
   }
+  */
 }

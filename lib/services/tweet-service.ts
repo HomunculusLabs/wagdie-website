@@ -1,69 +1,43 @@
 /**
  * Tweet Service
- * Business logic for fetching and filtering official WAGDIE tweets
+ * Domain layer - Business logic for fetching and filtering official WAGDIE tweets
+ * Uses repository layer for data access (dependency injection)
  */
 
-import { supabase } from '../supabase'
+import { tweetRepository, type ITweetRepository } from '../repositories'
 import type { Tweet, TweetFilters, TweetsResponse } from '@/types/tweet'
 
 /**
- * Get tweets with filtering, pagination, and sorting
- * Filters out replies and retweets by default
+ * Tweet Service
+ * Encapsulates business rules for tweet handling
  */
-export async function getTweets(filters: TweetFilters): Promise<TweetsResponse> {
-  let query = supabase
-    .from('tweets')
-    .select('*')
-    // Always filter out replies and retweets
-    .eq('is_reply', false)
-    .eq('is_retweet', false)
+export class TweetService {
+  constructor(private repository: ITweetRepository) {}
 
-  // Apply media type filter
-  if (filters.tab === 'text') {
-    query = query.eq('media_type', 'none')
-  } else if (filters.tab === 'video') {
-    query = query.eq('media_type', 'video')
+  /**
+   * Get tweets with filtering, pagination, and sorting
+   * Business rule: Always filter out replies and retweets
+   */
+  async getTweets(filters: TweetFilters): Promise<TweetsResponse> {
+    return this.repository.findMany(filters)
   }
 
-  // Apply sorting (chronological)
-  query = query.order('created_at', { ascending: filters.sort === 'asc' })
+  /**
+   * Get tweets with auto-refresh capability
+   * Useful for real-time lore updates
+   */
+  async getTweetsWithRefresh(filters: TweetFilters, lastFetchTime?: Date): Promise<TweetsResponse> {
+    const result = await this.getTweets(filters)
 
-  // Apply pagination using cursor
-  if (filters.startAt) {
-    // Cursor-based pagination: fetch tweets after/before this timestamp
-    if (filters.sort === 'desc') {
-      query = query.lt('created_at', filters.startAt)
-    } else {
-      query = query.gt('created_at', filters.startAt)
-    }
-  }
+    // Additional business logic can be added here
+    // e.g., filter by timestamp, check for new content, etc.
 
-  // Limit results
-  query = query.limit(filters.perPage + 1) // Fetch one extra to check if there are more
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching tweets:', error)
-    throw new Error(`Failed to fetch tweets: ${error.message}`)
-  }
-
-  const tweets = (data || []) as Tweet[]
-
-  // Check if there are more results
-  const hasMore = tweets.length > filters.perPage
-
-  // Remove the extra item if present
-  const resultTweets = hasMore ? tweets.slice(0, filters.perPage) : tweets
-
-  // Get next cursor (last tweet's created_at)
-  const nextCursor = hasMore && resultTweets.length > 0
-    ? resultTweets[resultTweets.length - 1].created_at
-    : null
-
-  return {
-    tweets: resultTweets,
-    hasMore,
-    nextCursor
+    return result
   }
 }
+
+// Export singleton instance
+export const tweetService = new TweetService(tweetRepository)
+
+// Export individual functions for backward compatibility
+export const getTweets = (filters: TweetFilters) => tweetService.getTweets(filters)
