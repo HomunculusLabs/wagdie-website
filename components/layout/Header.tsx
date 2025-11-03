@@ -204,6 +204,13 @@ export function Header() {
             {/* Drawer Content */}
             <nav className="p-4 space-y-2">
               <Link
+                href="/map"
+                onClick={closeDrawer}
+                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+              >
+                World Map
+              </Link>
+              <Link
                 href="/about"
                 onClick={closeDrawer}
                 className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
