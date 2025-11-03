@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2025-10-28
 - Supabase PostgreSQL (characters, chat, tweets), Firebase Realtime Database (chat real-time sync), Browser localStorage (wallet persistence) (003-page-wireframes)
 - TypeScript 5+, Node.js 18+ + Supabase JS Client, @supabase/supabase-js v2 (005-mock-data-integration)
 - Supabase PostgreSQL (existing migrations applied) (005-mock-data-integration)
+- TypeScript 5+, Node.js 18+ + Next.js 15 (App Router), React 18, wagmi v2, viem v2, Tailwind CSS 3.4, Supabase PostgreSQL, RainbowKit 2.2+ (006-map-integration)
+- Supabase PostgreSQL (characters, locations data), Browser localStorage (wallet persistence) (006-map-integration)
 
 - TypeScript 5+ (Node.js 18+ for migration scripts) + Firebase Admin SDK, Supabase JS client, ethers.js (for address normalization) (001-migration-plan)
 
@@ -28,9 +30,9 @@ npm test && npm run lint
 TypeScript 5+ (Node.js 18+ for migration scripts): Follow standard conventions
 
 ## Recent Changes
+- 006-map-integration: Added TypeScript 5+, Node.js 18+ + Next.js 15 (App Router), React 18, wagmi v2, viem v2, Tailwind CSS 3.4, Supabase PostgreSQL, RainbowKit 2.2+
 - 005-mock-data-integration: Added TypeScript 5+, Node.js 18+ + Supabase JS Client, @supabase/supabase-js v2
 - 004-blockchain-integration: Added TypeScript 5+, Node.js 18+
-- 003-page-wireframes: **COMPLETED 2025-10-28** - Full UI wireframe implementation with 6 major pages (Home, Characters Browse/Detail, Lore, Spread), navigation system, authentication (SIWE), and blockchain integration placeholders. Chat feature intentionally skipped to avoid Firebase dependency. See IMPLEMENTATION_NOTES.md for details.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

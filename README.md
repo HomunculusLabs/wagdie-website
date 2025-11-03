@@ -14,6 +14,8 @@ This project represents a complete architectural simplification of the original 
 
 - **SIWE Authentication**: Secure wallet-based authentication using Sign-In with Ethereum
 - **NFT Character Management**: Track and display WAGDIE NFT characters
+- **Interactive World Map**: View and manage character locations on an interactive map
+- **Blockchain Integration**: Stake, move, and unstake characters via smart contract transactions
 - **Simplified Database**: PostgreSQL with auto-generated REST APIs via Supabase
 - **Modern Stack**: Next.js 15, TypeScript, Tailwind CSS
 - **Zero Infrastructure**: No Docker, no complex deployment pipelines
@@ -25,6 +27,7 @@ This project represents a complete architectural simplification of the original 
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: SIWE (Sign-In with Ethereum)
 - **Blockchain**: wagmi, viem, ethers
+- **State Management**: TanStack Query (React Query)
 - **Deployment**: Vercel (zero-config)
 
 ## Getting Started
@@ -117,6 +120,75 @@ wagdie-simplified/
 4. Frontend sends message + signature to `/api/auth/verify`
 5. Backend verifies signature and creates/updates user in database
 6. Session cookie is set with user's Ethereum address
+
+## Interactive World Map
+
+The Interactive World Map feature allows users to view and manage their WAGDIE characters on the Wagdie World map.
+
+### Access the Map
+
+Navigate to `/map` or click "World Map" in the navigation menu.
+
+### Features
+
+1. **View Map**: Interactive iframe displaying the Wagdie World map
+2. **Character Locations**: See your staked characters and their current locations
+3. **Stake Characters**: Select a location and stake your character
+4. **Move Characters**: Relocate characters to different locations
+5. **Unstake Characters**: Remove characters from their locations
+
+### How It Works
+
+#### User Story 1: Access Interactive Map
+- Users can access the map from any page via navigation
+- Map loads via iframe from wagdie.world
+- Clean, responsive interface with loading states
+
+#### User Story 2: View Character Locations
+- Authenticated users see their characters on the map page
+- Characters are fetched from Supabase cache
+- Real-time updates with React Query (30-second cache)
+- Empty state for users with no characters
+
+#### User Story 3: Stake Characters to Locations
+- Click "Move" on a character to open location selector
+- Choose from available locations with descriptions
+- Confirm transaction (stake/move/unstake)
+- Real-time transaction status via wagmi
+- Cache updates automatically after confirmation
+
+### Architecture
+
+The map feature uses a three-layer architecture:
+
+1. **UI Layer**: React components with error boundaries
+2. **Service Layer**: Business logic and data transformation
+3. **Data Layer**: Supabase and blockchain integration
+
+Key components:
+- `MapEmbed`: iframe wrapper with error handling
+- `CharacterLocationList`: displays user's characters
+- `LocationSelector`: location selection modal
+- `TransactionStatus`: blockchain transaction feedback
+- `ErrorBoundary`: graceful error handling
+
+For detailed architecture decisions, see [ADR-006](docs/adr-006-map-integration.md).
+
+### Database Tables
+
+Three new tables for map functionality:
+- `locations`: Available game locations
+- `character_locations`: Cached character positions
+- `location_transactions`: Transaction history
+
+### Smart Contract Integration
+
+Three contract interactions via WagdieWorld:
+- `stakeWagdies()`: Initial staking
+- `changeWagdieLocations()`: Moving characters
+- `unstakeWagdies()`: Removing characters
+
+All transactions include proper error handling and user feedback.
 
 ## Database Schema
 
