@@ -6,7 +6,7 @@
 'use client'
 
 import { useInView } from 'react-intersection-observer'
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 
 interface InfiniteScrollProps {
   hasMore: boolean
@@ -26,16 +26,28 @@ export function InfiniteScroll({
   className = ''
 }: InfiniteScrollProps) {
   const { ref, inView } = useInView({
-    threshold: 0,
-    rootMargin: '100px', // Trigger 100px before reaching the sentinel
+    threshold: 0.1, // Require 10% visibility before triggering
+    rootMargin: '200px', // Trigger 200px before reaching the sentinel
   })
+
+  const lastLoadTime = useRef<number>(0)
+  const DEBOUNCE_TIME = 2000 // Increased to 2 seconds debounce between loads
+
+  // Debounced load more function to prevent rapid fire calls
+  const debouncedLoadMore = useCallback(() => {
+    const now = Date.now()
+    if (now - lastLoadTime.current > DEBOUNCE_TIME) {
+      lastLoadTime.current = now
+      onLoadMore()
+    }
+  }, [onLoadMore])
 
   // Trigger load more when sentinel comes into view
   useEffect(() => {
     if (inView && hasMore && !isLoading) {
-      onLoadMore()
+      debouncedLoadMore()
     }
-  }, [inView, hasMore, isLoading, onLoadMore])
+  }, [inView, hasMore, isLoading, debouncedLoadMore])
 
   return (
     <div className={className}>
