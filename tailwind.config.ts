@@ -9,6 +9,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'wagdie': ['Wagdie_Fraktur_21', 'serif'],
+        'eskapade': ['EskapadeFraktur-Black', 'serif'],
+      },
       colors: {
         // Gothic dark theme - Backgrounds
         abyss: '#0a0a0a',        // Deepest black

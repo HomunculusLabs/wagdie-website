@@ -149,4 +149,4 @@ export class ApiClient {
 }
 
 // Export singleton instance
-export const apiClient = new ApiClient('/api')
+export const apiClient = new ApiClient('')

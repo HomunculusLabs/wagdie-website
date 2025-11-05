@@ -1,0 +1,88 @@
+/* Marker Cluster Styles - WAGDIE Theme */
+
+.marker-cluster-small {
+  background-color: rgba(212, 175, 55, 0.8);
+  border: 2px solid #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.marker-cluster-small div {
+  background-color: rgba(10, 10, 10, 0.9);
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  font-family: 'Wagdie_Fraktur_21', serif;
+  font-weight: bold;
+}
+
+.marker-cluster-medium {
+  background-color: rgba(212, 175, 55, 0.8);
+  border: 2px solid #d4af37;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+}
+
+.marker-cluster-medium div {
+  background-color: rgba(10, 10, 10, 0.9);
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  font-family: 'Wagdie_Fraktur_21', serif;
+  font-weight: bold;
+}
+
+.marker-cluster-large {
+  background-color: rgba(212, 175, 55, 0.8);
+  border: 2px solid #d4af37;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.7);
+}
+
+.marker-cluster-large div {
+  background-color: rgba(10, 10, 10, 0.9);
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  font-family: 'Wagdie_Fraktur_21', serif;
+  font-weight: bold;
+}
+
+/* Cluster hover effects */
+.marker-cluster:hover {
+  background-color: rgba(255, 107, 53, 0.8);
+  border: 2px solid #ff6b35;
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.7);
+  transition: all 0.3s ease;
+}
+
+.marker-cluster:hover div {
+  background-color: rgba(10, 10, 10, 0.95);
+  color: #ff6b35;
+  border: 1px solid #ff6b35;
+  transition: all 0.3s ease;
+}
+
+/* Cluster animations */
+.marker-cluster {
+  transition: all 0.3s ease;
+}
+
+.marker-cluster div {
+  transition: all 0.3s ease;
+}
+
+/* Mobile optimization for clusters */
+@media (max-width: 768px) {
+  .marker-cluster-small,
+  .marker-cluster-medium,
+  .marker-cluster-large {
+    /* Larger touch targets on mobile */
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .marker-cluster-small div,
+  .marker-cluster-medium div,
+  .marker-cluster-large div {
+    width: 44px !important;
+    height: 44px !important;
+    margin-left: 2px !important;
+    margin-top: 2px !important;
+    line-height: 40px !important;
+  }
+}
