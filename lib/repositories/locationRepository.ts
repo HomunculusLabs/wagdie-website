@@ -45,7 +45,7 @@ export class LocationRepository implements ILocationRepository {
       }
 
       // Check if locations have metadata
-      const hasMetadata = data.every(loc => loc.metadata && loc.metadata.bounds);
+      const hasMetadata = data.every((loc: Location) => loc.metadata && loc.metadata.bounds);
       if (!hasMetadata) {
         console.warn('Database locations missing metadata, using mock data');
         return this.getMockLocations();

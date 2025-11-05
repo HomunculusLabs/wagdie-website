@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useImperativeHandle, forwardRef, memo } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, memo, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { Location, CharacterLocation, LayerVisibility, MapMarkerData } from '@/lib/types/map';
+import 'react-leaflet-markercluster/styles';
+import './MarkerCluster.css';
+import MarkerClusterGroup from 'react-leaflet-markercluster';
+import type { Location, CharacterLocation, LayerVisibility, MapMarkerData, EventMarker } from '@/lib/types/map';
+import { useEventMarkers } from '@/hooks/map/useEventMarkers';
 
 interface SimpleMapProps {
   locations: Location[];
@@ -18,63 +23,31 @@ export interface SimpleMapRef {
   getMap: () => L.Map | null;
 }
 
-// Memoized component to prevent unnecessary re-renders
-const SimpleMapComponent = forwardRef<SimpleMapRef, SimpleMapProps>(({ locations, characterLocations, layers, toggleLayer, onMarkerClick }, ref) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+// Fix for default markers in react-leaflet with webpack
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
+// Component to handle map ref and initialization
+function MapController({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
   useEffect(() => {
-    // Guard against SSR
-    if (typeof window === 'undefined') return;
-
-    if (!mapRef.current || mapInstanceRef.current) return;
-
-    // Initialize map
-    const map = L.map(mapRef.current, {
-      center: [1111, 1111],
-      zoom: 0,
-      zoomControl: true,
-      crs: L.CRS.Simple,
-      minZoom: -2,
-      maxZoom: 2,
-      attributionControl: true,
-    });
-
-    // Set attribution separately
+    mapRef.current = map;
     map.attributionControl.setPrefix('WAGDIE World');
-
-    // Add WAGDIE world image with loading tracking
     const bounds: L.LatLngBoundsExpression = [[0, 0], [2222, 2222]];
     const imageOverlay = L.imageOverlay('/images/wagdiemap.png', bounds);
-
-    imageOverlay.on('load', () => {
-      console.log('Map image loaded successfully');
-    });
-
-    imageOverlay.on('error', (error) => {
-      console.error('Failed to load map image:', error);
-    });
-
     imageOverlay.addTo(map);
     map.fitBounds(bounds);
+  }, [map, mapRef]);
+  return null;
+}
 
-    // Handle window resize for responsive behavior
-    const handleResize = () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    mapInstanceRef.current = map;
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      map.remove();
-      mapInstanceRef.current = null;
-    };
-  }, []);
+// Memoized component to prevent unnecessary re-renders
+const SimpleMapComponent = forwardRef<SimpleMapRef, SimpleMapProps>(({ locations, characterLocations, layers, toggleLayer, onMarkerClick }, ref) => {
+  const mapInstanceRef = useRef<L.Map | null>(null);
 
   // Helper function to get responsive icon sizes for touch targets
   const getIconSizes = (isMobile: boolean, baseSize: [number, number]) => {
@@ -91,215 +64,426 @@ const SimpleMapComponent = forwardRef<SimpleMapRef, SimpleMapProps>(({ locations
     return window.innerWidth <= 1024;
   };
 
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-
-    const map = mapInstanceRef.current;
-
-    // Clear existing markers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
-        map.removeLayer(layer);
-      }
+  // Create custom icons
+  const createLocationIcon = (isMobile: boolean) => {
+    const size = getIconSizes(isMobile, [32, 32]);
+    return L.icon({
+      iconUrl: '/images/map-icons/icon_location.png',
+      iconSize: size,
+      iconAnchor: [size[0] / 2, size[1]],
+      popupAnchor: [0, -size[1]],
     });
+  };
 
-    // Add location markers
-    if (layers.locations) {
-      locations.forEach((location) => {
-        // Skip if no metadata or bounds
-        if (!location.metadata || !location.metadata.bounds) {
-          console.warn('Location missing metadata:', location);
-          return;
+  const createCharacterIcon = (isMobile: boolean) => {
+    const size = getIconSizes(isMobile, [24, 24]);
+    return L.icon({
+      iconUrl: '/images/map-icons/icon_character.png',
+      iconSize: size,
+      iconAnchor: [size[0] / 2, size[1]],
+      popupAnchor: [0, -size[1]],
+    });
+  };
+
+  const createBurnIcon = (isMobile: boolean) => {
+    const size = getIconSizes(isMobile, [28, 28]);
+    return L.icon({
+      iconUrl: '/images/map-icons/icon_burn.png',
+      iconSize: size,
+      iconAnchor: [size[0] / 2, size[1]],
+      popupAnchor: [0, -size[1]],
+    });
+  };
+
+  const createDeathIcon = (isMobile: boolean) => {
+    const size = getIconSizes(isMobile, [28, 28]);
+    return L.icon({
+      iconUrl: '/images/map-icons/icon_death.png',
+      iconSize: size,
+      iconAnchor: [size[0] / 2, size[1]],
+      popupAnchor: [0, -size[1]],
+    });
+  };
+
+  const createFightIcon = (isMobile: boolean) => {
+    const size = getIconSizes(isMobile, [28, 28]);
+    return L.icon({
+      iconUrl: '/images/map-icons/icon_fight.png',
+      iconSize: size,
+      iconAnchor: [size[0] / 2, size[1]],
+      popupAnchor: [0, -size[1]],
+    });
+  };
+
+  // Fetch event markers
+  const { eventMarkers } = useEventMarkers();
+
+  // Create location markers
+  const locationMarkers = useMemo(() => {
+    if (!layers.locations) return [];
+
+    return locations.map((location) => {
+      if (!location.metadata || !location.metadata.bounds) {
+        console.warn('Location missing metadata:', location);
+        return null;
+      }
+
+      const bounds = location.metadata.bounds;
+      const center: [number, number] = location.metadata.center || [
+        (bounds[0][0] + bounds[1][0]) / 2,
+        (bounds[0][1] + bounds[1][1]) / 2,
+      ];
+
+      const isMobile = isMobileOrTablet();
+      const icon = createLocationIcon(isMobile);
+
+      const handleClick = () => {
+        if (onMarkerClick) {
+          onMarkerClick({
+            id: location.id,
+            type: 'location',
+            position: center,
+            data: location,
+          });
         }
+      };
 
-        const bounds = location.metadata.bounds;
-        const center: [number, number] = location.metadata.center || [
-          (bounds[0][0] + bounds[1][0]) / 2,
-          (bounds[0][1] + bounds[1][1]) / 2,
-        ];
-
-        // Create custom icon using WAGDIE icon with touch-friendly sizing
-        const isMobile = isMobileOrTablet();
-        const locationIconSize = getIconSizes(isMobile, [32, 32]);
-        const locationIcon = L.icon({
-          iconUrl: '/images/map-icons/icon_location.png',
-          iconSize: locationIconSize,
-          iconAnchor: [locationIconSize[0] / 2, locationIconSize[1]],
-          popupAnchor: [0, -locationIconSize[1]],
-        });
-
-        const marker = L.marker(center, {
-          icon: locationIcon,
-        });
-
-        // Add tooltip on hover with mobile-friendly positioning
-        marker.bindTooltip(
-          `<div style="font-family: 'Wagdie_Fraktur_21', serif;">
-            <strong>${location.name}</strong><br/>
-            ${location.description || 'WAGDIE Location'}
-          </div>`,
-          {
-            direction: 'top',
-            offset: [0, -locationIconSize[1]],
-            className: 'custom-tooltip',
-            // Improve touch interaction
-            permanent: false,
-            opacity: isMobile ? 0.9 : 0.8,
-          }
-        );
-
-        // Add popup on click
-        const popupContent = `
-          <div style="font-family: 'Wagdie_Fraktur_21', serif; min-width: 250px;">
-            <h3 style="color: #d4af37; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #252525; padding-bottom: 4px;">
-              ${location.name}
-            </h3>
-            <p style="color: #e8e8e8; font-size: 12px; margin-bottom: 8px;">
-              ${location.description || 'A location in the WAGDIE world'}
-            </p>
-            <div style="background: #1a1a1a; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-              <div style="color: #b0b0b0; font-size: 11px; margin-bottom: 4px;">
-                <span style="color: #e8e8e8;">Area:</span> ${location.metadata.area || 'Unknown'}
+      return (
+        <Marker
+          key={`location-${location.id}`}
+          position={center}
+          icon={icon}
+          eventHandlers={{ click: handleClick }}
+        >
+          <Tooltip direction="top" className="custom-tooltip">
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif" }}>
+              <strong>{location.name}</strong><br />
+              {location.description || 'WAGDIE Location'}
+            </div>
+          </Tooltip>
+          <Popup className="custom-popup" maxWidth={300}>
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif", minWidth: '250px' }}>
+              <h3 style={{ color: '#d4af37', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #252525', paddingBottom: '4px' }}>
+                {location.name}
+              </h3>
+              <p style={{ color: '#e8e8e8', fontSize: '12px', marginBottom: '8px' }}>
+                {location.description || 'A location in the WAGDIE world'}
+              </p>
+              <div style={{ background: '#1a1a1a', padding: '8px', borderRadius: '4px', marginBottom: '8px' }}>
+                <div style={{ color: '#b0b0b0', fontSize: '11px', marginBottom: '4px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Area:</span> {location.metadata.area || 'Unknown'}
+                </div>
+                <div style={{ color: '#b0b0b0', fontSize: '11px', marginBottom: '4px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Type:</span> {location.metadata.properties?.terrain || 'Unknown'}
+                </div>
+                <div style={{ color: '#b0b0b0', fontSize: '11px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Difficulty:</span> {location.metadata.properties?.difficulty || 'Unknown'}
+                </div>
               </div>
-              <div style="color: #b0b0b0; font-size: 11px; margin-bottom: 4px;">
-                <span style="color: #e8e8e8;">Type:</span> ${location.metadata.properties?.terrain || 'Unknown'}
-              </div>
-              <div style="color: #b0b0b0; font-size: 11px;">
-                <span style="color: #e8e8e8;">Difficulty:</span> ${location.metadata.properties?.difficulty || 'Unknown'}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => alert('Stake feature coming soon!')}
+                  style={{
+                    flex: 1,
+                    background: '#d4af37',
+                    color: '#0a0a0a',
+                    border: 'none',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    fontFamily: "'Wagdie_Fraktur_21', serif",
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Stake Character
+                </button>
+                <button
+                  onClick={() => console.log('View details for', location.name)}
+                  style={{
+                    flex: 1,
+                    background: '#252525',
+                    color: '#e8e8e8',
+                    border: '1px solid #252525',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    fontFamily: "'Wagdie_Fraktur_21', serif",
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  View Details
+                </button>
               </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-              <button onclick="alert('Stake feature coming soon!')" style="flex: 1; background: #d4af37; color: #0a0a0a; border: none; padding: 8px; border-radius: 4px; font-family: 'Wagdie_Fraktur_21', serif; font-size: 11px; cursor: pointer;">
-                Stake Character
-              </button>
-              <button onclick="console.log('View details for ${location.name}')" style="flex: 1; background: #252525; color: #e8e8e8; border: 1px solid #252525; padding: 8px; border-radius: 4px; font-family: 'Wagdie_Fraktur_21', serif; font-size: 11px; cursor: pointer;">
-                View Details
-              </button>
-            </div>
-          </div>
-        `;
+          </Popup>
+        </Marker>
+      );
+    }).filter(Boolean);
+  }, [locations, layers.locations, onMarkerClick]);
 
-        marker.bindPopup(popupContent, {
-          className: 'custom-popup',
-          maxWidth: 300,
-        });
+  // Create character markers
+  const characterMarkers = useMemo(() => {
+    if (!layers.characters) return [];
 
-        marker.on('click', () => {
-          if (onMarkerClick) {
-            onMarkerClick({
-              id: location.id,
-              type: 'location',
-              position: center,
-              data: location,
-            });
-          }
-        });
+    return characterLocations.map((charLocation) => {
+      if (!charLocation.location) return null;
 
-        marker.addTo(map);
-      });
-    }
+      if (!charLocation.location.metadata || !charLocation.location.metadata.bounds) {
+        console.warn('Character location missing metadata:', charLocation);
+        return null;
+      }
 
-    // Add character markers
-    if (layers.characters) {
-      characterLocations.forEach((charLocation) => {
-        if (!charLocation.location) return;
+      const bounds = charLocation.location.metadata.bounds;
+      const center: [number, number] = charLocation.location.metadata.center || [
+        (bounds[0][0] + bounds[1][0]) / 2,
+        (bounds[0][1] + bounds[1][1]) / 2,
+      ];
 
-        // Skip if no metadata or bounds
-        if (!charLocation.location.metadata || !charLocation.location.metadata.bounds) {
-          console.warn('Character location missing metadata:', charLocation);
-          return;
+      const isMobile = isMobileOrTablet();
+      const icon = createCharacterIcon(isMobile);
+
+      const handleClick = () => {
+        if (onMarkerClick) {
+          onMarkerClick({
+            id: `character-${charLocation.character_token_id}`,
+            type: 'character',
+            position: center,
+            data: charLocation,
+          });
         }
+      };
 
-        const bounds = charLocation.location.metadata.bounds;
-        const center: [number, number] = charLocation.location.metadata.center || [
-          (bounds[0][0] + bounds[1][0]) / 2,
-          (bounds[0][1] + bounds[1][1]) / 2,
-        ];
-
-        // Create custom icon using WAGDIE icon with touch-friendly sizing
-        const isMobile = isMobileOrTablet();
-        const characterIconSize = getIconSizes(isMobile, [24, 24]);
-        const characterIcon = L.icon({
-          iconUrl: '/images/map-icons/icon_character.png',
-          iconSize: characterIconSize,
-          iconAnchor: [characterIconSize[0] / 2, characterIconSize[1]],
-          popupAnchor: [0, -characterIconSize[1]],
-        });
-
-        const marker = L.marker(center, {
-          icon: characterIcon,
-        });
-
-        // Add tooltip on hover with mobile-friendly positioning
-        marker.bindTooltip(
-          `<div style="font-family: 'Wagdie_Fraktur_21', serif;">
-            <strong>Character #${charLocation.character_token_id}</strong><br/>
-            ${charLocation.location?.name || 'Unknown Location'}
-          </div>`,
-          {
-            direction: 'top',
-            offset: [0, -characterIconSize[1]],
-            className: 'custom-tooltip',
-            // Improve touch interaction
-            permanent: false,
-            opacity: isMobile ? 0.9 : 0.8,
-          }
-        );
-
-        // Add popup on click
-        const characterPopupContent = `
-          <div style="font-family: 'Wagdie_Fraktur_21', serif; min-width: 250px;">
-            <h3 style="color: #d4af37; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #252525; padding-bottom: 4px;">
-              Character #${charLocation.character_token_id}
-            </h3>
-            <p style="color: #e8e8e8; font-size: 12px; margin-bottom: 8px;">
-              A WAGDIE character
-            </p>
-            <div style="background: #1a1a1a; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-              <div style="color: #b0b0b0; font-size: 11px; margin-bottom: 4px;">
-                <span style="color: #e8e8e8;">Token ID:</span> ${charLocation.character_token_id}
+      return (
+        <Marker
+          key={`character-${charLocation.character_token_id}`}
+          position={center}
+          icon={icon}
+          eventHandlers={{ click: handleClick }}
+        >
+          <Tooltip direction="top" className="custom-tooltip">
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif" }}>
+              <strong>Character #{charLocation.character_token_id}</strong><br />
+              {charLocation.location?.name || 'Unknown Location'}
+            </div>
+          </Tooltip>
+          <Popup className="custom-popup" maxWidth={300}>
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif", minWidth: '250px' }}>
+              <h3 style={{ color: '#d4af37', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #252525', paddingBottom: '4px' }}>
+                Character #{charLocation.character_token_id}
+              </h3>
+              <p style={{ color: '#e8e8e8', fontSize: '12px', marginBottom: '8px' }}>
+                A WAGDIE character
+              </p>
+              <div style={{ background: '#1a1a1a', padding: '8px', borderRadius: '4px', marginBottom: '8px' }}>
+                <div style={{ color: '#b0b0b0', fontSize: '11px', marginBottom: '4px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Token ID:</span> {charLocation.character_token_id}
+                </div>
+                <div style={{ color: '#b0b0b0', fontSize: '11px', marginBottom: '4px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Location:</span> {charLocation.location?.name || 'Unknown'}
+                </div>
+                <div style={{ color: '#b0b0b0', fontSize: '11px', marginBottom: '4px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Status:</span> <span style={{ color: '#4a7c59', textTransform: 'capitalize' }}>{charLocation.status}</span>
+                </div>
+                <div style={{ color: '#b0b0b0', fontSize: '11px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Wallet:</span> {charLocation.wallet_address.slice(0, 6)}...{charLocation.wallet_address.slice(-4)}
+                </div>
               </div>
-              <div style="color: #b0b0b0; font-size: 11px; margin-bottom: 4px;">
-                <span style="color: #e8e8e8;">Location:</span> ${charLocation.location?.name || 'Unknown'}
-              </div>
-              <div style="color: #b0b0b0; font-size: 11px; margin-bottom: 4px;">
-                <span style="color: #e8e8e8;">Status:</span> <span style="color: #4a7c59; text-transform: capitalize;">${charLocation.status}</span>
-              </div>
-              <div style="color: #b0b0b0; font-size: 11px;">
-                <span style="color: #e8e8e8;">Wallet:</span> ${charLocation.wallet_address.slice(0, 6)}...${charLocation.wallet_address.slice(-4)}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => alert('View character feature coming soon!')}
+                  style={{
+                    flex: 1,
+                    background: '#d4af37',
+                    color: '#0a0a0a',
+                    border: 'none',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    fontFamily: "'Wagdie_Fraktur_21', serif",
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  View Character
+                </button>
+                <button
+                  onClick={() => alert('Move character feature coming soon!')}
+                  style={{
+                    flex: 1,
+                    background: '#252525',
+                    color: '#e8e8e8',
+                    border: '1px solid #252525',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    fontFamily: "'Wagdie_Fraktur_21', serif",
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Move Character
+                </button>
               </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-              <button onclick="alert('View character feature coming soon!')" style="flex: 1; background: #d4af37; color: #0a0a0a; border: none; padding: 8px; border-radius: 4px; font-family: 'Wagdie_Fraktur_21', serif; font-size: 11px; cursor: pointer;">
-                View Character
-              </button>
-              <button onclick="alert('Move character feature coming soon!')" style="flex: 1; background: #252525; color: #e8e8e8; border: 1px solid #252525; padding: 8px; border-radius: 4px; font-family: 'Wagdie_Fraktur_21', serif; font-size: 11px; cursor: pointer;">
-                Move Character
-              </button>
+          </Popup>
+        </Marker>
+      );
+    }).filter(Boolean);
+  }, [characterLocations, layers.characters, onMarkerClick]);
+
+  // Create burn event markers
+  const burnMarkers = useMemo(() => {
+    if (!layers.burns) return [];
+
+    return eventMarkers.burns.map((event) => {
+      const isMobile = isMobileOrTablet();
+      const icon = createBurnIcon(isMobile);
+
+      const handleClick = () => {
+        if (onMarkerClick) {
+          onMarkerClick({
+            id: event.id,
+            type: 'burn',
+            position: event.position as [number, number],
+            data: event,
+          });
+        }
+      };
+
+      return (
+        <Marker
+          key={event.id}
+          position={event.position as [number, number]}
+          icon={icon}
+          eventHandlers={{ click: handleClick }}
+        >
+          <Tooltip direction="top" className="custom-tooltip">
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif" }}>
+              <strong>{event.title}</strong><br />
+              {event.description || 'Burn Event'}
             </div>
-          </div>
-        `;
+          </Tooltip>
+          <Popup className="custom-popup" maxWidth={300}>
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif", minWidth: '250px' }}>
+              <h3 style={{ color: '#ff6b35', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #252525', paddingBottom: '4px' }}>
+                {event.title}
+              </h3>
+              <p style={{ color: '#e8e8e8', fontSize: '12px', marginBottom: '8px' }}>
+                {event.description || 'A burn event in the WAGDIE world'}
+              </p>
+              <div style={{ background: '#1a1a1a', padding: '8px', borderRadius: '4px' }}>
+                <div style={{ color: '#b0b0b0', fontSize: '11px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Type:</span> Burn Event
+                </div>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    }).filter(Boolean);
+  }, [eventMarkers.burns, layers.burns, onMarkerClick]);
 
-        marker.bindPopup(characterPopupContent, {
-          className: 'custom-popup',
-          maxWidth: 300,
-        });
+  // Create death event markers
+  const deathMarkers = useMemo(() => {
+    if (!layers.deaths) return [];
 
-        marker.on('click', () => {
-          if (onMarkerClick) {
-            onMarkerClick({
-              id: `character-${charLocation.character_token_id}`,
-              type: 'character',
-              position: center,
-              data: charLocation,
-            });
-          }
-        });
+    return eventMarkers.deaths.map((event) => {
+      const isMobile = isMobileOrTablet();
+      const icon = createDeathIcon(isMobile);
 
-        marker.addTo(map);
-      });
-    }
-  }, [locations, characterLocations, layers, onMarkerClick]);
+      const handleClick = () => {
+        if (onMarkerClick) {
+          onMarkerClick({
+            id: event.id,
+            type: 'death',
+            position: event.position as [number, number],
+            data: event,
+          });
+        }
+      };
+
+      return (
+        <Marker
+          key={event.id}
+          position={event.position as [number, number]}
+          icon={icon}
+          eventHandlers={{ click: handleClick }}
+        >
+          <Tooltip direction="top" className="custom-tooltip">
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif" }}>
+              <strong>{event.title}</strong><br />
+              {event.description || 'Death Event'}
+            </div>
+          </Tooltip>
+          <Popup className="custom-popup" maxWidth={300}>
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif", minWidth: '250px' }}>
+              <h3 style={{ color: '#c92a2a', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #252525', paddingBottom: '4px' }}>
+                {event.title}
+              </h3>
+              <p style={{ color: '#e8e8e8', fontSize: '12px', marginBottom: '8px' }}>
+                {event.description || 'A death event in the WAGDIE world'}
+              </p>
+              <div style={{ background: '#1a1a1a', padding: '8px', borderRadius: '4px' }}>
+                <div style={{ color: '#b0b0b0', fontSize: '11px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Type:</span> Death Event
+                </div>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    }).filter(Boolean);
+  }, [eventMarkers.deaths, layers.deaths, onMarkerClick]);
+
+  // Create fight event markers
+  const fightMarkers = useMemo(() => {
+    if (!layers.fights) return [];
+
+    return eventMarkers.fights.map((event) => {
+      const isMobile = isMobileOrTablet();
+      const icon = createFightIcon(isMobile);
+
+      const handleClick = () => {
+        if (onMarkerClick) {
+          onMarkerClick({
+            id: event.id,
+            type: 'fight',
+            position: event.position as [number, number],
+            data: event,
+          });
+        }
+      };
+
+      return (
+        <Marker
+          key={event.id}
+          position={event.position as [number, number]}
+          icon={icon}
+          eventHandlers={{ click: handleClick }}
+        >
+          <Tooltip direction="top" className="custom-tooltip">
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif" }}>
+              <strong>{event.title}</strong><br />
+              {event.description || 'Fight Event'}
+            </div>
+          </Tooltip>
+          <Popup className="custom-popup" maxWidth={300}>
+            <div style={{ fontFamily: "'Wagdie_Fraktur_21', serif", minWidth: '250px' }}>
+              <h3 style={{ color: '#ff6b35', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #252525', paddingBottom: '4px' }}>
+                {event.title}
+              </h3>
+              <p style={{ color: '#e8e8e8', fontSize: '12px', marginBottom: '8px' }}>
+                {event.description || 'A fight/battle event in the WAGDIE world'}
+              </p>
+              <div style={{ background: '#1a1a1a', padding: '8px', borderRadius: '4px' }}>
+                <div style={{ color: '#b0b0b0', fontSize: '11px' }}>
+                  <span style={{ color: '#e8e8e8' }}>Type:</span> Fight/Battle Event
+                </div>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+      );
+    }).filter(Boolean);
+  }, [eventMarkers.fights, layers.fights, onMarkerClick]);
 
   // Expose map methods via ref
   useImperativeHandle(ref, () => ({
@@ -311,6 +495,25 @@ const SimpleMapComponent = forwardRef<SimpleMapRef, SimpleMapProps>(({ locations
     getMap: () => mapInstanceRef.current,
   }), []);
 
+  // Cluster options for performance
+  const clusterOptions = {
+    disableClusteringAtZoom: 16,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    maxClusterRadius: 80,
+    iconCreateFunction: (cluster: any) => {
+      const count = cluster.getChildCount();
+      const size = count < 100 ? 'large' : count < 1000 ? 'medium' : 'large';
+      const className = `marker-cluster marker-cluster-${size}`;
+      return L.divIcon({
+        html: `<div><span>${count}</span></div>`,
+        className,
+        iconSize: L.point(40, 40),
+      });
+    },
+  };
+
   return (
     <>
       {/* Skip to content link for accessibility */}
@@ -321,7 +524,52 @@ const SimpleMapComponent = forwardRef<SimpleMapRef, SimpleMapProps>(({ locations
         Skip to map controls
       </a>
 
-      <div ref={mapRef} className="w-full h-full" />
+      <MapContainer
+        center={[1111, 1111]}
+        zoom={0}
+        minZoom={-2}
+        maxZoom={2}
+        crs={L.CRS.Simple}
+        style={{ height: '100%', width: '100%' }}
+        attributionControl={true}
+      >
+        <MapController mapRef={mapInstanceRef} />
+
+        {/* Location markers with clustering */}
+        {layers.locations && (
+          <MarkerClusterGroup {...clusterOptions}>
+            {locationMarkers}
+          </MarkerClusterGroup>
+        )}
+
+        {/* Character markers with clustering */}
+        {layers.characters && (
+          <MarkerClusterGroup {...clusterOptions}>
+            {characterMarkers}
+          </MarkerClusterGroup>
+        )}
+
+        {/* Burn event markers with clustering */}
+        {layers.burns && (
+          <MarkerClusterGroup {...clusterOptions}>
+            {burnMarkers}
+          </MarkerClusterGroup>
+        )}
+
+        {/* Death event markers with clustering */}
+        {layers.deaths && (
+          <MarkerClusterGroup {...clusterOptions}>
+            {deathMarkers}
+          </MarkerClusterGroup>
+        )}
+
+        {/* Fight event markers with clustering */}
+        {layers.fights && (
+          <MarkerClusterGroup {...clusterOptions}>
+            {fightMarkers}
+          </MarkerClusterGroup>
+        )}
+      </MapContainer>
 
       {/* Layer Controls - Responsive for mobile/tablet with enhanced accessibility */}
       <div
@@ -394,56 +642,68 @@ const SimpleMapComponent = forwardRef<SimpleMapRef, SimpleMapProps>(({ locations
 
           <div className="border-t border-midnight my-1 sm:my-2" role="separator" aria-hidden="true"></div>
 
-          <label className="flex items-center gap-2 sm:gap-3 text-mist text-xs sm:text-sm opacity-80 min-h-[44px]">
+          <label className="flex items-center gap-2 sm:gap-3 text-mist text-xs sm:text-sm cursor-pointer hover:text-ember transition-all duration-200 group min-h-[44px] focus-within:ring-2 focus-within:ring-gold focus-within:ring-offset-2 focus-within:ring-offset-abyss rounded">
             <img
               src="/images/map-icons/icon_burn.png"
               alt="Burns layer icon"
-              className="w-5 h-5 sm:w-6 sm:h-6 opacity-60"
+              className="w-5 h-5 sm:w-6 sm:h-6 filter drop-shadow-[0_0_3px_rgba(212,175,55,0.3)] group-hover:brightness-110 transition-all"
               aria-hidden="true"
             />
             <input
               type="checkbox"
-              disabled
-              aria-disabled="true"
-              className="ml-1 h-4 w-4 rounded border-midnight bg-midnight opacity-50 cursor-not-allowed"
+              checked={layers.burns}
+              onChange={() => toggleLayer('burns')}
+              className="ml-1 h-4 w-4 rounded border-midnight bg-shadow text-gold focus:ring-gold focus:ring-2 touch-manipulation"
+              aria-label="Toggle burns layer"
+              aria-describedby="burns-description"
             />
             <span className="font-wagdie tracking-wide">Burns</span>
-            <span className="text-xs text-ash font-wagdie ml-auto" aria-label="coming soon">(Soon)</span>
           </label>
+          <div id="burns-description" className="sr-only">
+            Toggle visibility of burn event markers on the map
+          </div>
 
-          <label className="flex items-center gap-2 sm:gap-3 text-mist text-xs sm:text-sm opacity-80 min-h-[44px]">
+          <label className="flex items-center gap-2 sm:gap-3 text-mist text-xs sm:text-sm cursor-pointer hover:text-ember transition-all duration-200 group min-h-[44px] focus-within:ring-2 focus-within:ring-gold focus-within:ring-offset-2 focus-within:ring-offset-abyss rounded">
             <img
               src="/images/map-icons/icon_death.png"
               alt="Deaths layer icon"
-              className="w-5 h-5 sm:w-6 sm:h-6 opacity-60"
+              className="w-5 h-5 sm:w-6 sm:h-6 filter drop-shadow-[0_0_3px_rgba(212,175,55,0.3)] group-hover:brightness-110 transition-all"
               aria-hidden="true"
             />
             <input
               type="checkbox"
-              disabled
-              aria-disabled="true"
-              className="ml-1 h-4 w-4 rounded border-midnight bg-midnight opacity-50 cursor-not-allowed"
+              checked={layers.deaths}
+              onChange={() => toggleLayer('deaths')}
+              className="ml-1 h-4 w-4 rounded border-midnight bg-shadow text-gold focus:ring-gold focus:ring-2 touch-manipulation"
+              aria-label="Toggle deaths layer"
+              aria-describedby="deaths-description"
             />
             <span className="font-wagdie tracking-wide">Deaths</span>
-            <span className="text-xs text-ash font-wagdie ml-auto" aria-label="coming soon">(Soon)</span>
           </label>
+          <div id="deaths-description" className="sr-only">
+            Toggle visibility of death event markers on the map
+          </div>
 
-          <label className="flex items-center gap-2 sm:gap-3 text-mist text-xs sm:text-sm opacity-80 min-h-[44px]">
+          <label className="flex items-center gap-2 sm:gap-3 text-mist text-xs sm:text-sm cursor-pointer hover:text-ember transition-all duration-200 group min-h-[44px] focus-within:ring-2 focus-within:ring-gold focus-within:ring-offset-2 focus-within:ring-offset-abyss rounded">
             <img
               src="/images/map-icons/icon_fight.png"
               alt="Fights layer icon"
-              className="w-5 h-5 sm:w-6 sm:h-6 opacity-60"
+              className="w-5 h-5 sm:w-6 sm:h-6 filter drop-shadow-[0_0_3px_rgba(212,175,55,0.3)] group-hover:brightness-110 transition-all"
               aria-hidden="true"
             />
             <input
               type="checkbox"
-              disabled
-              aria-disabled="true"
-              className="ml-1 h-4 w-4 rounded border-midnight bg-midnight opacity-50 cursor-not-allowed"
+              checked={layers.fights}
+              onChange={() => toggleLayer('fights')}
+              className="ml-1 h-4 w-4 rounded border-midnight bg-shadow text-gold focus:ring-gold focus:ring-2 touch-manipulation"
+              aria-label="Toggle fights layer"
+              aria-describedby="fights-description"
             />
             <span className="font-wagdie tracking-wide">Fights</span>
-            <span className="text-xs text-ash font-wagdie ml-auto" aria-label="coming soon">(Soon)</span>
           </label>
+          <div id="fights-description" className="sr-only">
+            Toggle visibility of fight/battle event markers on the map
+          </div>
         </div>
       </div>
 

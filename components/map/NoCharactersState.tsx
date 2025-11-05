@@ -34,7 +34,7 @@ export function NoCharactersState({ onConnectWallet }: NoCharactersStateProps) {
 
         {/* Description */}
         <p className="font-wagdie text-bone text-base mb-2">
-          You don't have any WAGDIE characters yet.
+          You don&apos;t have any WAGDIE characters yet.
         </p>
         <p className="font-wagdie text-mist text-sm mb-6">
           Acquire characters to see them on the map and participate in the WAGDIE world.

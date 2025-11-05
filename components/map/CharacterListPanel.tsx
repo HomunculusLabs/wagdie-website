@@ -10,7 +10,7 @@ interface CharacterListPanelProps {
   onClose?: () => void;
 }
 
-const CharacterListPanelComponent = function CharacterListPanel({
+const CharacterListPanelComponent = function CharacterListPanelComponent({
   characters,
   connectedWallet,
   onCharacterSelect,

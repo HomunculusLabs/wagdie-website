@@ -6,6 +6,7 @@ import { useMapData } from '@/hooks/map/useMapData';
 import { useMapLayers } from '@/hooks/map/useMapLayers';
 import { useWallet } from '@/hooks/map/useWallet';
 import { CharacterListPanel } from '@/components/map/CharacterListPanel';
+import { LoadingState } from '@/components/map/LoadingState';
 import type { CharacterLocation } from '@/lib/types/map';
 import type { SimpleMapRef } from '@/components/map/SimpleMap';
 
@@ -20,24 +21,55 @@ const SimpleMap = dynamic(() => import('@/components/map/SimpleMap').then(mod =>
 });
 
 export default function MapPage() {
-  const { locations, characterLocations, isLoading, error } = useMapData();
+  const { locations, characterLocations, isLoading, error, loadingProgress, loadingStage, loadingStages } = useMapData();
   const { layers, toggleLayer } = useMapLayers();
-  const { connectedWallet, connectWallet } = useWallet();
+  const { connectedWallet, connectWallet, isConnecting, connectionStage, connectionProgress, connectionStages } = useWallet();
   const [showCharacterPanel, setShowCharacterPanel] = useState(false);
   const mapRef = useRef<SimpleMapRef>(null);
 
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-abyss">
-        <div className="text-bone">Error loading map: {error.message}</div>
+        <div className="text-center">
+          <div className="text-poison text-6xl mb-4">⚠</div>
+          <div className="text-bone text-xl mb-2">Error loading map</div>
+          <div className="text-mist">{error.message}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-6 py-2 bg-gold text-abyss font-wagdie font-bold rounded-lg hover:bg-ember transition-all"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-abyss">
-        <div className="text-bone">Loading map...</div>
+      <LoadingState
+        message="Initializing WAGDIE World"
+        stage={loadingStage}
+        progress={loadingProgress}
+        showProgress={true}
+        stageList={loadingStages}
+        currentStage={loadingStages.indexOf(loadingStage)}
+      />
+    );
+  }
+
+  // Show wallet connection loading state
+  if (isConnecting) {
+    return (
+      <div className="w-full h-screen relative bg-abyss flex items-center justify-center">
+        <LoadingState
+          message="Connecting Wallet"
+          stage={connectionStage}
+          progress={connectionProgress}
+          showProgress={true}
+          stageList={connectionStages}
+          currentStage={connectionStages.indexOf(connectionStage)}
+        />
       </div>
     );
   }
@@ -107,9 +139,13 @@ export default function MapPage() {
             connectedWallet={connectedWallet}
             onCharacterSelect={(character: CharacterLocation) => {
               // Focus map on the selected character
-              if (mapRef.current) {
-                const [y, x] = [character.position.y, character.position.x];
-                mapRef.current.setView([y, x], 1, {
+              if (mapRef.current && character.location?.metadata) {
+                const bounds = character.location.metadata.bounds;
+                const center = character.location.metadata.center || [
+                  (bounds[0][0] + bounds[1][0]) / 2,
+                  (bounds[0][1] + bounds[1][1]) / 2,
+                ];
+                mapRef.current.setView(center, 1, {
                   animate: true,
                   duration: 0.5,
                 });
