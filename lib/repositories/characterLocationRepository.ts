@@ -164,7 +164,7 @@ export class CharacterLocationRepository implements ICharacterLocationRepository
       }
 
       // Check if character locations have metadata
-      const hasMetadata = data.every(cl => cl.location && cl.location.metadata && cl.location.metadata.bounds);
+      const hasMetadata = data.every((cl: CharacterLocation) => cl.location && cl.location.metadata && cl.location.metadata.bounds);
       if (!hasMetadata) {
         console.warn('Database character locations missing metadata, using mock data');
         return this.getMockCharacterLocations();
