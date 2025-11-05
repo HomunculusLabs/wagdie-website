@@ -81,6 +81,41 @@
     transform: scale(1.15) !important;
     filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.5)) brightness(1.1) !important;
   }
+
+  /* Layer Toggle Animations */
+  .leaflet-marker-icon.layer-appear {
+    animation: markerAppear 0.4s ease-out forwards;
+  }
+
+  .leaflet-marker-icon.layer-disappear {
+    animation: markerDisappear 0.3s ease-in forwards;
+  }
+
+  @keyframes markerAppear {
+    0% {
+      opacity: 0;
+      transform: scale(0.8) translateY(10px);
+      filter: blur(2px) brightness(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0) brightness(1);
+    }
+  }
+
+  @keyframes markerDisappear {
+    0% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0) brightness(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.8) translateY(-10px);
+      filter: blur(2px) brightness(0.5);
+    }
+  }
 }
 
 @layer utilities {

@@ -274,25 +274,82 @@ export function SimpleMap({ locations, characterLocations, layers, toggleLayer, 
     <div className="relative w-full h-full">
       <div ref={mapRef} className="w-full h-full" />
 
-      {/* Simple Layer Controls */}
-      <div className="absolute top-4 right-4 bg-shadow border border-midnight rounded-lg p-3 z-[1000]">
-        <h3 className="font-wagdie text-bone text-sm mb-2">Layers</h3>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-bone text-xs">
+      {/* Enhanced Layer Controls with WAGDIE Theme */}
+      <div className="absolute top-4 right-4 bg-abyss border-2 border-gold rounded-lg p-4 shadow-xl z-[1000] backdrop-blur-sm">
+        <h3 className="font-wagdie text-gold text-sm font-bold mb-3 border-b border-midnight pb-2">
+          Map Layers
+        </h3>
+        <div className="space-y-2.5">
+          <label className="flex items-center gap-3 text-bone text-sm cursor-pointer hover:text-gold transition-all duration-200 group">
+            <img
+              src="/images/map-icons/icon_location.png"
+              alt="Locations"
+              className="w-6 h-6 filter drop-shadow-[0_0_3px_rgba(212,175,55,0.3)] group-hover:brightness-110 transition-all"
+            />
             <input
               type="checkbox"
               checked={layers.locations}
               onChange={() => toggleLayer('locations')}
+              className="ml-1 h-4 w-4 rounded border-midnight bg-shadow text-gold focus:ring-gold focus:ring-2"
             />
-            Locations
+            <span className="font-wagdie tracking-wide">Locations</span>
           </label>
-          <label className="flex items-center gap-2 text-bone text-xs">
+          <label className="flex items-center gap-3 text-bone text-sm cursor-pointer hover:text-gold transition-all duration-200 group">
+            <img
+              src="/images/map-icons/icon_youarehere.png"
+              alt="Characters"
+              className="w-6 h-6 filter drop-shadow-[0_0_3px_rgba(212,175,55,0.3)] group-hover:brightness-110 transition-all"
+            />
             <input
               type="checkbox"
               checked={layers.characters}
               onChange={() => toggleLayer('characters')}
+              className="ml-1 h-4 w-4 rounded border-midnight bg-shadow text-gold focus:ring-gold focus:ring-2"
             />
-            Characters
+            <span className="font-wagdie tracking-wide">Characters</span>
+          </label>
+          <div className="border-t border-midnight my-2"></div>
+          <label className="flex items-center gap-3 text-mist text-sm cursor-pointer hover:text-ember transition-all duration-200 group opacity-80">
+            <img
+              src="/images/map-icons/icon_burn.png"
+              alt="Burns"
+              className="w-6 h-6 opacity-60 group-hover:opacity-80 transition-opacity"
+            />
+            <input
+              type="checkbox"
+              disabled
+              className="ml-1 h-4 w-4 rounded border-midnight bg-midnight opacity-50 cursor-not-allowed"
+            />
+            <span className="font-wagdie tracking-wide">Burns</span>
+            <span className="text-xs text-ash font-wagdie ml-auto">(Soon)</span>
+          </label>
+          <label className="flex items-center gap-3 text-mist text-sm cursor-pointer hover:text-ember transition-all duration-200 group opacity-80">
+            <img
+              src="/images/map-icons/icon_death.png"
+              alt="Deaths"
+              className="w-6 h-6 opacity-60 group-hover:opacity-80 transition-opacity"
+            />
+            <input
+              type="checkbox"
+              disabled
+              className="ml-1 h-4 w-4 rounded border-midnight bg-midnight opacity-50 cursor-not-allowed"
+            />
+            <span className="font-wagdie tracking-wide">Deaths</span>
+            <span className="text-xs text-ash font-wagdie ml-auto">(Soon)</span>
+          </label>
+          <label className="flex items-center gap-3 text-mist text-sm cursor-pointer hover:text-ember transition-all duration-200 group opacity-80">
+            <img
+              src="/images/map-icons/icon_fight.png"
+              alt="Fights"
+              className="w-6 h-6 opacity-60 group-hover:opacity-80 transition-opacity"
+            />
+            <input
+              type="checkbox"
+              disabled
+              className="ml-1 h-4 w-4 rounded border-midnight bg-midnight opacity-50 cursor-not-allowed"
+            />
+            <span className="font-wagdie tracking-wide">Fights</span>
+            <span className="text-xs text-ash font-wagdie ml-auto">(Soon)</span>
           </label>
         </div>
       </div>

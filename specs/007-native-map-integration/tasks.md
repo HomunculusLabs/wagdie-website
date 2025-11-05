@@ -153,9 +153,9 @@ description: "Task breakdown for Native Map Integration - Current implementation
 
 ### Setup Tasks for User Story 3
 
-- [ ] T021 [P] [US3] Add WAGDIE icons to layer toggle buttons
-  - Update LayerControls UI in SimpleMap.tsx
-  - Use icons from /public/images/map-icons/
+- [x] T021 [P] [US3] Add WAGDIE icons to layer toggle buttons ✅
+  - Update LayerControls UI in SimpleMap.tsx ✅
+  - Use icons from /public/images/map-icons/ ✅
 - [ ] T022 [P] [US3] Implement burn event markers component
   - Create burn markers data structure
   - Add to layer visibility system
@@ -168,15 +168,15 @@ description: "Task breakdown for Native Map Integration - Current implementation
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Add layer persistence to localStorage
-  - Remember user's layer preferences
-  - Load on map initialization
-- [ ] T026 [US3] Style layer controls with WAGDIE theme
-  - Apply WAGDIE fonts
-  - Use WAGDIE color scheme (blood, ember, gold)
-- [ ] T027 [US3] Add smooth transitions when toggling layers
-  - CSS animations for marker appearance/disappearance
-  - Fade in/out effects
+- [x] T025 [US3] Add layer persistence to localStorage ✅
+  - Remember user's layer preferences ✅
+  - Load on map initialization ✅
+- [x] T026 [US3] Style layer controls with WAGDIE theme ✅
+  - Apply WAGDIE fonts ✅
+  - Use WAGDIE color scheme (blood, ember, gold) ✅
+- [x] T027 [US3] Add smooth transitions when toggling layers ✅
+  - CSS animations for marker appearance/disappearance ✅
+  - Fade in/out effects ✅
 
 **Checkpoint**: User Story 3 fully functional - all 5 layers (locations, characters, burns, deaths, fights) work with proper WAGDIE-themed UI
 
