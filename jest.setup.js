@@ -1,7 +1,78 @@
 // Jest setup file
 // This file is run before each test file
 
-import '@testing-library/jest-dom'
+require('@testing-library/jest-dom')
+
+const React = require('react');
+
+// IMPORTANT: Mock react-leaflet BEFORE any imports
+jest.mock('react-leaflet', () => {
+  return {
+    MapContainer: ({ children }) => (
+      React.createElement('div', { 'data-testid': 'map-container' }, children)
+    ),
+    TileLayer: () => React.createElement('div', { 'data-testid': 'tile-layer' }),
+    Marker: ({ children, position }) => {
+      return React.createElement(
+        'div',
+        {
+          'data-testid': 'leaflet-marker',
+          'data-position': JSON.stringify(position),
+        },
+        children
+      );
+    },
+    Popup: ({ children }) => (
+      React.createElement('div', { 'data-testid': 'leaflet-popup' }, children)
+    ),
+    Tooltip: ({ children }) => (
+      React.createElement('div', { 'data-testid': 'leaflet-tooltip' }, children)
+    ),
+    useMap: () => ({
+      setView: jest.fn(),
+      fitBounds: jest.fn(),
+      invalidateSize: jest.fn(),
+      getBounds: jest.fn(() => ({
+        getSouth: () => 0,
+        getNorth: () => 100,
+        getWest: () => 0,
+        getEast: () => 100,
+      })),
+    }),
+  };
+});
+
+// Mock react-leaflet-markercluster
+jest.mock('react-leaflet-markercluster', () => {
+  const MarkerClusterGroup = ({ children }) =>
+    React.createElement('div', { 'data-testid': 'marker-cluster-group' }, children);
+  return { default: MarkerClusterGroup };
+});
+
+// Mock leaflet module
+jest.mock('leaflet', () => {
+  const mockIcon = (options) => ({
+    options,
+  });
+
+  mockIcon.Default = {
+    mergeOptions: jest.fn(),
+    prototype: {
+      _getIconUrl: jest.fn(),
+    },
+  };
+
+  return {
+    ...mockIcon,
+    icon: (options) => mockIcon(options),
+    divIcon: (options) => ({
+      options,
+    }),
+    CRS: {
+      Simple: 'simple',
+    },
+  };
+});
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -12,9 +83,9 @@ jest.mock('next/navigation', () => ({
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn(),
-    }
+    };
   },
-}))
+}));
 
 // Mock wagmi
 jest.mock('wagmi', () => ({
@@ -22,48 +93,12 @@ jest.mock('wagmi', () => ({
     return {
       address: undefined,
       isConnected: false,
-    }
+    };
   },
   useReadContract: jest.fn(),
   useWriteContract: jest.fn(),
   useWaitForTransactionReceipt: jest.fn(),
-}))
+}));
 
-// Mock wagdie-world contract (optional - tests don't require it)
-// jest.mock('@/lib/services/map/wagdieWorldContract')
-
-// Mock other map-related hooks
-jest.mock('@/hooks/map/useLocations', () => ({
-  useLocations: () => ({
-    data: [
-      {
-        id: '1',
-        name: 'Test Location',
-        description: 'A test location',
-        metadata: {
-          special_properties: ['Test Property'],
-        },
-      },
-    ],
-    isLoading: false,
-  }),
-}))
-
-jest.mock('@/hooks/map/useLocationStaking', () => ({
-  useLocationStaking: () => ({
-    stake: jest.fn(),
-    move: jest.fn(),
-    isPending: false,
-    isSuccess: false,
-    error: null,
-    hash: null,
-  }),
-}))
-
-jest.mock('@/hooks/map/useCharacterLocation', () => ({
-  useCharacterLocation: () => ({
-    data: [],
-    isLoading: false,
-    error: null,
-  }),
-}))
+// Note: Map hooks (useLocations, useLocationStaking, useCharacterLocation) are not yet implemented
+// They will be added in future phases. For now, tests mock them inline as needed.
