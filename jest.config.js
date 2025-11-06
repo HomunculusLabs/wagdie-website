@@ -17,9 +17,9 @@ const config = {
     '^@/(.*)$': '<rootDir>/$1',
   },
 
-  // Test file patterns (only integration tests, not E2E)
+  // Test file patterns (integration and component tests)
   testMatch: [
-    '<rootDir>/tests/**/integration/**/*.test.{ts,tsx}',
+    '<rootDir>/tests/**/*.{test,spec}.{ts,tsx}',
   ],
 
   // Transform configuration
@@ -35,6 +35,12 @@ const config = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
+    '<rootDir>/tests/TODO-',
+  ],
+
+  // Transform ignore patterns - don't transform node_modules except react-leaflet
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-leaflet)/)',
   ],
 
   // Module file extensions
