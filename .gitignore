@@ -38,3 +38,7 @@ scripts/migration/data/
 scripts/migration/node_modules/
 scripts/migration/dist/
 scripts/migration/.env
+
+# storybook
+storybook-static/
+.vite/
