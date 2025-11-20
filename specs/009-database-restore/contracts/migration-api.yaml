@@ -1,0 +1,627 @@
+openapi: 3.0.3
+info:
+  title: Database Migration API
+  description: API for managing database restoration and migration operations
+  version: 1.0.0
+  contact:
+    name: WAGDIE Simplified Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api/migration
+    description: Development server
+
+paths:
+  /migration/start:
+    post:
+      summary: Start a new database migration
+      description: Initiates migration of JSON data to Supabase with specified configuration
+      operationId: startMigration
+      tags:
+        - Migration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MigrationRequest'
+      responses:
+        '200':
+          description: Migration started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '400':
+          description: Invalid migration configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Migration already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migration/status/{migrationId}:
+    get:
+      summary: Get migration status
+      description: Retrieves current status and progress of a specific migration
+      operationId: getMigrationStatus
+      tags:
+        - Migration
+      parameters:
+        - name: migrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Migration status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationStatus'
+        '404':
+          description: Migration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migration/resume/{migrationId}:
+    post:
+      summary: Resume a paused or failed migration
+      description: Continues migration from last checkpoint or specific position
+      operationId: resumeMigration
+      tags:
+        - Migration
+      parameters:
+        - name: migrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResumeRequest'
+      responses:
+        '200':
+          description: Migration resumed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResponse'
+        '404':
+          description: Migration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Migration already running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migration/pause/{migrationId}:
+    post:
+      summary: Pause an active migration
+      description: Gracefully pauses migration at next checkpoint
+      operationId: pauseMigration
+      tags:
+        - Migration
+      parameters:
+        - name: migrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Migration paused successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationStatus'
+        '404':
+          description: Migration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Migration not running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migration/rollback/{migrationId}:
+    post:
+      summary: Rollback a migration
+      description: Rolls back all changes made by the specified migration
+      operationId: rollbackMigration
+      tags:
+        - Migration
+      parameters:
+        - name: migrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Migration rolled back successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollbackResponse'
+        '404':
+          description: Migration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Cannot rollback migration in current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migration/validate/{migrationId}:
+    post:
+      summary: Validate migrated data
+      description: Performs comprehensive validation of migrated data against source
+      operationId: validateMigration
+      tags:
+        - Migration
+      parameters:
+        - name: migrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '404':
+          description: Migration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migration/list:
+    get:
+      summary: List all migrations
+      description: Returns a list of all migrations with their current status
+      operationId: listMigrations
+      tags:
+        - Migration
+      responses:
+        '200':
+          description: Migration list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MigrationSummary'
+
+  /migration/logs/{migrationId}:
+    get:
+      summary: Get migration logs
+      description: Retrieves detailed logs for a specific migration
+      operationId: getMigrationLogs
+      tags:
+        - Migration
+      parameters:
+        - name: migrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [error, warn, info, debug]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Migration logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogEntry'
+
+components:
+  schemas:
+    MigrationRequest:
+      type: object
+      required:
+        - sourceFile
+        - entities
+      properties:
+        sourceFile:
+          type: string
+          description: Path to JSON source file
+          example: "./wagdie.json"
+        entities:
+          type: array
+          items:
+            type: string
+            description: Entity types to migrate
+            enum: [character_sheets, login_records, metadata, tokens, tweets, tweet_authors]
+        config:
+          $ref: '#/components/schemas/MigrationConfig'
+        dryRun:
+          type: boolean
+          description: Validate without importing data
+          default: false
+
+    MigrationConfig:
+      type: object
+      properties:
+        batchSize:
+          type: integer
+          description: Number of records per batch
+          default: 100
+          minimum: 10
+          maximum: 1000
+        parallelBatches:
+          type: integer
+          description: Number of parallel batch processors
+          default: 2
+          minimum: 1
+          maximum: 8
+        checkpointInterval:
+          type: integer
+          description: Records between checkpoints
+          default: 1000
+        maxErrorRate:
+          type: number
+          description: Maximum allowed error rate (0.0-1.0)
+          default: 0.01
+        timeoutMinutes:
+          type: integer
+          description: Migration timeout in minutes
+          default: 30
+        validateBeforeImport:
+          type: boolean
+          description: Validate all data before importing
+          default: true
+
+    MigrationResponse:
+      type: object
+      required:
+        - migrationId
+        - status
+        - message
+      properties:
+        migrationId:
+          type: string
+          format: uuid
+          description: Unique migration identifier
+        status:
+          type: string
+          enum: [started, running, paused, completed, failed, rolled_back]
+        message:
+          type: string
+          description: Status message
+        estimatedDuration:
+          type: integer
+          description: Estimated completion time in seconds
+        totalRecords:
+          type: integer
+          description: Total number of records to migrate
+        startedAt:
+          type: string
+          format: date-time
+
+    MigrationStatus:
+      type: object
+      required:
+        - migrationId
+        - status
+        - progress
+      properties:
+        migrationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, running, paused, completed, failed, rolled_back]
+        progress:
+          $ref: '#/components/schemas/ProgressInfo'
+        startedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+
+    ProgressInfo:
+      type: object
+      required:
+        - totalRecords
+        - processedRecords
+        - percentage
+      properties:
+        totalRecords:
+          type: integer
+        processedRecords:
+          type: integer
+        failedRecords:
+          type: integer
+        percentage:
+          type: number
+        recordsPerSecond:
+          type: number
+        estimatedRemainingSeconds:
+          type: integer
+        currentEntity:
+          type: string
+        entityProgress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/EntityProgress'
+
+    EntityProgress:
+      type: object
+      required:
+        - entityName
+        - total
+        - processed
+      properties:
+        entityName:
+          type: string
+        total:
+          type: integer
+        processed:
+          type: integer
+        failed:
+          type: integer
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+
+    ResumeRequest:
+      type: object
+      properties:
+        fromCheckpoint:
+          type: boolean
+          description: Resume from last checkpoint
+          default: true
+        fromEntity:
+          type: string
+          description: Resume from specific entity
+        fromRecord:
+          type: integer
+          description: Resume from specific record index
+
+    RollbackResponse:
+      type: object
+      required:
+        - migrationId
+        - status
+        - recordsRolledBack
+      properties:
+        migrationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [rollback_started, rollback_completed, rollback_failed]
+        recordsRolledBack:
+          type: integer
+        rollbackStartedAt:
+          type: string
+          format: date-time
+        rollbackCompletedAt:
+          type: string
+          format: date-time
+
+    ValidationResponse:
+      type: object
+      required:
+        - migrationId
+        - validationResults
+      properties:
+        migrationId:
+          type: string
+          format: uuid
+        validationResults:
+          $ref: '#/components/schemas/ValidationResults'
+        validatedAt:
+          type: string
+          format: date-time
+
+    ValidationResults:
+      type: object
+      required:
+        - overallStatus
+        - totalRecords
+        - validRecords
+      properties:
+        overallStatus:
+          type: string
+          enum: [passed, failed, warning]
+        totalRecords:
+          type: integer
+        validRecords:
+          type: integer
+        invalidRecords:
+          type: integer
+        successRate:
+          type: number
+        entityResults:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/EntityValidation'
+        checksumMatches:
+          type: boolean
+        integrityIssues:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrityIssue'
+
+    EntityValidation:
+      type: object
+      required:
+        - entityName
+        - total
+        - valid
+      properties:
+        entityName:
+          type: string
+        total:
+          type: integer
+        valid:
+          type: integer
+        invalid:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      required:
+        - recordId
+        - field
+        - message
+      properties:
+        recordId:
+          type: string
+        field:
+          type: string
+        value:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [error, warning]
+
+    IntegrityIssue:
+      type: object
+      required:
+        - type
+        - description
+      properties:
+        type:
+          type: string
+          enum: [missing_foreign_key, data_corruption, duplicate_record, orphaned_record]
+        description:
+          type: string
+        affectedRecords:
+          type: array
+          items:
+            type: string
+
+    MigrationSummary:
+      type: object
+      required:
+        - migrationId
+        - status
+        - createdAt
+      properties:
+        migrationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, running, paused, completed, failed, rolled_back]
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        totalRecords:
+          type: integer
+        successRate:
+          type: number
+
+    LogEntry:
+      type: object
+      required:
+        - timestamp
+        - level
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [error, warn, info, debug]
+        message:
+          type: string
+        entity:
+          type: string
+        recordId:
+          type: string
+        details:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Migration
+    description: Database migration operations
