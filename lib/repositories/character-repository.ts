@@ -88,10 +88,8 @@ export class CharacterRepository implements ICharacterRepository {
     tokenId: number,
     updates: Partial<Pick<Character, 'background_story' | 'equipment'>>
   ): Promise<Character | null> {
-    // Workaround for Supabase type inference issue with partial updates
-    const supabaseClient = supabase as any
-    const { data, error } = await supabaseClient
-      .from('characters')
+    const { data, error } = await (supabase
+      .from('characters') as any)
       .update(updates)
       .eq('token_id', tokenId)
       .select()

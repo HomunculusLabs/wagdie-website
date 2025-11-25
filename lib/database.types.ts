@@ -38,9 +38,27 @@ export interface Database {
           token_id: number
           contract_address: string
           owner_address: string | null
+          name: string | null
+          class: string | null
+          level: number
+          experience: number
+          str: number
+          dex: number
+          con: number
+          int: number
+          wis: number
+          cha: number
+          hp: number
+          max_hp: number
+          ac: number
+          speed: number
+          background_story: string | null
+          equipment: Json | null
           metadata: Json | null
           burned: boolean
-          infected: boolean
+          infection_status: string
+          staking_status: string
+          image_url: string
           location_id: string | null
           created_at: string
           updated_at: string
@@ -50,9 +68,27 @@ export interface Database {
           token_id: number
           contract_address: string
           owner_address?: string | null
+          name?: string | null
+          class?: string | null
+          level?: number
+          experience?: number
+          str?: number
+          dex?: number
+          con?: number
+          int?: number
+          wis?: number
+          cha?: number
+          hp?: number
+          max_hp?: number
+          ac?: number
+          speed?: number
+          background_story?: string | null
+          equipment?: Json | null
           metadata?: Json | null
           burned?: boolean
-          infected?: boolean
+          infection_status?: string
+          staking_status?: string
+          image_url?: string
           location_id?: string | null
           created_at?: string
           updated_at?: string
@@ -62,9 +98,27 @@ export interface Database {
           token_id?: number
           contract_address?: string
           owner_address?: string | null
+          name?: string | null
+          class?: string | null
+          level?: number
+          experience?: number
+          str?: number
+          dex?: number
+          con?: number
+          int?: number
+          wis?: number
+          cha?: number
+          hp?: number
+          max_hp?: number
+          ac?: number
+          speed?: number
+          background_story?: string | null
+          equipment?: Json | null
           metadata?: Json | null
           burned?: boolean
-          infected?: boolean
+          infection_status?: string
+          staking_status?: string
+          image_url?: string
           location_id?: string | null
           created_at?: string
           updated_at?: string

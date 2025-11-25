@@ -18,14 +18,17 @@ supabase --version
 
 ### Database Preparation
 ```bash
-# Start local Supabase instance
-supabase start
+# Start WAGDIE Docker services (includes Supabase)
+docker-compose up -d
 
-# Apply existing migrations
-supabase db reset
+# Verify Supabase services are running
+curl http://localhost:8010/health
 
-# Generate TypeScript types
-supabase gen types typescript --local > types/supabase.ts
+# Access Supabase Studio
+# Open http://localhost:3012 in your browser
+
+# Apply existing migrations if needed
+# Migrations are in: supabase/migrations/
 ```
 
 ### Environment Variables
@@ -34,9 +37,14 @@ supabase gen types typescript --local > types/supabase.ts
 cp .env.example .env.local
 
 # Required environment variables
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+# WAGDIE Local Docker Configuration
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:8010
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_local_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Note: Port 8010 is used by WAGDIE Docker setup (Kong API Gateway)
+# PostgreSQL database runs on port 5442 directly
+# Supabase Studio UI is available at http://localhost:3012
 ```
 
 ## Installation
