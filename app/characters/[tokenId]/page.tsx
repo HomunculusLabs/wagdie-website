@@ -20,7 +20,7 @@ import { StakingStatusCard } from '@/components/StakingStatusCard'
 import { SearingModal } from '@/components/modals/SearingModal'
 import { InfectionModal } from '@/components/modals/InfectionModal'
 import { CureModal } from '@/components/modals/CureModal'
-import type { Character } from '@/types/character'
+import type { Character, Equipment } from '@/types/character'
 
 export default function CharacterDetailPage() {
   const params = useParams()
@@ -49,7 +49,9 @@ export default function CharacterDetailPage() {
 
         const data = await response.json()
         setCharacter(data)
-        setEditedStory(data.background_story || '')
+        // Extract background story from metadata or direct field
+        const story = data.metadata?.background_story || data.background_story || ''
+        setEditedStory(story)
       } catch (error) {
         console.error('Error fetching character:', error)
         toast.error('Failed to load character')
@@ -61,6 +63,7 @@ export default function CharacterDetailPage() {
     fetchCharacter()
   }, [tokenId])
 
+
   // Check if user owns this character
   const isOwner = character && address
     ? character.owner_address?.toLowerCase() === address.toLowerCase()
@@ -70,7 +73,8 @@ export default function CharacterDetailPage() {
   const handleEditToggle = () => {
     if (isEditMode) {
       // Cancel editing - reset story
-      setEditedStory(character?.background_story || '')
+      const story = character?.metadata?.background_story || character?.background_story || ''
+      setEditedStory(story)
     }
     setIsEditMode(!isEditMode)
   }
@@ -197,7 +201,7 @@ export default function CharacterDetailPage() {
             />
 
             {/* Equipment */}
-            <SheetEquipment equipment={character.equipment} isEditMode={isEditMode} />
+            <SheetEquipment equipment={(character.equipment || character.metadata?.equipment) as Equipment | null} isEditMode={isEditMode} />
           </div>
 
           {/* Sidebar - 1/3 width on large screens */}
@@ -253,7 +257,7 @@ export default function CharacterDetailPage() {
         <>
           <SearingModal
             wagdieId={tokenId}
-            wagdieName={character.name || `Character #${tokenId}`}
+            wagdieName={character.metadata?.name || character.name || `Character #${tokenId}`}
             isOpen={isSearingModalOpen}
             onClose={() => setIsSearingModalOpen(false)}
             onSuccess={() => {
@@ -266,7 +270,7 @@ export default function CharacterDetailPage() {
           <InfectionModal
             mode="specific"
             tokenId={BigInt(tokenId)}
-            tokenName={character.name || `Character #${tokenId}`}
+            tokenName={character.metadata?.name || character.name || `Character #${tokenId}`}
             isOpen={isInfectionModalOpen}
             onClose={() => setIsInfectionModalOpen(false)}
             onSuccess={() => {
@@ -278,7 +282,7 @@ export default function CharacterDetailPage() {
 
           <CureModal
             characterId={tokenId}
-            characterName={character.name || `Character #${tokenId}`}
+            characterName={character.metadata?.name || character.name || `Character #${tokenId}`}
             isOpen={isCureModalOpen}
             onClose={() => setIsCureModalOpen(false)}
             onSuccess={() => {
