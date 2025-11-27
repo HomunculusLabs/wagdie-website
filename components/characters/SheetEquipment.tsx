@@ -1,11 +1,8 @@
-/**
- * SheetEquipment Component
- * Display character equipment (weapons, armor, items, gold)
- */
-
 'use client'
 
 import React from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components-new/Card'
+import { Empty } from '@/components-new/Empty'
 import type { Equipment } from '@/types/character'
 
 interface SheetEquipmentProps {
@@ -13,17 +10,32 @@ interface SheetEquipmentProps {
   isEditMode?: boolean
 }
 
-export function SheetEquipment({ equipment, isEditMode = false }: SheetEquipmentProps) {
-  // Handle both array format (weapons/armor/items) and object format (armor/back/mask)
+function EquipmentSection({ title, items }: { title: string, items: string[] }) {
+  if (items.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-display uppercase tracking-widest text-soul-accent">{title}</h4>
+      <ul className="space-y-1">
+        {items.map((item, index) => (
+          <li key={index} className="text-neutral-400 font-serif flex items-center gap-2">
+            <span className="w-1 h-1 bg-soul-accent/50 rotate-45" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+export function SheetEquipment({ equipment }: SheetEquipmentProps) {
   let weapons: string[] = []
   let armor: string[] = []
   let items: string[] = []
   let gold = 0
 
   if (equipment) {
-    // Check if it's the metadata format (armor/back/mask as strings)
     if ('armor' in equipment && typeof equipment.armor === 'string') {
-      // Metadata format - convert to arrays
       if (equipment.armor && equipment.armor !== 'None') {
         armor.push(equipment.armor)
       }
@@ -34,7 +46,6 @@ export function SheetEquipment({ equipment, isEditMode = false }: SheetEquipment
         items.push((equipment as any).mask)
       }
     } else {
-      // Standard format - use arrays directly
       weapons = equipment.weapons || []
       armor = Array.isArray(equipment.armor) ? equipment.armor : []
       items = equipment.items || []
@@ -44,65 +55,30 @@ export function SheetEquipment({ equipment, isEditMode = false }: SheetEquipment
 
   const hasEquipment = weapons.length > 0 || armor.length > 0 || items.length > 0 || gold > 0
 
-  if (!hasEquipment) {
-    return (
-      <div className="bg-midnight rounded-lg p-6">
-        <h3 className="text-2xl font-bold text-bone mb-4">Equipment</h3>
-        <p className="text-mist italic">No equipment</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="bg-midnight rounded-lg p-6">
-      <h3 className="text-2xl font-bold text-bone mb-4">Equipment</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Equipment</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!hasEquipment ? (
+          <Empty message="No equipment" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <EquipmentSection title="Weapons" items={weapons} />
+            <EquipmentSection title="Armor" items={armor} />
+            <EquipmentSection title="Items" items={items} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Weapons */}
-        {weapons.length > 0 && (
-          <div>
-            <h4 className="text-lg font-bold text-gold mb-2">Weapons</h4>
-            <ul className="list-disc list-inside text-ash">
-              {weapons.map((weapon, index) => (
-                <li key={index}>{weapon}</li>
-              ))}
-            </ul>
+            {gold > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-display uppercase tracking-widest text-soul-accent">Gold</h4>
+                <p className="text-2xl font-display text-neutral-200">{gold} <span className="text-soul-accent text-sm">gp</span></p>
+              </div>
+            )}
           </div>
         )}
-
-        {/* Armor */}
-        {armor.length > 0 && (
-          <div>
-            <h4 className="text-lg font-bold text-gold mb-2">Armor</h4>
-            <ul className="list-disc list-inside text-ash">
-              {armor.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Items */}
-        {items.length > 0 && (
-          <div>
-            <h4 className="text-lg font-bold text-gold mb-2">Items</h4>
-            <ul className="list-disc list-inside text-ash">
-              {items.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Gold */}
-        {gold > 0 && (
-          <div>
-            <h4 className="text-lg font-bold text-gold mb-2">Gold</h4>
-            <p className="text-2xl font-bold text-bone">{gold} gp</p>
-          </div>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

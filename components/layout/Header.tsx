@@ -5,43 +5,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Navigation } from './Navigation'
 import { WalletButton } from '@/components/wallet/WalletButton'
+import { Button } from '@/components-new'
 
 /**
  * Header Component
- *
  * Main site header with logo, navigation, and wallet connection.
- * Features sticky positioning and responsive mobile hamburger menu.
- *
- * @component
- * @example
- * ```tsx
- * import { Header } from '@/components/layout/Header'
- *
- * // In app/layout.tsx
- * export default function RootLayout({ children }) {
- *   return (
- *     <body>
- *       <Header />
- *       <main>{children}</main>
- *     </body>
- *   )
- * }
- * ```
- *
- * Features:
- * - **Sticky Positioning**: Stays at top of viewport while scrolling (z-index: 50)
- * - **Responsive Layout**: Desktop horizontal nav, mobile hamburger menu
- * - **Mobile Menu**: Toggle-able dropdown with X/hamburger icon transition
- * - **Logo**: WAGDIE text logo with hover effect (bone → gold)
- * - **Desktop Navigation**: Horizontal menu hidden on mobile (<768px)
- * - **Mobile Navigation**: Vertical menu with border separator, auto-closes on nav click
- * - **Wallet Integration**: WalletButton positioned appropriately for each layout
- * - **Accessibility**: aria-label and aria-expanded on hamburger button
- * - **Gothic Styling**: Abyss background, midnight border, smooth transitions
- *
- * Layout Breakpoints:
- * - Mobile (<768px): Logo + Hamburger + Collapsible menu
- * - Desktop (≥768px): Logo + Horizontal nav + Wallet button
  */
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -86,14 +54,14 @@ export function Header() {
   }, [isDrawerOpen])
 
   return (
-    <header className="sticky top-0 z-50 bg-abyss border-b border-midnight">
+    <header className="sticky top-0 z-50 bg-soul-950/95 backdrop-blur-sm border-b border-neutral-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo with scroll-to-top */}
           <Link
             href="/"
             onClick={scrollToTop}
-            className="text-2xl font-bold text-bone hover:text-gold transition-colors duration-200 cursor-pointer"
+            className="text-xl font-display uppercase tracking-[0.3em] text-neutral-200 hover:text-soul-accent transition-colors duration-300 cursor-pointer"
             title="Scroll to top"
           >
             WAGDIE
@@ -104,48 +72,30 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-bone p-2 w-11 h-11 flex items-center justify-center"
+            className="md:hidden text-neutral-400 p-2 w-11 h-11 flex items-center justify-center hover:text-soul-accent transition-colors"
             onClick={toggleMobileMenu}
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {isMobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
               ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
               )}
             </svg>
           </button>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 text-bone hover:text-gold transition-colors"
-              title="Toggle dark mode"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
-
+          <div className="hidden md:flex items-center gap-2">
             {/* MORE button */}
             <button
               onClick={toggleDrawer}
-              className="px-3 py-2 text-bone hover:text-gold transition-colors font-medium"
+              className="px-4 py-2 text-neutral-500 hover:text-soul-accent transition-colors font-display uppercase tracking-widest text-xs"
               title="More options"
               aria-label="Open menu drawer"
             >
-              MORE
+              More
             </button>
 
             <WalletButton />
@@ -154,25 +104,21 @@ export function Header() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-midnight">
+          <div className="md:hidden py-4 border-t border-neutral-800">
             <Navigation isMobile onNavClick={closeMobileMenu} />
-            <div className="mt-4 flex flex-col gap-3">
-              <button
-                onClick={toggleDarkMode}
-                className="flex items-center gap-2 px-4 py-2 text-bone hover:text-gold transition-colors"
-              >
-                {darkMode ? 'Light Mode' : 'Dark Mode'}
-              </button>
+            <div className="mt-4 flex flex-col gap-2 px-2">
               <button
                 onClick={() => {
                   closeMobileMenu()
                   toggleDrawer()
                 }}
-                className="text-left px-4 py-2 text-bone hover:text-gold transition-colors"
+                className="text-left px-4 py-3 text-neutral-500 hover:text-soul-accent transition-colors font-display uppercase tracking-widest text-xs"
               >
-                MORE
+                More Options
               </button>
-              <WalletButton />
+              <div className="px-4">
+                <WalletButton />
+              </div>
             </div>
           </div>
         )}
@@ -181,74 +127,85 @@ export function Header() {
       {/* Menu Drawer (Desktop & Mobile) */}
       {isDrawerOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           onClick={closeDrawer}
         >
           <div
-            className="fixed right-0 top-0 h-full w-80 bg-abyss border-l border-midnight shadow-xl overflow-y-auto"
+            className="fixed right-0 top-0 h-full w-80 bg-soul-950 border-l border-neutral-800 shadow-2xl overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drawer Header */}
-            <div className="flex items-center justify-between p-4 border-b border-midnight">
-              <h2 className="text-xl font-bold text-bone">Menu</h2>
+            <div className="flex items-center justify-between p-6 border-b border-neutral-800">
+              <h2 className="text-lg font-display uppercase tracking-widest text-neutral-200">Menu</h2>
               <button
                 onClick={closeDrawer}
-                className="p-2 text-bone hover:text-gold transition-colors"
+                className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
                 aria-label="Close drawer"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Drawer Content */}
-            <nav className="p-4 space-y-2">
+            <nav className="p-4 space-y-1">
               <Link
                 href="/map"
                 onClick={closeDrawer}
-                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
               >
                 World Map
               </Link>
               <Link
                 href="/about"
                 onClick={closeDrawer}
-                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
               >
                 About WAGDIE
               </Link>
               <Link
                 href="/spread"
                 onClick={closeDrawer}
-                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
               >
                 Spread Infection
               </Link>
-              <div className="border-t border-midnight my-4" />
+
+              <div className="my-4 h-px bg-neutral-800" />
+
               <a
                 href="https://discord.gg/wagdie"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
               >
-                Join Discord ↗
+                <span>Discord</span>
+                <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </a>
               <a
                 href="https://twitter.com/WAGDIE_ETH"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
               >
-                Follow on Twitter ↗
+                <span>Twitter</span>
+                <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </a>
               <a
                 href="https://opensea.io/collection/wagdie"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block px-4 py-3 text-bone hover:text-gold hover:bg-midnight rounded transition-colors"
+                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
               >
-                View on OpenSea ↗
+                <span>OpenSea</span>
+                <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </a>
             </nav>
           </div>

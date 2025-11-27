@@ -71,7 +71,7 @@ export class AssetLoadingService implements IAssetLoadingService {
 
     // Stage 2: Check cache first for instant retrieval
     // Cache hits provide immediate response with 0ms load time
-    const cachedAsset = this.assetCache.get(assetId);
+    const cachedAsset = this.assetCache.get<{ url: string }>(assetId);
     if (cachedAsset) {
       const cachedState: AssetLoadingState = {
         assetId,
@@ -103,19 +103,23 @@ export class AssetLoadingService implements IAssetLoadingService {
 
     try {
       // Stage 4: Attempt network load with optimization
-      const result = await this.attemptAssetLoad(assetId);
+      await this.attemptAssetLoad(assetId);
 
       // Cache the successfully loaded asset with priority-based TTL
       // Critical assets get longer cache time (2 hours vs 30 minutes)
       const priority = this.config.criticalAssets.includes(assetId) ? 'critical' : 'normal';
-      this.assetCache.set(assetId, result, {
+      const assetUrl = this.getAssetUrl(assetId);
+      const loadedState = this.loadingStates.get(assetId)!;
+      this.assetCache.set(assetId, { url: assetUrl }, {
         priority,
-        url: result.url,
         ttl: priority === 'critical' ? 2 * 60 * 60 * 1000 : 30 * 60 * 1000,
-        size: result.size || this.estimateAssetSize(result)
+        size: this.estimateAssetSize({ url: assetUrl })
       });
 
-      return this.loadingStates.get(assetId)!;
+      // Update loaded state with URL
+      loadedState.url = assetUrl;
+
+      return loadedState;
     } catch (error) {
       // Error handling with progressive fallbacks
       return this.handleLoadError(assetId, error as Error);
@@ -181,13 +185,6 @@ export class AssetLoadingService implements IAssetLoadingService {
    */
   getAssetState(assetId: string): AssetLoadingState | undefined {
     return this.loadingStates.get(assetId);
-  }
-
-  /**
-   * Get asset URL for a given asset ID
-   */
-  private getAssetUrl(assetId: string): string {
-    return this.fallbackAssets.get(assetId) || '';
   }
 
   /**
@@ -534,6 +531,13 @@ export class AssetLoadingService implements IAssetLoadingService {
         errorType: 'file_not_found',
         maxRetries: 1,
         retryDelay: 0,
+        useFallback: true,
+        logError: true
+      },
+      corruption: {
+        errorType: 'corruption',
+        maxRetries: 1,
+        retryDelay: 500,
         useFallback: true,
         logError: true
       },

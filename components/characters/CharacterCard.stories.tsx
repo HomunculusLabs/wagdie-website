@@ -28,7 +28,7 @@ type Story = StoryObj<typeof CharacterCard>;
 const mockCharacter = {
   token_id: 1234,
   name: 'Zombie King',
-  class: 'Warrior',
+  class: 'Warrior' as const,
   level: 45,
   owner_address: '0x1234567890123456789012345678901234567890',
   experience: 10000,

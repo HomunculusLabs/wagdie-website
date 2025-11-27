@@ -7,6 +7,7 @@
 
 import React from 'react';
 import Image from 'next/image'
+import { Card, CardContent, Badge } from '@/components-new'
 import type { Character } from '@/types/character'
 import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
 
@@ -24,61 +25,62 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
   const characterClass = character.class
 
   return (
-    <div
+    <Card
       onClick={() => onClick?.(character.token_id)}
-      className={`group relative bg-midnight rounded-lg overflow-hidden border border-shadow hover:border-gold transition-all duration-300 cursor-pointer ${className}`}
+      className={`group overflow-hidden cursor-pointer transition-all duration-500 hover:border-soul-accent/40 hover:shadow-[0_0_20px_rgba(200,170,110,0.1)] ${className}`}
     >
       {/* Character Image */}
-      <div className="relative w-full aspect-square">
+      <div className="relative w-full aspect-square overflow-hidden">
         <Image
           src={imageUrl}
           alt={name}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          className="object-cover grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
         />
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
         {/* Status Badges */}
         <div className="absolute top-2 right-2 flex flex-col gap-1">
           <OwnershipBadge tokenId={BigInt(character.token_id)} />
           {character.infection_status === 'infected' && (
-            <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
-              INFECTED
+            <span className="px-2 py-0.5 bg-red-950/80 border border-red-900/50 text-red-400 text-[10px] font-display uppercase tracking-widest">
+              Infected
             </span>
           )}
           {character.infection_status === 'cured' && (
-            <span className="px-2 py-1 bg-green-600 text-white text-xs font-bold rounded">
-              CURED
+            <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-[10px] font-display uppercase tracking-widest">
+              Cured
             </span>
           )}
           {character.staking_status === 'staked' && (
-            <span className="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded">
-              STAKED
+            <span className="px-2 py-0.5 bg-blue-950/80 border border-blue-900/50 text-blue-400 text-[10px] font-display uppercase tracking-widest">
+              Staked
             </span>
           )}
         </div>
 
         {/* Token ID Badge */}
         <div className="absolute bottom-2 left-2">
-          <span className="px-3 py-1 bg-black bg-opacity-75 text-gold text-sm font-bold rounded">
-            #{character.token_id}
-          </span>
+          <Badge variant="accent">#{character.token_id}</Badge>
         </div>
       </div>
 
       {/* Character Info */}
-      <div className="p-4">
-        <h3 className="text-lg font-bold text-bone group-hover:text-gold transition-colors truncate">
+      <CardContent className="p-4">
+        <h3 className="text-base font-display uppercase tracking-wider text-neutral-200 group-hover:text-soul-accent transition-colors duration-300 truncate">
           {name}
         </h3>
         {(characterClass || level) && (
-          <p className="text-sm text-ash mt-1">
+          <p className="text-sm text-neutral-500 font-serif mt-1">
             {characterClass && `${characterClass}`}
-            {characterClass && level && ' • '}
+            {characterClass && level && ' · '}
             {level && `Level ${level}`}
           </p>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

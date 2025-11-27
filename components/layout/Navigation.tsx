@@ -25,45 +25,7 @@ interface NavigationProps {
 
 /**
  * Navigation Component
- *
  * Main navigation menu with active page highlighting using Next.js usePathname.
- * Supports both desktop horizontal and mobile vertical layouts.
- *
- * @component
- * @param {NavigationProps} props - Component props
- * @param {string} props.className - Additional CSS classes to apply
- * @param {boolean} props.isMobile - Whether to render in mobile layout (vertical)
- * @param {Function} props.onNavClick - Callback when navigation item is clicked
- *
- * @example
- * ```tsx
- * import { Navigation } from '@/components/layout/Navigation'
- *
- * // Desktop usage
- * function Header() {
- *   return <Navigation className="hidden md:flex" />
- * }
- *
- * // Mobile usage
- * function MobileMenu() {
- *   const handleNavClick = () => setMenuOpen(false)
- *   return <Navigation isMobile onNavClick={handleNavClick} />
- * }
- * ```
- *
- * Features:
- * - Active page detection via usePathname hook
- * - Golden underline indicator for active page
- * - Automatic layout switching (horizontal/vertical)
- * - 44x44px minimum touch targets for accessibility
- * - Gothic theme with hover transitions (ash → bone)
- * - Auto-close callback for mobile menu integration
- *
- * Navigation Items:
- * - Home (/)
- * - Characters (/characters)
- * - Lore (/lore)
- * - Gather (/gather)
  */
 export function Navigation({ className = '', isMobile = false, onNavClick }: NavigationProps) {
   const pathname = usePathname()
@@ -75,17 +37,33 @@ export function Navigation({ className = '', isMobile = false, onNavClick }: Nav
   }
 
   return (
-    <nav className={`flex ${isMobile ? 'flex-col gap-4' : 'flex-row gap-6'} ${className}`}>
+    <nav className={`flex ${isMobile ? 'flex-col gap-2' : 'flex-row gap-1'} ${className}`}>
       {NAV_ITEMS.map((item) => {
         const isActive = pathname === item.path
         return (
           <Link
             key={item.path}
             href={item.path}
-            className={`nav-link py-3 px-4 min-h-[44px] flex items-center ${isActive ? 'active' : ''}`}
+            className={`
+              relative px-4 py-3 min-h-[44px] flex items-center
+              text-sm font-display uppercase tracking-widest
+              transition-all duration-300 group
+              ${isActive
+                ? 'text-soul-accent'
+                : 'text-neutral-500 hover:text-neutral-300'
+              }
+            `}
             onClick={handleClick}
           >
             {item.label}
+            {/* Underline indicator */}
+            <span
+              className={`
+                absolute bottom-0 left-1/2 -translate-x-1/2 h-[1px] bg-soul-accent
+                transition-all duration-300
+                ${isActive ? 'w-full' : 'w-0 group-hover:w-1/2'}
+              `}
+            />
           </Link>
         )
       })}

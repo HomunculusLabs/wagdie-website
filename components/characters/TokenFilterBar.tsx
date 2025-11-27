@@ -6,6 +6,8 @@
 'use client'
 
 import React from 'react';
+import { Tabs, Button } from '@/components-new'
+import type { TabItem } from '@/components-new'
 import type { CharacterFilterTab, SortOrder } from '@/types/character'
 
 interface TokenFilterBarProps {
@@ -16,12 +18,12 @@ interface TokenFilterBarProps {
   className?: string
 }
 
-const TABS: { value: CharacterFilterTab; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'owned', label: 'My Characters' },
-  { value: 'infected', label: 'Infected' },
-  { value: 'cured', label: 'Cured' },
-  { value: 'staked', label: 'Staked' },
+const TAB_ITEMS: TabItem[] = [
+  { id: 'all', label: 'All' },
+  { id: 'owned', label: 'My Characters' },
+  { id: 'infected', label: 'Infected' },
+  { id: 'cured', label: 'Cured' },
+  { id: 'staked', label: 'Staked' },
 ]
 
 export function TokenFilterBar({
@@ -32,44 +34,36 @@ export function TokenFilterBar({
   className = ''
 }: TokenFilterBarProps) {
   return (
-    <div className={`flex flex-col sm:flex-row gap-4 items-center justify-between ${className}`}>
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => onTabChange(tab.value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              currentTab === tab.value
-                ? 'bg-gold text-abyss'
-                : 'bg-midnight text-ash hover:text-bone hover:bg-shadow'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className={`flex flex-col gap-4 ${className}`}>
+      {/* Filter Tabs using new Tabs component */}
+      <Tabs
+        items={TAB_ITEMS}
+        activeId={currentTab}
+        onChange={(id) => onTabChange(id as CharacterFilterTab)}
+      />
 
       {/* Sort Toggle */}
-      <button
-        onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
-        className="flex items-center gap-2 px-4 py-2 bg-midnight text-ash hover:text-bone rounded-lg transition-colors"
-        title={`Sort ${currentSort === 'asc' ? 'descending' : 'ascending'}`}
-      >
-        <span>Token ID</span>
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      <div className="flex justify-end">
+        <button
+          onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
+          className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display uppercase tracking-wider text-sm"
+          title={`Sort ${currentSort === 'asc' ? 'descending' : 'ascending'}`}
         >
-          {currentSort === 'asc' ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          )}
-        </svg>
-      </button>
+          <span>Token ID</span>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {currentSort === 'asc' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            )}
+          </svg>
+        </button>
+      </div>
     </div>
   )
 }

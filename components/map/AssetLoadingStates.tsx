@@ -168,11 +168,26 @@ export const AssetFailedState: React.FC<AssetFailedStateProps> = ({
   );
 };
 
+type AssetStatus = 'loading' | 'loaded' | 'failed' | 'retrying' | 'fallback';
+
+interface AssetLoadingStateInfo {
+  status: AssetStatus;
+  [key: string]: any;
+}
+
 export interface AssetLoadingIndicatorProps {
-  loadingStates: Map<string, 'loading' | 'loaded' | 'failed' | 'retrying' | 'fallback'>;
+  loadingStates: Map<string, AssetStatus | AssetLoadingStateInfo>;
   onRetryAsset?: (assetId: string) => void;
   className?: string;
 }
+
+/**
+ * Helper to extract status from either string or object
+ */
+const getStatus = (value: AssetStatus | AssetLoadingStateInfo): AssetStatus => {
+  if (typeof value === 'string') return value;
+  return value.status;
+};
 
 /**
  * Comprehensive loading indicator for multiple assets
@@ -184,12 +199,12 @@ export const AssetLoadingIndicator: React.FC<AssetLoadingIndicatorProps> = ({
 }) => {
   const totalAssets = loadingStates.size;
   const loadedAssets = Array.from(loadingStates.values()).filter(
-    state => state === 'loaded' || state === 'fallback'
+    value => { const state = getStatus(value); return state === 'loaded' || state === 'fallback'; }
   ).length;
   const failedAssets = Array.from(loadingStates.values()).filter(
-    state => state === 'failed'
+    value => getStatus(value) === 'failed'
   ).length;
-  const loadingAssets = Array.from(loadingStates.values()).filter(v => v === 'loading').length;
+  const loadingAssets = Array.from(loadingStates.values()).filter(value => getStatus(value) === 'loading').length;
 
   if (totalAssets === 0) return null;
 
@@ -229,7 +244,9 @@ export const AssetLoadingIndicator: React.FC<AssetLoadingIndicatorProps> = ({
 
       {/* Individual Asset States */}
       <div className="space-y-2 max-h-32 overflow-y-auto">
-        {Array.from(loadingStates.entries()).map(([assetId, state]) => (
+        {Array.from(loadingStates.entries()).map(([assetId, value]) => {
+          const state = getStatus(value);
+          return (
           <div key={assetId} className="flex items-center justify-between p-2 bg-abyss/30 rounded">
             <div className="flex items-center space-x-2">
               <div className={`w-4 h-4 rounded-full border-2 ${
@@ -268,7 +285,7 @@ export const AssetLoadingIndicator: React.FC<AssetLoadingIndicatorProps> = ({
               )}
             </div>
           </div>
-        ))}
+        );})}
       </div>
 
       {/* Actions */}
@@ -278,7 +295,7 @@ export const AssetLoadingIndicator: React.FC<AssetLoadingIndicatorProps> = ({
             onClick={() => {
               // Retry all failed assets
               Array.from(loadingStates.entries())
-                .filter(([_, state]) => state === 'failed')
+                .filter(([_, value]) => getStatus(value) === 'failed')
                 .forEach(([assetId]) => onRetryAsset(assetId));
             }}
             className="px-4 py-2 bg-gold text-abyss font-wagdie font-bold rounded-lg hover:bg-amber-600 transition-colors"

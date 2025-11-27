@@ -52,7 +52,7 @@ export class CharacterService {
    */
   async isOwner(tokenId: number, walletAddress: string): Promise<boolean> {
     const character = await this.getCharacter(tokenId)
-    if (!character) return false
+    if (!character || !character.owner_address) return false
     return character.owner_address.toLowerCase() === walletAddress.toLowerCase()
   }
 }

@@ -1,9 +1,3 @@
-/**
- * Character Detail Page
- * Display character sheet with stats, story, equipment
- * Allow owners to edit and perform blockchain actions
- */
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -20,6 +14,7 @@ import { StakingStatusCard } from '@/components/StakingStatusCard'
 import { SearingModal } from '@/components/modals/SearingModal'
 import { InfectionModal } from '@/components/modals/InfectionModal'
 import { CureModal } from '@/components/modals/CureModal'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, Button, Spinner, Separator } from '@/components-new'
 import type { Character, Equipment } from '@/types/character'
 
 export default function CharacterDetailPage() {
@@ -153,25 +148,33 @@ export default function CharacterDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-ash">Loading character...</p>
+      <div className="min-h-screen flex items-center justify-center bg-soul-950">
+        <div className="flex flex-col items-center gap-4">
+          <Spinner size="lg" />
+          <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
+            Loading Character
+          </p>
+        </div>
       </div>
     )
   }
 
   if (!character) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl text-bone mb-2">Character not found</p>
-          <p className="text-sm text-mist">Token ID #{tokenId}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-soul-950">
+        <Card className="max-w-md text-center">
+          <CardContent className="py-12">
+            <div className="text-6xl mb-4 opacity-30">☠</div>
+            <CardTitle className="mb-2">Character Not Found</CardTitle>
+            <CardDescription>Token ID #{tokenId} does not exist or has been lost to the void.</CardDescription>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-soul-950">
       <SheetMenuBar
         tokenId={tokenId}
         isOwner={isOwner}
@@ -182,73 +185,70 @@ export default function CharacterDetailPage() {
         isSaving={isSaving}
       />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Ownership Verification Banner */}
         <OwnershipVerificationBanner tokenId={BigInt(tokenId)} className="mb-6" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - 2/3 width on large screens */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Character Image and Attributes */}
             <SheetTitleAndAttributes character={character} isEditMode={isEditMode} />
-
-            {/* Background Story */}
             <SheetBackgroundStory
               story={editedStory}
               isEditMode={isEditMode}
               isOwner={isOwner}
               onChange={setEditedStory}
             />
-
-            {/* Equipment */}
             <SheetEquipment equipment={(character.equipment || character.metadata?.equipment) as Equipment | null} isEditMode={isEditMode} />
           </div>
 
-          {/* Sidebar - 1/3 width on large screens */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Token Balances Card */}
             <TokenBalancesCard />
-
-            {/* Staking Status Card */}
             <StakingStatusCard tokenId={tokenId} />
           </div>
         </div>
 
         {/* Blockchain Actions (for owners) */}
         {isOwner && (
-          <div className="bg-midnight rounded-lg p-6 mt-6">
-            <h3 className="text-2xl font-bold text-bone mb-4">Blockchain Actions</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Searing Action */}
-              <button
-                className="px-6 py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors"
-                onClick={() => setIsSearingModalOpen(true)}
-              >
-                🔥 Sear Concords
-              </button>
-
-              {/* Infection Action */}
-              <button
-                className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors"
-                onClick={() => setIsInfectionModalOpen(true)}
-              >
-                🦠 Infect Character
-              </button>
-
-              {/* Cure Action (only if infected) */}
-              {character.infection_status === 'infected' && (
-                <button
-                  className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
-                  onClick={() => setIsCureModalOpen(true)}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Blockchain Actions</CardTitle>
+              <CardDescription>
+                These actions interact with smart contracts and require wallet transactions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Separator className="mb-6" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Button
+                  variant="primary"
+                  onClick={() => setIsSearingModalOpen(true)}
+                  className="w-full"
                 >
-                  💊 Cure Character
-                </button>
-              )}
-            </div>
-            <p className="text-sm text-mist mt-4">
-              These actions interact with blockchain smart contracts and require wallet transactions.
-            </p>
-          </div>
+                  Sear Concords
+                </Button>
+
+                <Button
+                  variant="danger"
+                  onClick={() => setIsInfectionModalOpen(true)}
+                  className="w-full"
+                >
+                  Infect Character
+                </Button>
+
+                {character.infection_status === 'infected' && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsCureModalOpen(true)}
+                    className="w-full border-emerald-900/50 text-emerald-500 hover:border-emerald-700"
+                  >
+                    Cure Character
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 

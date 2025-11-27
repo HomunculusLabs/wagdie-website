@@ -243,7 +243,7 @@ class EnhancedIconFactoryImpl implements IEnhancedIconFactory {
     }
 
     // Add additional enhanced configs for new asset types
-    const additionalConfigs: Record<NewIconType, EnhancedIconConfig> = {
+    const additionalConfigs: Partial<Record<NewIconType, EnhancedIconConfig>> = {
       'legend_location_on': {
         baseSize: [24, 24],
         iconUrl: '/images/legendicons/legend_icon_location_on.png',
@@ -319,7 +319,9 @@ class EnhancedIconFactoryImpl implements IEnhancedIconFactory {
     };
 
     Object.entries(additionalConfigs).forEach(([type, config]) => {
-      enhancedConfigs.set(type as NewIconType, config);
+      if (config) {
+        enhancedConfigs.set(type as NewIconType, config);
+      }
     });
 
     return enhancedConfigs;
@@ -398,23 +400,8 @@ class EnhancedIconFactoryImpl implements IEnhancedIconFactory {
         iconSize: size,
         iconAnchor: [size[0] / 2, size[1]],
         popupAnchor: [0, -size[1]],
-        className: `custom-icon-${type} leaflet-marker-icon`,
-        zIndex: 1000 // Ensure markers appear above map image
+        className: `custom-icon-${type} leaflet-marker-icon`
       });
-
-      // Verify icon was created successfully
-      if (!icon || !icon._icon) {
-        if (DEBUG_ASSET_LOADING) console.warn(`[IconFactory] Failed to create icon ${type}, using default`);
-        // Create a simple fallback icon
-        return L.icon({
-          iconUrl: fallbackUrl,
-          iconSize: size,
-          iconAnchor: [size[0] / 2, size[1]],
-          popupAnchor: [0, -size[1]],
-          className: 'fallback-icon leaflet-marker-icon',
-          zIndex: 1000 // Ensure markers appear above map image
-        });
-      }
 
       return icon;
     } catch (error) {
@@ -425,8 +412,7 @@ class EnhancedIconFactoryImpl implements IEnhancedIconFactory {
         iconSize: size,
         iconAnchor: [size[0] / 2, size[1]],
         popupAnchor: [0, -size[1]],
-        className: 'error-fallback-icon leaflet-marker-icon',
-        zIndex: 1000 // Ensure markers appear above map image
+        className: 'error-fallback-icon leaflet-marker-icon'
       });
     }
   }
@@ -460,19 +446,17 @@ class EnhancedIconFactoryImpl implements IEnhancedIconFactory {
 
     // Apply additional density scaling for high-DPI displays
     const densityScale = viewport.isHighDensity ? Math.min(viewport.pixelRatio, 2) : 1;
-    const finalSize = [
-      Math.round(responsiveSize[0] * densityScale),
-      Math.round(responsiveSize[1] * densityScale)
-    ];
+    let finalWidth = Math.round(responsiveSize[0] * densityScale);
+    let finalHeight = Math.round(responsiveSize[1] * densityScale);
 
     // Apply orientation-specific adjustments
     if (viewport.isPortrait && viewport.isMobile) {
       // Slightly reduce icons in portrait mode on mobile to save space
-      finalSize[0] = Math.round(finalSize[0] * 0.9);
-      finalSize[1] = Math.round(finalSize[1] * 0.9);
+      finalWidth = Math.round(finalWidth * 0.9);
+      finalHeight = Math.round(finalHeight * 0.9);
     }
 
-    return finalSize;
+    return [finalWidth, finalHeight];
   }
 }
 

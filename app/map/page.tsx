@@ -8,6 +8,7 @@ import { useMapLayers } from '@/hooks/map/useMapLayers';
 import { useWallet } from '@/hooks/map/useWallet';
 import { CharacterListPanel } from '@/components/map/CharacterListPanel';
 import { LoadingState } from '@/components/map/LoadingState';
+import { Button, Spinner } from '@/components-new';
 import type { CharacterLocation } from '@/lib/types/map';
 import type { SimpleMapRef } from '@/components/map/SimpleMap';
 
@@ -15,8 +16,13 @@ import type { SimpleMapRef } from '@/components/map/SimpleMap';
 const SimpleMap = dynamic(() => import('@/components/map/SimpleMap').then(mod => ({ default: mod.SimpleMap })), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-screen bg-abyss">
-      <div className="text-bone">Loading map...</div>
+    <div className="flex items-center justify-center h-screen bg-soul-950">
+      <div className="flex flex-col items-center gap-4">
+        <Spinner size="lg" />
+        <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
+          Loading Map
+        </p>
+      </div>
     </div>
   ),
 });
@@ -30,17 +36,19 @@ export default function MapPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-abyss">
+      <div className="flex items-center justify-center h-screen bg-soul-950">
         <div className="text-center">
-          <div className="text-poison text-6xl mb-4">⚠</div>
-          <div className="text-bone text-xl mb-2">Error loading map</div>
-          <div className="text-mist">{error.message}</div>
-          <button
+          <div className="text-red-800 text-6xl mb-4 opacity-60">⚠</div>
+          <div className="text-neutral-200 text-xl font-display uppercase tracking-widest mb-2">
+            Error loading map
+          </div>
+          <div className="text-neutral-500 font-serif mb-6">{error.message}</div>
+          <Button
+            variant="primary"
             onClick={() => window.location.reload()}
-            className="mt-4 px-6 py-2 bg-gold text-abyss font-wagdie font-bold rounded-lg hover:bg-ember transition-all"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );

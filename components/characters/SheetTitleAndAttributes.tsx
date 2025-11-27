@@ -1,12 +1,10 @@
-/**
- * SheetTitleAndAttributes Component
- * Display character image, name, class, and D&D-style attributes (STR/DEX/CON/INT/WIS/CHA)
- */
-
 'use client'
 
 import React from 'react';
 import Image from 'next/image'
+import { Card, CardContent } from '@/components-new/Card'
+import { Badge } from '@/components-new/Badge'
+import { ProgressBar } from '@/components-new/ProgressBar'
 import type { Character } from '@/types/character'
 
 interface SheetTitleAndAttributesProps {
@@ -14,23 +12,19 @@ interface SheetTitleAndAttributesProps {
   isEditMode?: boolean
 }
 
-export function SheetTitleAndAttributes({ character, isEditMode = false }: SheetTitleAndAttributesProps) {
-  // Extract data from metadata if available
+export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesProps) {
   const name = character.metadata?.name || character.name || `Character #${character.token_id}`
   const imageUrl = character.metadata?.image?.replace('ipfs://', 'https://ipfs.io/ipfs/') || character.image_url || '/images/placeholder-character.png'
   const level = character.metadata?.level || character.level || 1
   const hp = character.metadata?.hit_points || character.hp
   const maxHp = character.max_hp
 
-  // Extract attributes from metadata (could be array or object format)
   let attrs = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
 
   if (character.metadata?.attributes) {
     if (Array.isArray(character.metadata.attributes)) {
-      // NFT format - ignore for now, no character sheet data
       attrs = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
     } else {
-      // Character sheet format
       const metaAttrs = character.metadata.attributes
       attrs = {
         str: metaAttrs.strength || character.str || 0,
@@ -42,7 +36,6 @@ export function SheetTitleAndAttributes({ character, isEditMode = false }: Sheet
       }
     }
   } else {
-    // Use direct fields if no metadata
     attrs = {
       str: character.str || 0,
       dex: character.dex || 0,
@@ -65,101 +58,94 @@ export function SheetTitleAndAttributes({ character, isEditMode = false }: Sheet
   const hasCharacterSheet = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0
 
   return (
-    <div className="bg-midnight rounded-lg p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left: Character Image */}
-        <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-gold">
-          <Image
-            src={imageUrl}
-            alt={name}
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
+    <Card>
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+          {/* Left: Character Image */}
+          <div className="relative aspect-square overflow-hidden border-r border-neutral-800">
+            <Image
+              src={imageUrl}
+              alt={name}
+              fill
+              className="object-cover grayscale-[30%] contrast-110"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
-        {/* Right: Character Info */}
-        <div className="flex flex-col justify-between">
-          {/* Name and Class */}
-          <div>
-            <h1 className="text-4xl font-bold text-bone mb-2">
-              {name}
-            </h1>
-            <p className="text-xl text-ash mb-4">
-              {character.class ? `${character.class} • Level ${level}` : `Level ${level}`}
-            </p>
+            {/* Status Badges */}
+            <div className="absolute bottom-4 left-4 flex gap-2">
+              {character.infection_status === 'infected' && (
+                <Badge variant="default" className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge>
+              )}
+              {character.infection_status === 'cured' && (
+                <Badge variant="default" className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge>
+              )}
+              {character.staking_status === 'staked' && (
+                <Badge variant="accent">Staked</Badge>
+              )}
+            </div>
+          </div>
 
-            {/* Combat Stats - only show if character has sheet data */}
+          {/* Right: Character Info */}
+          <div className="flex flex-col p-6">
+            {/* Name and Class */}
+            <div className="mb-6">
+              <h1 className="text-3xl font-display uppercase tracking-wider text-neutral-100 mb-2">
+                {name}
+              </h1>
+              <p className="text-sm font-display uppercase tracking-widest text-soul-accent">
+                {character.class ? `${character.class} • Level ${level}` : `Level ${level}`}
+              </p>
+            </div>
+
+            {/* Combat Stats */}
             {hasCharacterSheet && hp !== undefined && (
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-neutral-800">
                 <div className="text-center">
-                  <p className="text-sm text-mist">HP</p>
-                  <p className="text-2xl font-bold text-gold">
-                    {hp}{maxHp ? `/${maxHp}` : ''}
+                  <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">HP</p>
+                  <p className="text-2xl font-display text-soul-accent">
+                    {hp}<span className="text-neutral-500 text-sm">{maxHp ? `/${maxHp}` : ''}</span>
                   </p>
                 </div>
                 {character.ac !== undefined && (
                   <div className="text-center">
-                    <p className="text-sm text-mist">AC</p>
-                    <p className="text-2xl font-bold text-gold">{character.ac}</p>
+                    <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">AC</p>
+                    <p className="text-2xl font-display text-neutral-200">{character.ac}</p>
                   </div>
                 )}
                 {character.speed !== undefined && (
                   <div className="text-center">
-                    <p className="text-sm text-mist">Speed</p>
-                    <p className="text-2xl font-bold text-gold">{character.speed} ft</p>
+                    <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">Speed</p>
+                    <p className="text-2xl font-display text-neutral-200">{character.speed}<span className="text-neutral-500 text-sm"> ft</span></p>
                   </div>
                 )}
               </div>
             )}
-          </div>
 
-          {/* Attributes - only show if character has sheet data */}
-          {hasCharacterSheet && (
-            <div>
-              <h3 className="text-lg font-bold text-bone mb-3">Attributes</h3>
-              <div className="grid grid-cols-6 gap-2">
-                {attributes.map((attr) => (
-                  <div
-                    key={attr.label}
-                    className="bg-shadow rounded p-3 text-center"
-                  >
-                    <p className="text-xs text-mist mb-1">{attr.label}</p>
-                    <p className="text-xl font-bold text-bone">{attr.value}</p>
-                    {/* Progress bar */}
-                    <div className="mt-2 bg-abyss rounded-full h-1 overflow-hidden">
-                      <div
-                        className="bg-gold h-full transition-all"
-                        style={{ width: `${(attr.value / 20) * 100}%` }}
-                      />
+            {/* Attributes */}
+            {hasCharacterSheet && (
+              <div className="flex-1">
+                <h3 className="text-xs font-display uppercase tracking-widest text-neutral-500 mb-4">Attributes</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {attributes.map((attr) => (
+                    <div
+                      key={attr.label}
+                      className="bg-black/40 border border-neutral-800 p-3 text-center"
+                    >
+                      <p className="text-[10px] font-display uppercase tracking-widest text-neutral-600 mb-1">{attr.label}</p>
+                      <p className="text-xl font-display text-neutral-200">{attr.value}</p>
+                      <div className="mt-2">
+                        <ProgressBar value={attr.value} max={20} showValue={false} variant="souls" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Status Badges */}
-          <div className="flex gap-2 mt-4">
-            {character.infection_status === 'infected' && (
-              <span className="px-3 py-1 bg-red-600 text-white text-sm font-bold rounded">
-                INFECTED
-              </span>
-            )}
-            {character.infection_status === 'cured' && (
-              <span className="px-3 py-1 bg-green-600 text-white text-sm font-bold rounded">
-                CURED
-              </span>
-            )}
-            {character.staking_status === 'staked' && (
-              <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded">
-                STAKED
-              </span>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
