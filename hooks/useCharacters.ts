@@ -1,12 +1,12 @@
 /**
  * useCharacters Hook
- * Application layer - Character data fetching with infinite scroll and caching
+ * Application layer - Character data fetching with pagination and caching
  * Uses React Query for state management and API client for data fetching
  */
 
 'use client'
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api/endpoints'
 import { Character, CharacterFilterTab, SortOrder } from '@/types/character'
 
@@ -14,19 +14,59 @@ export interface UseCharactersOptions {
   tab: CharacterFilterTab
   sort: SortOrder
   wallet?: string
+  page?: number
   perPage?: number
   enabled?: boolean
 }
 
 /**
- * Custom hook for fetching characters with infinite scroll
+ * Custom hook for fetching characters with pagination
  * Integrates with React Query for caching and background refetching
  */
 export function useCharacters(options: UseCharactersOptions) {
+  const { tab, sort, wallet, page = 1, perPage = 50, enabled = true } = options
+
+  const query = useQuery({
+    queryKey: ['characters', tab, sort, wallet, page, perPage],
+    queryFn: () =>
+      api.characters.getCharacters({
+        tab,
+        sort,
+        wallet,
+        page,
+        perPage,
+      }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled,
+  })
+
+  const characters = query.data?.characters ?? []
+  const totalCount = query.data?.totalCount ?? 0
+  const totalPages = Math.ceil(totalCount / perPage)
+  const hasMore = page < totalPages
+
+  return {
+    characters,
+    totalCount,
+    totalPages,
+    currentPage: page,
+    hasMore,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+/**
+ * Custom hook for fetching characters with infinite scroll (legacy)
+ */
+export function useCharactersInfinite(options: Omit<UseCharactersOptions, 'page'>) {
   const { tab, sort, wallet, perPage = 50, enabled = true } = options
 
   const query = useInfiniteQuery({
-    queryKey: ['characters', tab, sort, wallet],
+    queryKey: ['characters-infinite', tab, sort, wallet],
     queryFn: ({ pageParam = 1 }) =>
       api.characters.getCharacters({
         tab,
@@ -39,11 +79,10 @@ export function useCharacters(options: UseCharactersOptions) {
       return lastPage.hasMore ? allPages.length + 1 : undefined
     },
     initialPageParam: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     enabled,
   })
 
-  // Flatten paginated results
   const characters = query.data?.pages.reduce((acc, page) => {
     if (page?.characters) {
       return [...acc, ...page.characters];
@@ -53,13 +92,6 @@ export function useCharacters(options: UseCharactersOptions) {
 
   const totalCount = query.data?.pages[0]?.totalCount ?? 0
   const hasMore = query.hasNextPage ?? false
-
-  console.log('useCharacters state:', {
-    isLoading: query.isLoading,
-    isError: query.isError,
-    error: query.error,
-    data: query.data
-  });
 
   return {
     characters,

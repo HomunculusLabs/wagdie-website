@@ -118,7 +118,7 @@ export default function HomePage() {
                  </svg>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-display uppercase tracking-[0.2em] text-neutral-100 text-center mb-6 drop-shadow-2xl leading-tight">
+            <h1 className="text-5xl md:text-7xl font-display uppercase tracking-[0.1em] text-neutral-100 text-center mb-6 drop-shadow-2xl leading-tight">
             We Are All <br/> <span className="text-soul-accent text-6xl md:text-8xl">Going to Die</span>
             </h1>
             

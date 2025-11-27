@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
-import { SheetMenuBar } from '@/components/characters/SheetMenuBar'
-import { SheetTitleAndAttributes } from '@/components/characters/SheetTitleAndAttributes'
 import { SheetBackgroundStory } from '@/components/characters/SheetBackgroundStory'
 import { SheetEquipment } from '@/components/characters/SheetEquipment'
 import { OwnershipVerificationBanner } from '@/components/OwnershipVerificationBanner'
@@ -14,11 +13,49 @@ import { StakingStatusCard } from '@/components/StakingStatusCard'
 import { SearingModal } from '@/components/modals/SearingModal'
 import { InfectionModal } from '@/components/modals/InfectionModal'
 import { CureModal } from '@/components/modals/CureModal'
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, Button, Spinner, Separator } from '@/components-new'
+import {
+  Card,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  Button,
+  Spinner,
+  Separator,
+  Badge,
+  Tabs,
+  ProgressBar,
+} from '@/components-new'
+import type { TabItem } from '@/components-new'
 import type { Character, Equipment } from '@/types/character'
+
+// Icons
+const BackIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+  </svg>
+)
+
+const FireIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+  </svg>
+)
+
+const SkullIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const HeartIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+)
 
 export default function CharacterDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const { address } = useAccount()
   const tokenId = parseInt(params.tokenId as string, 10)
 
@@ -30,21 +67,16 @@ export default function CharacterDetailPage() {
   const [isSearingModalOpen, setIsSearingModalOpen] = useState(false)
   const [isInfectionModalOpen, setIsInfectionModalOpen] = useState(false)
   const [isCureModalOpen, setIsCureModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('story')
 
-  // Fetch character data
   useEffect(() => {
     const fetchCharacter = async () => {
       try {
         setIsLoading(true)
         const response = await fetch(`/api/characters/${tokenId}`)
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch character')
-        }
-
+        if (!response.ok) throw new Error('Failed to fetch character')
         const data = await response.json()
         setCharacter(data)
-        // Extract background story from metadata or direct field
         const story = data.metadata?.background_story || data.background_story || ''
         setEditedStory(story)
       } catch (error) {
@@ -54,48 +86,34 @@ export default function CharacterDetailPage() {
         setIsLoading(false)
       }
     }
-
     fetchCharacter()
   }, [tokenId])
 
-
-  // Check if user owns this character
   const isOwner = character && address
     ? character.owner_address?.toLowerCase() === address.toLowerCase()
     : false
 
-  // Toggle edit mode
   const handleEditToggle = () => {
     if (isEditMode) {
-      // Cancel editing - reset story
       const story = character?.metadata?.background_story || character?.background_story || ''
       setEditedStory(story)
     }
     setIsEditMode(!isEditMode)
   }
 
-  // Save changes
   const handleSave = async () => {
     if (!character) return
-
     try {
       setIsSaving(true)
-
       const response = await fetch(`/api/characters/${tokenId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          background_story: editedStory,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ background_story: editedStory }),
       })
-
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to save')
       }
-
       const updated = await response.json()
       setCharacter(updated)
       setIsEditMode(false)
@@ -108,43 +126,53 @@ export default function CharacterDetailPage() {
     }
   }
 
-  // Roll new character stats (client-side randomization)
-  const handleRollNew = () => {
-    if (!character) return
+  // Extract character data
+  const name = character?.metadata?.name || character?.name || `Character #${tokenId}`
+  const imageUrl = character?.metadata?.image?.replace('ipfs://', 'https://ipfs.io/ipfs/') || character?.image_url || '/images/placeholder-character.png'
+  const level = character?.metadata?.level || character?.level || 1
 
-    const confirmed = window.confirm(
-      'This will generate new random stats for your character. Continue?'
-    )
-
-    if (!confirmed) return
-
-    // Generate random D&D-style stats (3d6 for each attribute)
-    const rollStat = () => {
-      const dice = [
-        Math.floor(Math.random() * 6) + 1,
-        Math.floor(Math.random() * 6) + 1,
-        Math.floor(Math.random() * 6) + 1,
-      ]
-      return dice.reduce((sum, die) => sum + die, 0)
+  // Extract attributes
+  let attrs = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
+  if (character?.metadata?.attributes) {
+    if (!Array.isArray(character.metadata.attributes)) {
+      const metaAttrs = character.metadata.attributes
+      attrs = {
+        str: metaAttrs.strength || character?.str || 0,
+        dex: metaAttrs.dexterity || character?.dex || 0,
+        con: metaAttrs.constitution || character?.con || 0,
+        int: metaAttrs.intelligence || character?.int || 0,
+        wis: metaAttrs.wisdom || character?.wis || 0,
+        cha: metaAttrs.charisma || character?.cha || 0,
+      }
     }
-
-    const newStats = {
-      str: rollStat(),
-      dex: rollStat(),
-      con: rollStat(),
-      int: rollStat(),
-      wis: rollStat(),
-      cha: rollStat(),
+  } else if (character) {
+    attrs = {
+      str: character.str || 0,
+      dex: character.dex || 0,
+      con: character.con || 0,
+      int: character.int || 0,
+      wis: character.wis || 0,
+      cha: character.cha || 0,
     }
-
-    // Update character with new stats (this would normally call an API)
-    setCharacter({
-      ...character,
-      ...newStats,
-    })
-
-    toast.success('New stats rolled!')
   }
+
+  const attributes = [
+    { label: 'STR', value: attrs.str },
+    { label: 'DEX', value: attrs.dex },
+    { label: 'CON', value: attrs.con },
+    { label: 'INT', value: attrs.int },
+    { label: 'WIS', value: attrs.wis },
+    { label: 'CHA', value: attrs.cha },
+  ]
+
+  const hasCharacterSheet = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0
+
+  // Tabs configuration
+  const tabs: TabItem[] = [
+    { id: 'story', label: 'Story' },
+    { id: 'equipment', label: 'Equipment' },
+    { id: 'wallet', label: 'Wallet' },
+  ]
 
   if (isLoading) {
     return (
@@ -167,6 +195,9 @@ export default function CharacterDetailPage() {
             <div className="text-6xl mb-4 opacity-30">☠</div>
             <CardTitle className="mb-2">Character Not Found</CardTitle>
             <CardDescription>Token ID #{tokenId} does not exist or has been lost to the void.</CardDescription>
+            <Button variant="secondary" onClick={() => router.push('/characters')} className="mt-6">
+              Back to Characters
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -175,81 +206,201 @@ export default function CharacterDetailPage() {
 
   return (
     <div className="min-h-screen bg-soul-950">
-      <SheetMenuBar
-        tokenId={tokenId}
-        isOwner={isOwner}
-        isEditMode={isEditMode}
-        onEditToggle={handleEditToggle}
-        onSave={handleSave}
-        onRollNew={handleRollNew}
-        isSaving={isSaving}
-      />
+      {/* Header */}
+      <div className="border-b border-neutral-800 bg-black/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 max-w-7xl">
+          <div className="flex items-center justify-between">
+            <Button variant="secondary" onClick={() => router.push('/characters')} className="gap-2">
+              <BackIcon />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Ownership Verification Banner */}
-        <OwnershipVerificationBanner tokenId={BigInt(tokenId)} className="mb-6" />
+            <h1 className="text-sm font-display uppercase tracking-widest text-neutral-400">
+              Character #{tokenId}
+            </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <SheetTitleAndAttributes character={character} isEditMode={isEditMode} />
+            <div className="flex items-center gap-2">
+              {isOwner && (
+                <>
+                  {isEditMode ? (
+                    <>
+                      <Button variant="primary" onClick={handleSave} isLoading={isSaving}>Save</Button>
+                      <Button variant="secondary" onClick={handleEditToggle}>Cancel</Button>
+                    </>
+                  ) : (
+                    <Button variant="secondary" onClick={handleEditToggle}>Edit</Button>
+                  )}
+                </>
+              )}
+              <Button variant="secondary" onClick={() => router.push(`/characters/${tokenId}/animated`)}>
+                Animated
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Ownership Banner */}
+        <OwnershipVerificationBanner tokenId={BigInt(tokenId)} className="mb-8" />
+
+        {/* Hero Section - Character Preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+          {/* Character Image */}
+          <div className="lg:col-span-5">
+            <Card className="overflow-hidden">
+              <div className="relative aspect-square">
+                <Image
+                  src={imageUrl}
+                  alt={name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                {/* Status badges */}
+                <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
+                  {character.infection_status === 'infected' && (
+                    <Badge className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge>
+                  )}
+                  {character.infection_status === 'cured' && (
+                    <Badge className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge>
+                  )}
+                  {character.staking_status === 'staked' && (
+                    <Badge variant="accent">Staked</Badge>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Character Info */}
+          <div className="lg:col-span-5">
+            <div className="h-full flex flex-col">
+              {/* Name and Level */}
+              <div className="mb-6">
+                <h2 className="text-3xl md:text-4xl font-display uppercase tracking-wider text-neutral-100 mb-2">
+                  {name}
+                </h2>
+                <p className="text-sm font-display uppercase tracking-widest text-soul-accent">
+                  {character.class ? `${character.class} • ` : ''}Level {level}
+                </p>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                {character.hp !== undefined && (
+                  <Card className="bg-black/30">
+                    <CardContent className="p-3 text-center">
+                      <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">HP</p>
+                      <p className="text-xl font-display text-soul-accent">
+                        {character.hp}{character.max_hp ? <span className="text-neutral-500 text-xs">/{character.max_hp}</span> : ''}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+                {character.ac !== undefined && (
+                  <Card className="bg-black/30">
+                    <CardContent className="p-3 text-center">
+                      <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">AC</p>
+                      <p className="text-xl font-display text-neutral-200">{character.ac}</p>
+                    </CardContent>
+                  </Card>
+                )}
+                {character.speed !== undefined && (
+                  <Card className="bg-black/30">
+                    <CardContent className="p-3 text-center">
+                      <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">Speed</p>
+                      <p className="text-xl font-display text-neutral-200">{character.speed}<span className="text-xs text-neutral-500"> ft</span></p>
+                    </CardContent>
+                  </Card>
+                )}
+                <Card className="bg-black/30">
+                  <CardContent className="p-3 text-center">
+                    <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">Token</p>
+                    <p className="text-xl font-display text-neutral-200">#{tokenId}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Character Attributes */}
+              {hasCharacterSheet && (
+                <div className="h-full">
+                  <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-3">Attributes</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {attributes.map((attr) => (
+                      <div
+                        key={attr.label}
+                        className="bg-black/40 border border-neutral-800 p-3 text-center"
+                      >
+                        <p className="text-[10px] font-display uppercase tracking-widest text-neutral-600 mb-1">{attr.label}</p>
+                        <p className="text-xl font-display text-neutral-200 mb-2">{attr.value}</p>
+                        <ProgressBar value={attr.value} max={20} showValue={false} variant="souls" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Owner Actions */}
+              {isOwner && (
+                <Card className="mt-auto">
+                  <CardContent className="p-4">
+                    <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-3">Blockchain Actions</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="primary" onClick={() => setIsSearingModalOpen(true)} className="gap-2">
+                        <FireIcon /> Sear Concords
+                      </Button>
+                      <Button variant="danger" onClick={() => setIsInfectionModalOpen(true)} className="gap-2">
+                        <SkullIcon /> Infect
+                      </Button>
+                      {character.infection_status === 'infected' && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setIsCureModalOpen(true)}
+                          className="gap-2 border-emerald-900/50 text-emerald-500 hover:border-emerald-700"
+                        >
+                          <HeartIcon /> Cure
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <Separator className="mb-8" />
+
+        {/* Tabbed Content */}
+        <Tabs items={tabs} activeId={activeTab} onChange={setActiveTab} />
+
+        <div className="mt-6">
+          {activeTab === 'story' && (
             <SheetBackgroundStory
               story={editedStory}
               isEditMode={isEditMode}
               isOwner={isOwner}
               onChange={setEditedStory}
             />
-            <SheetEquipment equipment={(character.equipment || character.metadata?.equipment) as Equipment | null} isEditMode={isEditMode} />
-          </div>
+          )}
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <TokenBalancesCard />
-            <StakingStatusCard tokenId={tokenId} />
-          </div>
+          {activeTab === 'equipment' && (
+            <SheetEquipment
+              equipment={(character.equipment || character.metadata?.equipment) as Equipment | null}
+              isEditMode={isEditMode}
+            />
+          )}
+
+          {activeTab === 'wallet' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <TokenBalancesCard />
+              <StakingStatusCard tokenId={tokenId} />
+            </div>
+          )}
         </div>
-
-        {/* Blockchain Actions (for owners) */}
-        {isOwner && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Blockchain Actions</CardTitle>
-              <CardDescription>
-                These actions interact with smart contracts and require wallet transactions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Separator className="mb-6" />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Button
-                  variant="primary"
-                  onClick={() => setIsSearingModalOpen(true)}
-                  className="w-full"
-                >
-                  Sear Concords
-                </Button>
-
-                <Button
-                  variant="danger"
-                  onClick={() => setIsInfectionModalOpen(true)}
-                  className="w-full"
-                >
-                  Infect Character
-                </Button>
-
-                {character.infection_status === 'infected' && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => setIsCureModalOpen(true)}
-                    className="w-full border-emerald-900/50 text-emerald-500 hover:border-emerald-700"
-                  >
-                    Cure Character
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Modals */}
@@ -257,37 +408,32 @@ export default function CharacterDetailPage() {
         <>
           <SearingModal
             wagdieId={tokenId}
-            wagdieName={character.metadata?.name || character.name || `Character #${tokenId}`}
+            wagdieName={name}
             isOpen={isSearingModalOpen}
             onClose={() => setIsSearingModalOpen(false)}
             onSuccess={() => {
               toast.success('Character seared successfully!')
-              // Refresh character data
               window.location.reload()
             }}
           />
-
           <InfectionModal
             mode="specific"
             tokenId={BigInt(tokenId)}
-            tokenName={character.metadata?.name || character.name || `Character #${tokenId}`}
+            tokenName={name}
             isOpen={isInfectionModalOpen}
             onClose={() => setIsInfectionModalOpen(false)}
             onSuccess={() => {
               toast.success('Character infected successfully!')
-              // Refresh character data
               window.location.reload()
             }}
           />
-
           <CureModal
             characterId={tokenId}
-            characterName={character.metadata?.name || character.name || `Character #${tokenId}`}
+            characterName={name}
             isOpen={isCureModalOpen}
             onClose={() => setIsCureModalOpen(false)}
             onSuccess={() => {
               toast.success('Character cured successfully!')
-              // Refresh character data
               window.location.reload()
             }}
           />

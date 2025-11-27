@@ -1,6 +1,6 @@
 /**
  * Characters Browse Page
- * Browse and filter all WAGDIE characters with infinite scroll
+ * Browse and filter all WAGDIE characters with pagination
  * Uses clean architecture: presentation layer only
  */
 
@@ -10,11 +10,13 @@ import { useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TokenFilterBar } from '@/components/characters/TokenFilterBar'
-import { TokenFeed } from '@/components/characters/TokenFeed'
-import { Alert, Spinner } from '@/components-new'
+import { CharacterCard } from '@/components/characters/CharacterCard'
+import { Alert, Spinner, Pagination, Empty } from '@/components-new'
 import { useCharacters } from '@/hooks/useCharacters'
 import { useWallet } from '@/hooks/useWallet'
 import type { CharacterFilterTab, SortOrder } from '@/types/character'
+
+const ITEMS_PER_PAGE = 50
 
 function CharactersPageContent() {
   const searchParams = useSearchParams()
@@ -24,50 +26,56 @@ function CharactersPageContent() {
   // Parse URL parameters
   const tab = (searchParams.get('tab') || 'all') as CharacterFilterTab
   const sort = (searchParams.get('sort') || 'desc') as SortOrder
+  const page = parseInt(searchParams.get('page') || '1', 10)
 
   // Fetch characters using custom hook with React Query
   const {
     characters,
-    hasMore,
+    totalCount,
+    totalPages,
     isLoading,
-    isFetchingNextPage,
-    fetchNextPage,
+    isFetching,
   } = useCharacters({
     tab,
     sort,
     wallet: address,
+    page,
+    perPage: ITEMS_PER_PAGE,
   })
 
-  // Update URL when filters change
-  const updateURL = useCallback((newTab: CharacterFilterTab, newSort: SortOrder) => {
+  // Update URL when filters or page change
+  const updateURL = useCallback((newTab: CharacterFilterTab, newSort: SortOrder, newPage: number = 1) => {
     const params = new URLSearchParams()
     if (newTab !== 'all') params.set('tab', newTab)
     if (newSort !== 'desc') params.set('sort', newSort)
+    if (newPage > 1) params.set('page', newPage.toString())
 
     const queryString = params.toString()
     router.push(`/characters${queryString ? `?${queryString}` : ''}`)
   }, [router])
 
-  // Handle filter changes
   const handleTabChange = (newTab: CharacterFilterTab) => {
     if (newTab === tab) return
-    updateURL(newTab, sort)
+    updateURL(newTab, sort, 1) // Reset to page 1 on filter change
   }
 
   const handleSortChange = (newSort: SortOrder) => {
     if (newSort === sort) return
-    updateURL(tab, newSort)
+    updateURL(tab, newSort, 1) // Reset to page 1 on sort change
   }
 
-  // Load more handler
-  const handleLoadMore = () => {
-    if (!isFetchingNextPage && hasMore) {
-      fetchNextPage()
-    }
+  const handlePageChange = (newPage: number) => {
+    if (newPage === page) return
+    updateURL(tab, sort, newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCharacterClick = (tokenId: number) => {
+    router.push(`/characters/${tokenId}`)
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-soul-950">
       <BannerHeader
         title="Characters"
         subtitle="Explore the WAGDIE collection - 6,666 unique characters"
@@ -94,13 +102,53 @@ function CharactersPageContent() {
           </Alert>
         )}
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <Spinner size="lg" />
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && characters.length === 0 && (
+          <Empty message="No characters found" className="my-12" />
+        )}
+
         {/* Character Grid */}
-        <TokenFeed
-          characters={characters}
-          hasMore={hasMore}
-          isLoading={isLoading || isFetchingNextPage}
-          onLoadMore={handleLoadMore}
-        />
+        {!isLoading && characters.length > 0 && (
+          <>
+            {/* Results count */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-xs font-display uppercase tracking-widest text-neutral-500">
+                Showing {((page - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(page * ITEMS_PER_PAGE, totalCount)} of {totalCount} characters
+              </p>
+              {isFetching && !isLoading && (
+                <Spinner size="sm" />
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+              {characters.filter(character => character && character.token_id).map((character) => (
+                <CharacterCard
+                  key={character.token_id}
+                  character={character}
+                  onClick={handleCharacterClick}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center py-8 border-t border-neutral-800">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )

@@ -1,14 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import { useState, useRef } from 'react';
 import { useMapData } from '@/hooks/map/useMapData';
 import { useMapLayers } from '@/hooks/map/useMapLayers';
 import { useWallet } from '@/hooks/map/useWallet';
 import { CharacterListPanel } from '@/components/map/CharacterListPanel';
 import { LoadingState } from '@/components/map/LoadingState';
-import { Button, Spinner } from '@/components-new';
+import { Button, Spinner, Card, CardContent } from '@/components-new';
 import type { CharacterLocation } from '@/lib/types/map';
 import type { SimpleMapRef } from '@/components/map/SimpleMap';
 
@@ -27,6 +26,24 @@ const SimpleMap = dynamic(() => import('@/components/map/SimpleMap').then(mod =>
   ),
 });
 
+const UserIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const WalletIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
 export default function MapPage() {
   const { locations, characterLocations, isLoading, error, loadingProgress, loadingStage, loadingStages } = useMapData();
   const { layers, toggleLayer } = useMapLayers();
@@ -37,19 +54,20 @@ export default function MapPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-soul-950">
-        <div className="text-center">
-          <div className="text-red-800 text-6xl mb-4 opacity-60">⚠</div>
-          <div className="text-neutral-200 text-xl font-display uppercase tracking-widest mb-2">
-            Error loading map
-          </div>
-          <div className="text-neutral-500 font-serif mb-6">{error.message}</div>
-          <Button
-            variant="primary"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
-        </div>
+        <Card className="max-w-md text-center">
+          <CardContent className="py-12">
+            <div className="text-red-700 mb-4 flex justify-center">
+              <AlertIcon />
+            </div>
+            <h2 className="text-xl font-display uppercase tracking-widest text-neutral-200 mb-2">
+              Error Loading Map
+            </h2>
+            <p className="text-neutral-500 font-serif mb-6">{error.message}</p>
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -67,10 +85,9 @@ export default function MapPage() {
     );
   }
 
-  // Show wallet connection loading state
   if (isConnecting) {
     return (
-      <div className="w-full h-screen relative bg-abyss flex items-center justify-center">
+      <div className="w-full h-screen relative bg-soul-950 flex items-center justify-center">
         <LoadingState
           message="Connecting Wallet"
           stage={connectionStage}
@@ -96,57 +113,35 @@ export default function MapPage() {
         ref={mapRef}
       />
 
-      {/* Character List Toggle Button - Responsive with enhanced accessibility */}
-      <button
-        onClick={() => setShowCharacterPanel(!showCharacterPanel)}
-        className={`fixed top-4 left-4 z-50 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg border-2 font-wagdie font-bold tracking-wide transition-all min-h-[44px] focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-abyss ${showCharacterPanel
-          ? 'bg-gold text-abyss border-gold'
-          : 'bg-shadow text-gold border-gold hover:bg-gold/10'
-          }`}
-        aria-label="Toggle character list panel"
-        aria-expanded={showCharacterPanel}
-        aria-controls="character-list-panel"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape' && showCharacterPanel) {
-            setShowCharacterPanel(false);
-          }
-        }}
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
+      {/* Character List Toggle Button */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          variant={showCharacterPanel ? 'primary' : 'secondary'}
+          onClick={() => setShowCharacterPanel(!showCharacterPanel)}
+          className="gap-2"
+          aria-label="Toggle character list panel"
+          aria-expanded={showCharacterPanel}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
-        </svg>
-        <span className="hidden xs:inline text-sm sm:text-base">My Characters</span>
-        <span className="xs:hidden text-sm sm:text-base">Chars</span>
-        {connectedWallet && (
-          <div className="w-2 h-2 bg-gold rounded-full animate-pulse" aria-label="Wallet connected"></div>
-        )}
-      </button>
+          <UserIcon />
+          <span className="hidden sm:inline">My Characters</span>
+          {connectedWallet && (
+            <span className="w-2 h-2 bg-soul-accent rounded-full animate-pulse" />
+          )}
+        </Button>
+      </div>
 
-      {/* Character List Panel - Responsive positioning */}
+      {/* Character List Panel */}
       {showCharacterPanel && (
         <div
           id="character-list-panel"
           className="fixed top-20 left-4 right-4 sm:left-4 sm:right-auto sm:max-w-sm z-40"
           role="dialog"
           aria-label="Character list"
-          aria-modal="false"
         >
           <CharacterListPanel
             characters={characterLocations}
             connectedWallet={connectedWallet}
             onCharacterSelect={(character: CharacterLocation) => {
-              // Focus map on the selected character
               if (mapRef.current && character.location?.metadata) {
                 const bounds = character.location.metadata.bounds;
                 const center = character.location.metadata.center || [
@@ -164,55 +159,33 @@ export default function MapPage() {
         </div>
       )}
 
-      {/* Wallet Connection Prompt - Image-based button with accessibility */}
-      {!connectedWallet && (
-        <button
-          onClick={connectWallet}
-          className="fixed top-4 right-4 z-50 relative w-[160px] sm:w-[180px] h-[48px] group focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-abyss rounded-lg"
-          aria-label="Connect wallet to view your characters"
-        >
-          <Image
-            src="/images/walletbutton/button-connect.png"
-            alt="Connect Wallet"
-            fill
-            className="object-contain transition-opacity duration-200 group-hover:opacity-90"
-          />
-          <span className="relative z-10 text-abyss font-wagdie font-bold text-sm tracking-wider group-hover:text-black transition-colors uppercase mt-1 block">
-            Connect Wallet
-          </span>
-        </button>
-      )}
-
-      {/* Connected Wallet Indicator - Image-based button with disconnect */}
-      {connectedWallet && (
-        <button
-          onClick={() => {
-            // Disconnect logic would go here
-            window.location.reload();
-          }}
-          className="fixed top-4 right-4 z-50 relative w-[160px] sm:w-[180px] h-[48px] group focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-abyss rounded-lg"
-          aria-label={`Connected wallet: ${connectedWallet.slice(0, 6)}...${connectedWallet.slice(-4)}. Click to disconnect`}
-          title="Click to disconnect"
-        >
-          <Image
-            src="/images/walletbutton/button-disconnect.png"
-            alt="Disconnect Wallet"
-            fill
-            className="object-contain transition-opacity duration-200 group-hover:opacity-90"
-          />
-          <div className="relative z-10 flex items-center justify-center h-full">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-gold rounded-full animate-pulse" aria-hidden="true"></div>
-              <span className="font-wagdie text-xs sm:text-sm text-bone group-hover:text-gold transition-colors hidden xs:inline">
-                {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
-              </span>
-              <span className="font-wagdie text-xs text-bone group-hover:text-gold transition-colors xs:hidden">
-                {connectedWallet.slice(0, 4)}...{connectedWallet.slice(-2)}
-              </span>
-            </div>
-          </div>
-        </button>
-      )}
+      {/* Wallet Connection Button */}
+      <div className="fixed top-4 right-4 z-50">
+        {!connectedWallet ? (
+          <Button
+            variant="primary"
+            onClick={connectWallet}
+            className="gap-2"
+            aria-label="Connect wallet to view your characters"
+          >
+            <WalletIcon />
+            <span className="hidden sm:inline">Connect Wallet</span>
+            <span className="sm:hidden">Connect</span>
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={() => window.location.reload()}
+            className="gap-2"
+            title="Click to disconnect"
+          >
+            <span className="w-2 h-2 bg-soul-accent rounded-full animate-pulse" />
+            <span className="font-mono text-xs">
+              {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
+            </span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
