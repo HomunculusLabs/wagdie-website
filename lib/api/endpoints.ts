@@ -23,6 +23,7 @@ export const characterApi = {
     searchParams.set('page', params.page.toString())
     searchParams.set('perPage', params.perPage.toString())
     if (params.wallet) searchParams.set('wallet', params.wallet)
+    if (params.search) searchParams.set('search', params.search)
 
     const url = `/api/characters?${searchParams}`;
     console.log('Fetching URL:', url);

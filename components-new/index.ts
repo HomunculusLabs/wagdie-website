@@ -10,7 +10,17 @@ export { Breadcrumb } from './Breadcrumb'
 export { Tabs } from './Tabs'
 export type { TabItem } from './Tabs'
 export { Pagination } from './Pagination'
-export { Sidebar } from './Sidebar'
+export {
+  Sidebar,
+  SidebarProvider,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarTrigger,
+  SidebarItem,
+  SidebarInset,
+  useSidebar
+} from './Sidebar'
 export { Menubar } from './Menubar'
 
 // Forms & Inputs
@@ -21,13 +31,29 @@ export { InputGroup } from './InputGroup'
 export { InputOTP } from './InputOTP'
 export { TextArea } from './TextArea'
 export { Select } from './Select'
-export { CustomSelect } from './CustomSelect'
+export {
+  CustomSelect,
+  CustomSelectTrigger,
+  CustomSelectContent,
+  CustomSelectItem,
+  CustomSelectLabel,
+  CustomSelectSeparator
+} from './CustomSelect'
 export { Checkbox } from './Checkbox'
 export { RadioGroup } from './Radio'
 export { Switch } from './Switch'
 export { Slider } from './Slider'
 export { Label } from './Label'
-export { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from './Form'
+export {
+  Form,
+  FormField,
+  FormControl,
+  FormDescription,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  useForm
+} from './Form'
 export { DatePicker } from './DatePicker'
 export { Calendar } from './Calendar'
 export { Combobox } from './Combobox'
@@ -47,7 +73,7 @@ export { Popover } from './Popover'
 export { Tooltip } from './Tooltip'
 export { HoverCard } from './HoverCard'
 export { Sheet } from './Sheet'
-export { DropdownMenu } from './DropdownMenu'
+export { DropdownMenu, DropdownItem, DropdownLabel, DropdownSeparator } from './DropdownMenu'
 export { ContextMenu } from './ContextMenu'
 export { Command } from './Command'
 

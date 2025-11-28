@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const sort = (searchParams.get('sort') || 'desc') as SortOrder
     const page = parseInt(searchParams.get('page') || '1', 10)
     const perPage = parseInt(searchParams.get('perPage') || '50', 10)
+    const search = searchParams.get('search') || undefined
 
     // Validate parameters
     if (page < 1 || perPage < 1 || perPage > 100) {
@@ -46,7 +47,8 @@ export async function GET(request: NextRequest) {
       wallet,
       sort,
       page,
-      perPage
+      perPage,
+      search
     })
 
     return NextResponse.json(result)

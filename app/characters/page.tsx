@@ -6,12 +6,12 @@
 
 'use client'
 
-import { useCallback, Suspense } from 'react'
+import { useCallback, useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TokenFilterBar } from '@/components/characters/TokenFilterBar'
 import { CharacterCard } from '@/components/characters/CharacterCard'
-import { Alert, Spinner, Pagination, Empty } from '@/components-new'
+import { Alert, Spinner, Pagination, Empty, Input } from '@/components-new'
 import { useCharacters } from '@/hooks/useCharacters'
 import { useWallet } from '@/hooks/useWallet'
 import type { CharacterFilterTab, SortOrder } from '@/types/character'
@@ -27,6 +27,25 @@ function CharactersPageContent() {
   const tab = (searchParams.get('tab') || 'all') as CharacterFilterTab
   const sort = (searchParams.get('sort') || 'desc') as SortOrder
   const page = parseInt(searchParams.get('page') || '1', 10)
+  const searchQuery = searchParams.get('search') || ''
+
+  // Local search input state (for debouncing)
+  const [searchInput, setSearchInput] = useState(searchQuery)
+
+  // Sync search input with URL on mount/change
+  useEffect(() => {
+    setSearchInput(searchQuery)
+  }, [searchQuery])
+
+  // Debounced search - update URL after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchQuery) {
+        updateURL(tab, sort, 1, searchInput)
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch characters using custom hook with React Query
   const {
@@ -41,14 +60,16 @@ function CharactersPageContent() {
     wallet: address,
     page,
     perPage: ITEMS_PER_PAGE,
+    search: searchQuery || undefined,
   })
 
   // Update URL when filters or page change
-  const updateURL = useCallback((newTab: CharacterFilterTab, newSort: SortOrder, newPage: number = 1) => {
+  const updateURL = useCallback((newTab: CharacterFilterTab, newSort: SortOrder, newPage: number = 1, newSearch: string = '') => {
     const params = new URLSearchParams()
     if (newTab !== 'all') params.set('tab', newTab)
     if (newSort !== 'desc') params.set('sort', newSort)
     if (newPage > 1) params.set('page', newPage.toString())
+    if (newSearch.trim()) params.set('search', newSearch.trim())
 
     const queryString = params.toString()
     router.push(`/characters${queryString ? `?${queryString}` : ''}`)
@@ -56,18 +77,23 @@ function CharactersPageContent() {
 
   const handleTabChange = (newTab: CharacterFilterTab) => {
     if (newTab === tab) return
-    updateURL(newTab, sort, 1) // Reset to page 1 on filter change
+    updateURL(newTab, sort, 1, searchQuery) // Reset to page 1 on filter change
   }
 
   const handleSortChange = (newSort: SortOrder) => {
     if (newSort === sort) return
-    updateURL(tab, newSort, 1) // Reset to page 1 on sort change
+    updateURL(tab, newSort, 1, searchQuery) // Reset to page 1 on sort change
   }
 
   const handlePageChange = (newPage: number) => {
     if (newPage === page) return
-    updateURL(tab, sort, newPage)
+    updateURL(tab, sort, newPage, searchQuery)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleClearSearch = () => {
+    setSearchInput('')
+    updateURL(tab, sort, 1, '')
   }
 
   const handleCharacterClick = (tokenId: number) => {
@@ -82,6 +108,47 @@ function CharactersPageContent() {
       />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <svg
+                className="w-4 h-4 text-neutral-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by name or token ID..."
+              className="w-full bg-black/40 border border-neutral-800 rounded-sm py-2.5 pl-10 pr-10 text-sm font-serif text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-soul-accent/50 focus:ring-1 focus:ring-soul-accent/30 transition-all"
+            />
+            {searchInput && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-500 hover:text-neutral-300 transition-colors"
+                aria-label="Clear search"
+              >
+                <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="mt-2 text-xs text-neutral-500 font-serif">
+              Searching for &ldquo;{searchQuery}&rdquo;
+            </p>
+          )}
+        </div>
+
         {/* Filter Bar */}
         <TokenFilterBar
           currentTab={tab}

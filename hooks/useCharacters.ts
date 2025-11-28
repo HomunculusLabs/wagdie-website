@@ -16,6 +16,7 @@ export interface UseCharactersOptions {
   wallet?: string
   page?: number
   perPage?: number
+  search?: string
   enabled?: boolean
 }
 
@@ -24,10 +25,10 @@ export interface UseCharactersOptions {
  * Integrates with React Query for caching and background refetching
  */
 export function useCharacters(options: UseCharactersOptions) {
-  const { tab, sort, wallet, page = 1, perPage = 50, enabled = true } = options
+  const { tab, sort, wallet, page = 1, perPage = 50, search, enabled = true } = options
 
   const query = useQuery({
-    queryKey: ['characters', tab, sort, wallet, page, perPage],
+    queryKey: ['characters', tab, sort, wallet, page, perPage, search],
     queryFn: () =>
       api.characters.getCharacters({
         tab,
@@ -35,6 +36,7 @@ export function useCharacters(options: UseCharactersOptions) {
         wallet,
         page,
         perPage,
+        search,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled,
