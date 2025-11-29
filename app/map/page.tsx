@@ -1,21 +1,26 @@
+/**
+ * WAGDIE World Map - Phaser Implementation
+ *
+ * Interactive map of the WAGDIE world built with Phaser 3.
+ * Features zoom, pan, markers for locations/characters/events,
+ * and layer controls.
+ */
+
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useMapData } from '@/hooks/map/useMapData';
 import { useMapLayers } from '@/hooks/map/useMapLayers';
-import { useWallet } from '@/hooks/map/useWallet';
-import { CharacterListPanel } from '@/components/map/CharacterListPanel';
-import { LoadingState } from '@/components/map/LoadingState';
-import { Button, Spinner, Card, CardContent } from '@/components-new';
-import type { CharacterLocation } from '@/lib/types/map';
-import type { SimpleMapRef } from '@/components/map/SimpleMap';
+import { EventBus, MapEvents } from '@/game/EventBus';
+import { Spinner } from '@/components-new';
+import type { IRefPhaserGame } from '@/game/PhaserGame';
 
-// Dynamically import SimpleMap to avoid SSR issues
-const SimpleMap = dynamic(() => import('@/components/map/SimpleMap').then(mod => ({ default: mod.SimpleMap })), {
+// Dynamically import PhaserGame to avoid SSR issues
+const PhaserGame = dynamic(() => import('@/game/PhaserGame'), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-screen bg-soul-950">
+    <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
         <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
@@ -26,166 +31,204 @@ const SimpleMap = dynamic(() => import('@/components/map/SimpleMap').then(mod =>
   ),
 });
 
-const UserIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-);
+// Layer configuration
+const layerConfigs = [
+  { key: 'locations', label: 'Locations', iconOn: '/images/legendicons/legend_icon_location_on.png', iconOff: '/images/legendicons/legend_icon_location_off.png' },
+  { key: 'characters', label: 'Characters', iconOn: '/images/legendicons/legend_icon_location_on.png', iconOff: '/images/legendicons/legend_icon_location_off.png' },
+  { key: 'burns', label: 'Burns', iconOn: '/images/legendicons/legend_icon_burn_on.png', iconOff: '/images/legendicons/legend_icon_burn_off.png' },
+  { key: 'deaths', label: 'Deaths', iconOn: '/images/legendicons/legend_icon_death_on.png', iconOff: '/images/legendicons/legend_icon_death_off.png' },
+  { key: 'fights', label: 'Fights', iconOn: '/images/legendicons/legend_icon_fight_on.png', iconOff: '/images/legendicons/legend_icon_fight_off.png' },
+] as const;
 
-const WalletIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-  </svg>
-);
-
-const AlertIcon = () => (
-  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-  </svg>
-);
+interface MarkerInfo {
+  id: string;
+  type: string;
+  name: string;
+  data: any;
+}
 
 export default function MapPage() {
-  const { locations, characterLocations, isLoading, error, loadingProgress, loadingStage, loadingStages } = useMapData();
+  const phaserRef = useRef<IRefPhaserGame>(null);
+  const { locations, characterLocations, isLoading, error } = useMapData();
   const { layers, toggleLayer } = useMapLayers();
-  const { connectedWallet, connectWallet, isConnecting, connectionStage, connectionProgress, connectionStages } = useWallet();
-  const [showCharacterPanel, setShowCharacterPanel] = useState(false);
-  const mapRef = useRef<SimpleMapRef>(null);
 
+  const [selectedMarker, setSelectedMarker] = useState<MarkerInfo | null>(null);
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+
+  const handleSceneReady = useCallback(() => {
+    setMapReady(true);
+  }, []);
+
+  const handleMarkerClick = useCallback((marker: MarkerInfo) => {
+    setSelectedMarker(marker);
+  }, []);
+
+  useEffect(() => {
+    if (mapReady) {
+      EventBus.emit(MapEvents.SET_LAYER_VISIBILITY, layers);
+    }
+  }, [layers, mapReady]);
+
+  useEffect(() => {
+    if (mapReady && locations.length > 0) {
+      EventBus.emit(MapEvents.UPDATE_LOCATIONS, locations);
+    }
+  }, [locations, mapReady]);
+
+  useEffect(() => {
+    if (mapReady && characterLocations.length > 0) {
+      EventBus.emit(MapEvents.UPDATE_CHARACTERS, characterLocations);
+    }
+  }, [characterLocations, mapReady]);
+
+  // Error state
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-soul-950">
-        <Card className="max-w-md text-center">
-          <CardContent className="py-12">
-            <div className="text-red-700 mb-4 flex justify-center">
-              <AlertIcon />
-            </div>
-            <h2 className="text-xl font-display uppercase tracking-widest text-neutral-200 mb-2">
-              Error Loading Map
-            </h2>
-            <p className="text-neutral-500 font-serif mb-6">{error.message}</p>
-            <Button variant="primary" onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-[#0a0a0a]">
+        <div className="text-center p-8">
+          <div className="text-red-500 text-4xl mb-4">⚠</div>
+          <h2 className="text-xl font-display uppercase tracking-widest text-neutral-200 mb-2">
+            Error Loading Map
+          </h2>
+          <p className="text-neutral-500 font-serif mb-6">{error.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-soul-accent text-black font-display uppercase text-sm hover:bg-soul-accent/80 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
+  // Loading state
   if (isLoading) {
     return (
-      <LoadingState
-        message="Initializing WAGDIE World"
-        stage={loadingStage}
-        progress={loadingProgress}
-        showProgress={true}
-        stageList={loadingStages}
-        currentStage={loadingStages.indexOf(loadingStage)}
-      />
-    );
-  }
-
-  if (isConnecting) {
-    return (
-      <div className="w-full h-screen relative bg-soul-950 flex items-center justify-center">
-        <LoadingState
-          message="Connecting Wallet"
-          stage={connectionStage}
-          progress={connectionProgress}
-          showProgress={true}
-          stageList={connectionStages}
-          currentStage={connectionStages.indexOf(connectionStage)}
-        />
+      <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-[#0a0a0a]">
+        <div className="flex flex-col items-center gap-4">
+          <Spinner size="lg" />
+          <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
+            Loading WAGDIE World
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-screen relative">
-      <SimpleMap
-        locations={locations}
-        characterLocations={characterLocations}
-        layers={layers}
-        toggleLayer={toggleLayer}
-        onMarkerClick={(marker) => {
-          console.log('Marker clicked:', marker);
-        }}
-        ref={mapRef}
+    <div className="relative h-[calc(100vh-64px)] bg-[#0a0a0a]">
+      {/* Phaser Canvas */}
+      <PhaserGame
+        ref={phaserRef}
+        onSceneReady={handleSceneReady}
+        onMarkerClick={handleMarkerClick}
       />
 
-      {/* Character List Toggle Button */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button
-          variant={showCharacterPanel ? 'primary' : 'secondary'}
-          onClick={() => setShowCharacterPanel(!showCharacterPanel)}
-          className="gap-2"
-          aria-label="Toggle character list panel"
-          aria-expanded={showCharacterPanel}
-        >
-          <UserIcon />
-          <span className="hidden sm:inline">My Characters</span>
-          {connectedWallet && (
-            <span className="w-2 h-2 bg-soul-accent rounded-full animate-pulse" />
-          )}
-        </Button>
+      {/* Layer Toggle */}
+      <button
+        onClick={() => setShowLayerPanel(!showLayerPanel)}
+        className={`absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 rounded border transition-all ${
+          showLayerPanel
+            ? 'bg-soul-accent text-black border-soul-accent'
+            : 'bg-black/80 text-neutral-300 border-neutral-700 hover:border-soul-accent hover:text-soul-accent'
+        }`}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <span className="font-display text-xs uppercase tracking-widest hidden sm:inline">Layers</span>
+      </button>
+
+      {/* Layer Panel */}
+      <div
+        className={`absolute top-16 left-4 z-40 bg-black/95 border border-soul-accent/60 rounded-lg p-4 shadow-xl backdrop-blur-sm transition-all duration-200 ${
+          showLayerPanel ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
+        style={{ minWidth: '180px' }}
+      >
+        <h3 className="font-display text-soul-accent text-xs uppercase tracking-widest mb-3 pb-2 border-b border-neutral-800">
+          Map Layers
+        </h3>
+
+        <div className="space-y-1">
+          {layerConfigs.map((config) => (
+            <button
+              key={config.key}
+              onClick={() => toggleLayer(config.key)}
+              className={`w-full flex items-center gap-3 px-2 py-2 rounded transition-all ${
+                layers[config.key]
+                  ? 'bg-soul-accent/10'
+                  : 'hover:bg-white/5'
+              }`}
+            >
+              <img
+                src={layers[config.key] ? config.iconOn : config.iconOff}
+                alt=""
+                className="w-5 h-5"
+                style={{
+                  filter: layers[config.key]
+                    ? 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.6))'
+                    : 'grayscale(100%) opacity(0.4)',
+                }}
+              />
+              <span
+                className={`font-serif text-sm ${
+                  layers[config.key] ? 'text-neutral-200' : 'text-neutral-500'
+                }`}
+              >
+                {config.label}
+              </span>
+              <div
+                className={`ml-auto w-3 h-3 rounded-full transition-all ${
+                  layers[config.key] ? 'bg-soul-accent' : 'bg-neutral-700'
+                }`}
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Character List Panel */}
-      {showCharacterPanel && (
-        <div
-          id="character-list-panel"
-          className="fixed top-20 left-4 right-4 sm:left-4 sm:right-auto sm:max-w-sm z-40"
-          role="dialog"
-          aria-label="Character list"
-        >
-          <CharacterListPanel
-            characters={characterLocations}
-            connectedWallet={connectedWallet}
-            onCharacterSelect={(character: CharacterLocation) => {
-              if (mapRef.current && character.location?.metadata) {
-                const bounds = character.location.metadata.bounds;
-                const center = character.location.metadata.center || [
-                  (bounds[0][0] + bounds[1][0]) / 2,
-                  (bounds[0][1] + bounds[1][1]) / 2,
-                ];
-                mapRef.current.setView(center, 1, {
-                  animate: true,
-                  duration: 0.5,
-                });
-              }
-            }}
-            onClose={() => setShowCharacterPanel(false)}
-          />
+      {/* Selected Marker Panel */}
+      {selectedMarker && (
+        <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-40">
+          <div className="bg-black/95 border border-soul-accent/60 rounded-lg overflow-hidden backdrop-blur-sm">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800">
+              <span className="text-[10px] px-2 py-0.5 bg-soul-accent/20 text-soul-accent font-display uppercase tracking-widest rounded">
+                {selectedMarker.type}
+              </span>
+              <button
+                onClick={() => setSelectedMarker(null)}
+                className="text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <h3 className="font-display text-neutral-100 uppercase tracking-wider">
+                {selectedMarker.name}
+              </h3>
+              {selectedMarker.data?.description && (
+                <p className="text-sm text-neutral-400 font-serif mt-2 line-clamp-3">
+                  {selectedMarker.data.description}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Wallet Connection Button */}
-      <div className="fixed top-4 right-4 z-50">
-        {!connectedWallet ? (
-          <Button
-            variant="primary"
-            onClick={connectWallet}
-            className="gap-2"
-            aria-label="Connect wallet to view your characters"
-          >
-            <WalletIcon />
-            <span className="hidden sm:inline">Connect Wallet</span>
-            <span className="sm:hidden">Connect</span>
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={() => window.location.reload()}
-            className="gap-2"
-            title="Click to disconnect"
-          >
-            <span className="w-2 h-2 bg-soul-accent rounded-full animate-pulse" />
-            <span className="font-mono text-xs">
-              {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
-            </span>
-          </Button>
-        )}
-      </div>
+      {/* Instructions */}
+      {mapReady && !selectedMarker && (
+        <div className="absolute bottom-4 left-4 z-30 hidden sm:block">
+          <p className="text-xs text-neutral-600 font-serif">
+            Scroll to zoom · Drag to pan
+          </p>
+        </div>
+      )}
     </div>
   );
 }
