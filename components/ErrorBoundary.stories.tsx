@@ -66,7 +66,16 @@ export const WithCustomFallback: Story = {
   },
 };
 
-export const ErrorFallbackComponent: Story = {
+// Standalone ErrorFallback story with its own meta
+const errorFallbackMeta: Meta<typeof ErrorFallback> = {
+  component: ErrorFallback,
+  title: 'Components/ErrorFallback',
+  tags: ['autodocs'],
+};
+
+type ErrorFallbackStory = StoryObj<typeof ErrorFallback>;
+
+export const ErrorFallbackComponent: ErrorFallbackStory = {
   args: {
     error: new Error('Example error message'),
     reset: () => alert('Reset clicked!'),

@@ -5,6 +5,7 @@ const config: Config = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './components-new/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
@@ -12,6 +13,8 @@ const config: Config = {
       fontFamily: {
         'wagdie': ['Wagdie_Fraktur_21', 'serif'],
         'eskapade': ['EskapadeFraktur-Black', 'serif'],
+        'display': ['Wagdie_Fraktur_21', 'EskapadeFraktur-Black', 'serif'],
+        'serif': ['Georgia', 'Times New Roman', 'serif'],
       },
       colors: {
         // Gothic dark theme - Backgrounds
@@ -30,6 +33,23 @@ const config: Config = {
         gold: '#d4af37',         // Highlights, important
         poison: '#4a7c59',       // Success states (muted green)
         arcane: '#6a4c93',       // Links, info (muted purple)
+
+        // Soul colors for new components
+        soul: {
+          accent: '#c8aa6e',     // Golden accent
+          blood: '#8b2635',      // Blood red selection
+          900: '#1a1410',        // Dark soul background
+          950: '#0d0a08',        // Darkest soul background
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.5s ease-out forwards',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },

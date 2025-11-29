@@ -17,12 +17,20 @@ import type {
 } from '@/types/assets';
 
 // Default icon configurations
-const DEFAULT_ICON_CONFIGS = {
+const DEFAULT_ICON_CONFIGS: Record<IconType, { size: [number, number]; url: string }> = {
   location: { size: [32, 32], url: '/images/mapicons/icon_location.png' },
   character: { size: [24, 24], url: '/images/mapicons/icon_youarehere.png' },
   burn: { size: [28, 28], url: '/images/mapicons/icon_burn.png' },
   death: { size: [28, 28], url: '/images/mapicons/icon_death.png' },
-  fight: { size: [28, 28], url: '/images/mapicons/icon_fight.png' }
+  fight: { size: [28, 28], url: '/images/mapicons/icon_fight.png' },
+  legend_location_on: { size: [24, 24], url: '/images/legendicons/legend_icon_location_on.png' },
+  legend_location_off: { size: [24, 24], url: '/images/legendicons/legend_icon_location_off.png' },
+  legend_burn_on: { size: [24, 24], url: '/images/legendicons/legend_icon_burn_on.png' },
+  legend_burn_off: { size: [24, 24], url: '/images/legendicons/legend_icon_burn_off.png' },
+  legend_death_on: { size: [24, 24], url: '/images/legendicons/legend_icon_death_on.png' },
+  legend_death_off: { size: [24, 24], url: '/images/legendicons/legend_icon_death_off.png' },
+  legend_fight_on: { size: [24, 24], url: '/images/legendicons/legend_icon_fight_on.png' },
+  legend_fight_off: { size: [24, 24], url: '/images/legendicons/legend_icon_fight_off.png' }
 };
 
 interface UseIconFactoryOptions {

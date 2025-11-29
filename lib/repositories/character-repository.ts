@@ -37,6 +37,19 @@ export class CharacterRepository implements ICharacterRepository {
       query = query.eq('staking_status', 'staked')
     }
 
+    // Apply search filter
+    if (filters.search) {
+      const searchTerm = filters.search.trim()
+      // Check if search is a number (token ID search)
+      const tokenIdSearch = parseInt(searchTerm, 10)
+      if (!isNaN(tokenIdSearch) && tokenIdSearch > 0) {
+        query = query.eq('token_id', tokenIdSearch)
+      } else {
+        // Search by name in metadata (case-insensitive)
+        query = query.ilike('metadata->>name', `%${searchTerm}%`)
+      }
+    }
+
     // Apply sorting
     const sortColumn = 'token_id'
     query = query.order(sortColumn, { ascending: filters.sort === 'asc' })

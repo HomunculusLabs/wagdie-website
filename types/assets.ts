@@ -66,13 +66,12 @@ export interface AssetLoadingState {
   status: 'loading' | 'loaded' | 'failed' | 'retrying' | 'fallback';
   loadStartTime: number;    // Timestamp when loading started
   loadEndTime?: number;     // Timestamp when loading completed/failed
-  loadTime?: number;        // Time taken to load
+  loadTime?: number;        // Total load time in ms
   retryCount: number;       // Number of retry attempts
   lastError?: string;       // Last error message
   usedFallback: boolean;    // Whether fallback asset is being used
   cached?: boolean;         // Whether asset was loaded from cache
-  url?: string;             // URL of the loaded asset
-  size?: number;            // Size of the asset in bytes
+  url?: string;             // Asset URL
 }
 
 // Asset loading context
@@ -95,7 +94,20 @@ export interface EnhancedIconConfig {
 }
 
 // Icon type identifiers (matching existing IconFactory)
-export type IconType = 'location' | 'character' | 'burn' | 'death' | 'fight';
+export type IconType =
+  | 'location'
+  | 'character'
+  | 'burn'
+  | 'death'
+  | 'fight'
+  | 'legend_location_on'
+  | 'legend_location_off'
+  | 'legend_burn_on'
+  | 'legend_burn_off'
+  | 'legend_death_on'
+  | 'legend_death_off'
+  | 'legend_fight_on'
+  | 'legend_fight_off';
 
 // Error information
 export interface AssetError {
@@ -114,6 +126,16 @@ export interface ErrorRecoveryStrategy {
   retryDelay: number;        // Delay between retries (ms)
   useFallback: boolean;      // Whether to use fallback asset
   logError: boolean;         // Whether to log the error
+}
+
+// Asset error handler interface
+export interface AssetErrorHandler {
+  handleError(error: AssetError): void;
+  isRetryableError(error: AssetError): boolean;
+  getRetryDelay(error: AssetError, attempt: number): number;
+  logError(error: AssetError): void;
+  getFallbackAsset(assetId: string): string | null;
+  getErrorLog(): AssetError[];
 }
 
 // Performance metrics for individual assets
@@ -214,8 +236,8 @@ export interface UseAssetLoadingReturn {
   loadAsset: (assetId: string) => Promise<void>;
   loadAssets: (assetIds: string[]) => Promise<void>;
   getAssetState: (assetId: string) => AssetLoadingState | undefined;
-  retryAsset: (assetId: string) => void;
-  preloadAssets: (assetIds: string[]) => void;
+  retryAsset: (assetId: string) => Promise<void>;
+  preloadAssets: (assetIds: string[]) => Promise<void>;
   metrics: PerformanceReport | null;
 }
 
@@ -224,8 +246,8 @@ export interface UseIconFactoryReturn {
   loading: boolean;
   error: string | null;
   metrics: AssetPerformanceMetrics[];
-  retryIcon: (type: IconType) => void;
-  preloadIcons: (types: IconType[]) => void;
+  retryIcon: (type: IconType) => Promise<void>;
+  preloadIcons: (types: IconType[]) => Promise<void>;
   createIconFromUrl: (iconUrl: string, fallbackUrl: string, size: [number, number]) => any; // L.Icon
   getIconLoadingState: (type: IconType) => AssetLoadingState | undefined;
 }

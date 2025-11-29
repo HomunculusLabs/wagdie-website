@@ -5,6 +5,8 @@
 
 'use client'
 
+import { Tabs, Switch } from '@/components-new'
+import type { TabItem } from '@/components-new'
 import type { TweetFilterTab, SortOrder } from '@/types/tweet'
 
 interface TweetFilterBarProps {
@@ -17,10 +19,10 @@ interface TweetFilterBarProps {
   className?: string
 }
 
-const TABS: { value: TweetFilterTab; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'text', label: 'Text Only' },
-  { value: 'video', label: 'Videos' },
+const TAB_ITEMS: TabItem[] = [
+  { id: 'all', label: 'All' },
+  { id: 'text', label: 'Text Only' },
+  { id: 'video', label: 'Videos' },
 ]
 
 export function TweetFilterBar({
@@ -33,43 +35,31 @@ export function TweetFilterBar({
   className = ''
 }: TweetFilterBarProps) {
   return (
-    <div className={`flex flex-col sm:flex-row gap-4 items-center justify-between ${className}`}>
+    <div className={`flex flex-col gap-4 ${className}`}>
       {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => onTabChange(tab.value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              currentTab === tab.value
-                ? 'bg-gold text-abyss'
-                : 'bg-midnight text-ash hover:text-bone hover:bg-shadow'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        items={TAB_ITEMS}
+        activeId={currentTab}
+        onChange={(id) => onTabChange(id as TweetFilterTab)}
+      />
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-4 justify-center items-center">
         {/* Translation Toggle */}
-        <button
-          onClick={onTranslationToggle}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            translationEnabled
-              ? 'bg-gold text-abyss'
-              : 'bg-midnight text-ash hover:text-bone hover:bg-shadow'
-          }`}
-          title="Toggle translation"
-        >
-          Translate
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-display uppercase tracking-widest text-neutral-500">
+            Translate
+          </span>
+          <Switch
+            checked={translationEnabled}
+            onChange={onTranslationToggle}
+          />
+        </div>
 
         {/* Sort Toggle */}
         <button
           onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
-          className="flex items-center gap-2 px-4 py-2 bg-midnight text-ash hover:text-bone rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display uppercase tracking-wider text-sm"
           title={`Sort ${currentSort === 'asc' ? 'newest first' : 'oldest first'}`}
         >
           <span>{currentSort === 'asc' ? 'Oldest' : 'Newest'}</span>

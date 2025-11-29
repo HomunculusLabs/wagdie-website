@@ -81,7 +81,7 @@ export const Failed: Story = {
 
 export const Reverted: Story = {
   args: {
-    status: TxStatus.REVERTED,
+    status: TxStatus.ERROR,
     hash: '0x1234...5678',
     error: 'Execution reverted',
   },
