@@ -112,7 +112,7 @@ export const LayerControls: React.FC<LayerControlsProps> = ({
         <AssetFailedState
           assetId={config.assetType}
           type="marker"
-          error={assetState.error}
+          error={assetState.lastError}
           onRetry={() => retryAsset(config.assetType)}
           className="w-6 h-6"
         />

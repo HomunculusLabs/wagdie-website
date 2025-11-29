@@ -176,6 +176,7 @@ export class AssetErrorHandler implements IAssetErrorHandler {
     const byType: Record<AssetError['errorType'], number> = {
       network: 0,
       file_not_found: 0,
+      corruption: 0,
       timeout: 0,
       unknown: 0
     };
@@ -193,6 +194,13 @@ export class AssetErrorHandler implements IAssetErrorHandler {
       byAsset,
       recentErrors: this.errorLog.slice(-10) // Last 10 errors
     };
+  }
+
+  /**
+   * Get error log
+   */
+  getErrorLog(): AssetError[] {
+    return [...this.errorLog];
   }
 
   /**
@@ -218,6 +226,13 @@ export class AssetErrorHandler implements IAssetErrorHandler {
         errorType: 'file_not_found',
         maxRetries: 1,
         retryDelay: 0,
+        useFallback: true,
+        logError: true
+      },
+      corruption: {
+        errorType: 'corruption',
+        maxRetries: 1,
+        retryDelay: 500,
         useFallback: true,
         logError: true
       },
@@ -251,6 +266,8 @@ export class AssetErrorHandler implements IAssetErrorHandler {
         return 'warn'; // Network issues are common
       case 'timeout':
         return 'warn'; // Timeouts can happen
+      case 'corruption':
+        return 'error'; // Corruption is serious
       case 'unknown':
       default:
         return 'error'; // Unknown errors are more serious

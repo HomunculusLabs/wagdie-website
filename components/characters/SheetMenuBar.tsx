@@ -1,12 +1,8 @@
-/**
- * SheetMenuBar Component
- * Character sheet header with actions (Edit, Save, Roll New, Back)
- */
-
 'use client'
 
 import React from 'react';
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components-new/Button'
 
 interface SheetMenuBarProps {
   tokenId: number
@@ -30,72 +26,63 @@ export function SheetMenuBar({
   const router = useRouter()
 
   return (
-    <div className="bg-midnight border-b border-shadow p-4">
+    <div className="bg-black/80 border-b border-neutral-800 py-4 px-6 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between">
-        {/* Left: Back Button */}
-        <button
+        <Button
+          variant="secondary"
           onClick={() => router.push('/characters')}
-          className="flex items-center gap-2 text-ash hover:text-bone transition-colors"
+          className="gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Back</span>
-        </button>
+          Back
+        </Button>
 
-        {/* Center: Title */}
-        <h2 className="text-xl font-bold text-bone">
+        <h2 className="text-lg font-display uppercase tracking-widest text-neutral-200">
           Character #{tokenId}
         </h2>
 
-        {/* Right: Owner Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {isOwner && (
             <>
               {isEditMode ? (
                 <>
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={onSave}
-                    disabled={isSaving}
-                    className="px-4 py-2 bg-gold text-abyss font-medium rounded hover:bg-yellow-500 transition-colors disabled:opacity-50"
+                    isLoading={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={onEditToggle}
-                    className="px-4 py-2 bg-midnight text-ash border border-shadow rounded hover:text-bone transition-colors"
-                  >
+                    Save
+                  </Button>
+                  <Button variant="secondary" onClick={onEditToggle}>
                     Cancel
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={onEditToggle}
-                    className="px-4 py-2 bg-midnight text-ash border border-shadow rounded hover:text-bone transition-colors"
-                  >
+                  <Button variant="secondary" onClick={onEditToggle}>
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
                     onClick={onRollNew}
-                    className="px-4 py-2 bg-midnight text-ash border border-shadow rounded hover:text-bone transition-colors"
                     title="Roll new character stats"
                   >
                     Roll New
-                  </button>
+                  </Button>
                 </>
               )}
             </>
           )}
 
-          {/* Animated View Link */}
-          <a
-            href={`/characters/${tokenId}/animated`}
-            className="px-4 py-2 bg-midnight text-ash border border-shadow rounded hover:text-bone transition-colors"
+          <Button
+            variant="secondary"
+            onClick={() => router.push(`/characters/${tokenId}/animated`)}
             title="View animated character"
           >
             Animated
-          </a>
+          </Button>
         </div>
       </div>
     </div>

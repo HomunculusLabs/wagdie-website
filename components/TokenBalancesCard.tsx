@@ -1,13 +1,14 @@
 'use client'
 
 import React from 'react';
-
-// TokenBalancesCard Component
-// Displays user's ERC1155 token balances
-
 import { useTokenBalances } from '@/hooks/useTokenBalances'
 import { formatBalanceWithSymbol, getTokenInfo, hasAnyBalance } from '@/lib/utils/balances'
 import { useAccount } from 'wagmi'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components-new/Card'
+import { Button } from '@/components-new/Button'
+import { Spinner } from '@/components-new/Spinner'
+import { Alert } from '@/components-new/Alert'
+import { Empty } from '@/components-new/Empty'
 
 interface TokenBalancesCardProps {
   className?: string
@@ -19,75 +20,55 @@ export function TokenBalancesCard({ className = '' }: TokenBalancesCardProps) {
 
   if (!address) {
     return (
-      <div className={`rounded-lg border border-white/10 bg-white/5 p-6 ${className}`}>
-        <h3 className="mb-4 text-xl font-bold text-white">Token Balances</h3>
-        <p className="text-sm text-gray-400">Connect your wallet to view token balances</p>
-      </div>
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle>Token Balances</CardTitle>
+          <CardDescription>Connect your wallet to view token balances</CardDescription>
+        </CardHeader>
+      </Card>
     )
   }
 
   return (
-    <div className={`rounded-lg border border-white/10 bg-white/5 p-6 ${className}`}>
-      {/* Header with Refresh Button */}
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-xl font-bold text-white">Token Balances</h3>
-        <button
+    <Card className={className}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle>Token Balances</CardTitle>
+        <Button
+          variant="secondary"
           onClick={refetch}
           disabled={isLoading}
-          className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+          className="h-8 px-3 text-xs"
         >
-          {isLoading ? '↻' : '↻ Refresh'}
-        </button>
-      </div>
+          {isLoading ? <Spinner size="sm" /> : 'Refresh'}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Spinner size="md" />
+          </div>
+        )}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-blue-500" />
-        </div>
-      )}
+        {error && !isLoading && (
+          <Alert variant="destructive">{error.message}</Alert>
+        )}
 
-      {/* Error State */}
-      {error && !isLoading && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-          <p className="text-sm text-red-400">{error.message}</p>
-        </div>
-      )}
+        {!isLoading && !error && (
+          <div className="space-y-2">
+            <TokenBalanceRow tokenType="concord" balance={balances.concord?.balance ?? 0n} />
+            <TokenBalanceRow tokenType="corpse" balance={balances.corpse?.balance ?? 0n} />
+            <TokenBalanceRow tokenType="mushroom" balance={balances.mushroom?.balance ?? 0n} />
 
-      {/* Balances Display */}
-      {!isLoading && !error && (
-        <div className="space-y-3">
-          {/* Concord Balance */}
-          <TokenBalanceRow
-            tokenType="concord"
-            balance={balances.concord?.balance ?? 0n}
-          />
-
-          {/* Corpse Balance */}
-          <TokenBalanceRow
-            tokenType="corpse"
-            balance={balances.corpse?.balance ?? 0n}
-          />
-
-          {/* Mushroom Balance */}
-          <TokenBalanceRow
-            tokenType="mushroom"
-            balance={balances.mushroom?.balance ?? 0n}
-          />
-
-          {/* No balances message */}
-          {!hasAnyBalance(balances) && (
-            <p className="pt-2 text-center text-sm text-gray-500">
-              You don&apos;t have any tokens yet
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+            {!hasAnyBalance(balances) && (
+              <Empty message="No tokens yet" />
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
-// Individual token balance row
 function TokenBalanceRow({
   tokenType,
   balance,
@@ -99,26 +80,21 @@ function TokenBalanceRow({
   const isZero = balance === 0n
 
   return (
-    <div className="flex items-center justify-between rounded-lg bg-white/5 p-3">
+    <div className="flex items-center justify-between bg-black/30 border border-neutral-800 p-3">
       <div className="flex items-center gap-3">
-        {/* Token Icon Placeholder */}
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold"
-          style={{ backgroundColor: `${info.color}20`, color: info.color }}
+          className="flex h-9 w-9 items-center justify-center text-sm font-display uppercase"
+          style={{ backgroundColor: `${info.color}15`, color: info.color, border: `1px solid ${info.color}40` }}
         >
           {info.symbol[0]}
         </div>
-
-        {/* Token Info */}
         <div>
-          <p className="text-sm font-medium text-white">{info.name}</p>
-          <p className="text-xs text-gray-400">{info.symbol}</p>
+          <p className="text-sm font-display uppercase tracking-wider text-neutral-200">{info.name}</p>
+          <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500">{info.symbol}</p>
         </div>
       </div>
-
-      {/* Balance */}
       <div className="text-right">
-        <p className={`text-lg font-bold ${isZero ? 'text-gray-500' : 'text-white'}`}>
+        <p className={`text-lg font-display ${isZero ? 'text-neutral-600' : 'text-soul-accent'}`}>
           {balance.toString()}
         </p>
       </div>
@@ -126,7 +102,6 @@ function TokenBalanceRow({
   )
 }
 
-// Compact version for inline display
 export function TokenBalancesInline({ className = '' }: { className?: string }) {
   const { address } = useAccount()
   const { balances, isLoading } = useTokenBalances()
@@ -136,17 +111,17 @@ export function TokenBalancesInline({ className = '' }: { className?: string }) 
   }
 
   return (
-    <div className={`flex items-center gap-3 text-sm ${className}`}>
-      <span className="text-gray-400">Balances:</span>
-      <span className="text-white">
+    <div className={`flex items-center gap-3 text-sm font-display uppercase tracking-wider ${className}`}>
+      <span className="text-neutral-500">Balances:</span>
+      <span className="text-neutral-200">
         {formatBalanceWithSymbol('concord', balances.concord?.balance ?? 0n)}
       </span>
-      <span className="text-gray-500">•</span>
-      <span className="text-white">
+      <span className="text-neutral-700">•</span>
+      <span className="text-neutral-200">
         {formatBalanceWithSymbol('corpse', balances.corpse?.balance ?? 0n)}
       </span>
-      <span className="text-gray-500">•</span>
-      <span className="text-white">
+      <span className="text-neutral-700">•</span>
+      <span className="text-neutral-200">
         {formatBalanceWithSymbol('mushroom', balances.mushroom?.balance ?? 0n)}
       </span>
     </div>

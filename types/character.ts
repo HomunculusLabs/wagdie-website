@@ -113,6 +113,7 @@ export interface CharacterFilters {
   sort: SortOrder
   page: number
   perPage: number
+  search?: string
 }
 
 export interface CharactersResponse {
