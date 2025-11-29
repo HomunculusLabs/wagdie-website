@@ -5,11 +5,12 @@
 
 'use client'
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image'
 import { Card, CardContent, Badge } from '@/components-new'
 import type { Character } from '@/types/character'
 import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
+import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
 
 interface CharacterCardProps {
   character: Character
@@ -18,11 +19,26 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ character, onClick, className = '' }: CharacterCardProps) {
+  const [isLoading, setIsLoading] = useState(true)
+  const [useLocalImage, setUseLocalImage] = useState(true)
+
   // Extract data from metadata if available, otherwise use direct fields
   const name = character.metadata?.name || character.name || `Character #${character.token_id}`
-  const imageUrl = character.metadata?.image?.replace('ipfs://', 'https://ipfs.io/ipfs/') || character.image_url || '/images/placeholder-character.png'
+
+  // Use local image first, fallback to IPFS if local fails
+  const localImageUrl = getLocalImagePath(character.token_id)
+  const fallbackImageUrl = getCharacterImageFallback(character.metadata?.image, character.image_url)
+  const imageUrl = useLocalImage ? localImageUrl : fallbackImageUrl
+
   const level = character.metadata?.level || character.level
   const characterClass = character.class
+
+  const handleImageError = () => {
+    if (useLocalImage) {
+      // Local image failed, try IPFS fallback
+      setUseLocalImage(false)
+    }
+  }
 
   return (
     <Card
@@ -30,12 +46,19 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
       className={`group overflow-hidden cursor-pointer transition-all duration-500 hover:border-soul-accent/40 hover:shadow-[0_0_20px_rgba(200,170,110,0.1)] ${className}`}
     >
       {/* Character Image */}
-      <div className="relative w-full aspect-square overflow-hidden">
+      <div className="relative w-full aspect-square overflow-hidden bg-neutral-900">
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-neutral-800 animate-pulse" />
+        )}
         <Image
           src={imageUrl}
           alt={name}
           fill
-          className="object-cover grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+          className={`object-cover grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          onLoad={() => setIsLoading(false)}
+          onError={handleImageError}
         />
 
         {/* Gradient overlay */}

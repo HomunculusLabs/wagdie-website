@@ -1,11 +1,12 @@
 'use client'
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image'
 import { Card, CardContent } from '@/components-new/Card'
 import { Badge } from '@/components-new/Badge'
 import { ProgressBar } from '@/components-new/ProgressBar'
 import type { Character } from '@/types/character'
+import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
 
 interface SheetTitleAndAttributesProps {
   character: Character
@@ -13,8 +14,14 @@ interface SheetTitleAndAttributesProps {
 }
 
 export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesProps) {
+  const [useLocalImage, setUseLocalImage] = useState(true)
+
   const name = character.metadata?.name || character.name || `Character #${character.token_id}`
-  const imageUrl = character.metadata?.image?.replace('ipfs://', 'https://ipfs.io/ipfs/') || character.image_url || '/images/placeholder-character.png'
+
+  // Use local image first, fallback to IPFS if local fails
+  const localImageUrl = getLocalImagePath(character.token_id)
+  const fallbackImageUrl = getCharacterImageFallback(character.metadata?.image, character.image_url)
+  const imageUrl = useLocalImage ? localImageUrl : fallbackImageUrl
   const level = character.metadata?.level || character.level || 1
   const hp = character.metadata?.hit_points || character.hp
   const maxHp = character.max_hp
@@ -67,8 +74,10 @@ export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesPr
               src={imageUrl}
               alt={name}
               fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover grayscale-[30%] contrast-110"
               priority
+              onError={() => useLocalImage && setUseLocalImage(false)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 

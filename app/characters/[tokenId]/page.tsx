@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
 import { SheetBackgroundStory } from '@/components/characters/SheetBackgroundStory'
 import { SheetEquipment } from '@/components/characters/SheetEquipment'
 import { OwnershipVerificationBanner } from '@/components/OwnershipVerificationBanner'
@@ -68,6 +69,7 @@ export default function CharacterDetailPage() {
   const [isInfectionModalOpen, setIsInfectionModalOpen] = useState(false)
   const [isCureModalOpen, setIsCureModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('story')
+  const [useLocalImage, setUseLocalImage] = useState(true)
 
   useEffect(() => {
     const fetchCharacter = async () => {
@@ -128,7 +130,11 @@ export default function CharacterDetailPage() {
 
   // Extract character data
   const name = character?.metadata?.name || character?.name || `Character #${tokenId}`
-  const imageUrl = character?.metadata?.image?.replace('ipfs://', 'https://ipfs.io/ipfs/') || character?.image_url || '/images/placeholder-character.png'
+
+  // Use local image first, fallback to IPFS if local fails
+  const localImageUrl = getLocalImagePath(tokenId)
+  const fallbackImageUrl = getCharacterImageFallback(character?.metadata?.image, character?.image_url)
+  const imageUrl = useLocalImage ? localImageUrl : fallbackImageUrl
   const level = character?.metadata?.level || character?.level || 1
 
   // Extract attributes
@@ -254,8 +260,10 @@ export default function CharacterDetailPage() {
                   src={imageUrl}
                   alt={name}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 40vw"
                   className="object-cover"
                   priority
+                  onError={() => useLocalImage && setUseLocalImage(false)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 

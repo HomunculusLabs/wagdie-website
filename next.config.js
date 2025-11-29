@@ -13,10 +13,12 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'gateway.pinata.cloud',
       },
+      {
+        protocol: 'https',
+        hostname: 'cloudflare-ipfs.com',
+      },
     ],
-    // Disable image optimization completely to prevent WebP conversion issues
-    // Leaflet icons are served directly without Next.js optimization
-    unoptimized: true,
+    // Enable optimization for character images (Leaflet uses direct URLs, not Next/Image)
   },
   webpack: (config, { isServer }) => {
     // Suppress MetaMask SDK React Native dependency warnings
