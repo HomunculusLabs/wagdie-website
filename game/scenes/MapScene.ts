@@ -16,9 +16,9 @@ const MAP_HEIGHT = 2222;
 const COORD_SCALE = MAP_WIDTH / 1000;
 
 // Zoom constraints
-const MIN_ZOOM = 0.3;
+const MIN_ZOOM = 1.0;
 const MAX_ZOOM = 3;
-const DEFAULT_ZOOM = 0.5;
+const DEFAULT_ZOOM = 1.0;
 
 // Marker types
 type MarkerType = 'location' | 'character' | 'burn' | 'death' | 'fight';
