@@ -17,6 +17,10 @@ export interface UseCharactersOptions {
   page?: number
   perPage?: number
   search?: string
+  // NEW: Additional filter options
+  hasSheet?: boolean
+  origin?: string
+  alignment?: string
   enabled?: boolean
 }
 
@@ -25,10 +29,10 @@ export interface UseCharactersOptions {
  * Integrates with React Query for caching and background refetching
  */
 export function useCharacters(options: UseCharactersOptions) {
-  const { tab, sort, wallet, page = 1, perPage = 50, search, enabled = true } = options
+  const { tab, sort, wallet, page = 1, perPage = 50, search, hasSheet, origin, alignment, enabled = true } = options
 
   const query = useQuery({
-    queryKey: ['characters', tab, sort, wallet, page, perPage, search],
+    queryKey: ['characters', tab, sort, wallet, page, perPage, search, hasSheet, origin, alignment],
     queryFn: () =>
       api.characters.getCharacters({
         tab,
@@ -37,6 +41,9 @@ export function useCharacters(options: UseCharactersOptions) {
         page,
         perPage,
         search,
+        hasSheet,
+        origin,
+        alignment,
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled,

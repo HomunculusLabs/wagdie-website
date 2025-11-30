@@ -6,13 +6,16 @@
 
 'use client'
 
-import { useCallback, useState, useEffect, Suspense } from 'react'
+import { useCallback, useState, useEffect, Suspense, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TokenFilterBar } from '@/components/characters/TokenFilterBar'
 import { CharacterCard } from '@/components/characters/CharacterCard'
+import { ActiveFilters } from '@/components/characters/ActiveFilters'
 import { Alert, Spinner, Pagination, Empty } from '@/components-new'
 import { useCharacters } from '@/hooks/useCharacters'
+import { useOrigins } from '@/hooks/useOrigins'
+import { useAlignments } from '@/hooks/useAlignments'
 import { useWallet } from '@/hooks/useWallet'
 import type { CharacterFilterTab, SortOrder } from '@/types/character'
 
@@ -28,9 +31,17 @@ function CharactersPageContent() {
   const sort = (searchParams.get('sort') || 'desc') as SortOrder
   const page = parseInt(searchParams.get('page') || '1', 10)
   const searchQuery = searchParams.get('search') || ''
+  // NEW: Parse hasSheet, origin, and alignment from URL
+  const hasSheet = searchParams.get('hasSheet') === 'true'
+  const origin = searchParams.get('origin') || null
+  const alignment = searchParams.get('alignment') || null
 
   // Local search input state (for debouncing)
   const [searchInput, setSearchInput] = useState(searchQuery)
+
+  // Fetch available origins and alignments for dropdowns
+  const { origins, isLoading: originsLoading } = useOrigins()
+  const { alignments, isLoading: alignmentsLoading } = useAlignments()
 
   // Sync search input with URL on mount/change
   useEffect(() => {
@@ -41,7 +52,7 @@ function CharactersPageContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== searchQuery) {
-        updateURL(tab, sort, 1, searchInput)
+        updateURL({ tab, sort, page: 1, search: searchInput, hasSheet, origin, alignment })
       }
     }, 400)
     return () => clearTimeout(timer)
@@ -61,39 +72,101 @@ function CharactersPageContent() {
     page,
     perPage: ITEMS_PER_PAGE,
     search: searchQuery || undefined,
+    hasSheet: hasSheet || undefined,
+    origin: origin || undefined,
+    alignment: alignment || undefined,
   })
 
   // Update URL when filters or page change
-  const updateURL = useCallback((newTab: CharacterFilterTab, newSort: SortOrder, newPage: number = 1, newSearch: string = '') => {
-    const params = new URLSearchParams()
-    if (newTab !== 'all') params.set('tab', newTab)
-    if (newSort !== 'desc') params.set('sort', newSort)
-    if (newPage > 1) params.set('page', newPage.toString())
-    if (newSearch.trim()) params.set('search', newSearch.trim())
+  interface UpdateURLParams {
+    tab: CharacterFilterTab
+    sort: SortOrder
+    page?: number
+    search?: string
+    hasSheet?: boolean
+    origin?: string | null
+    alignment?: string | null
+  }
 
-    const queryString = params.toString()
+  const updateURL = useCallback((params: UpdateURLParams) => {
+    const urlParams = new URLSearchParams()
+    if (params.tab !== 'all') urlParams.set('tab', params.tab)
+    if (params.sort !== 'desc') urlParams.set('sort', params.sort)
+    if (params.page && params.page > 1) urlParams.set('page', params.page.toString())
+    if (params.search?.trim()) urlParams.set('search', params.search.trim())
+    // NEW: Add hasSheet, origin, and alignment to URL
+    if (params.hasSheet) urlParams.set('hasSheet', 'true')
+    if (params.origin) urlParams.set('origin', params.origin)
+    if (params.alignment) urlParams.set('alignment', params.alignment)
+
+    const queryString = urlParams.toString()
     router.push(`/characters${queryString ? `?${queryString}` : ''}`)
   }, [router])
 
+  // Compute whether any filters are active (beyond defaults)
+  const hasActiveFilters = useMemo(() => {
+    return hasSheet || origin !== null || alignment !== null || searchQuery.length > 0
+  }, [hasSheet, origin, alignment, searchQuery])
+
   const handleTabChange = (newTab: CharacterFilterTab) => {
     if (newTab === tab) return
-    updateURL(newTab, sort, 1, searchQuery) // Reset to page 1 on filter change
+    updateURL({ tab: newTab, sort, page: 1, search: searchQuery, hasSheet, origin, alignment }) // Reset to page 1 on filter change
   }
 
   const handleSortChange = (newSort: SortOrder) => {
     if (newSort === sort) return
-    updateURL(tab, newSort, 1, searchQuery) // Reset to page 1 on sort change
+    updateURL({ tab, sort: newSort, page: 1, search: searchQuery, hasSheet, origin, alignment }) // Reset to page 1 on sort change
   }
 
   const handlePageChange = (newPage: number) => {
     if (newPage === page) return
-    updateURL(tab, sort, newPage, searchQuery)
+    updateURL({ tab, sort, page: newPage, search: searchQuery, hasSheet, origin, alignment })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleClearSearch = () => {
     setSearchInput('')
-    updateURL(tab, sort, 1, '')
+    updateURL({ tab, sort, page: 1, search: '', hasSheet, origin, alignment })
+  }
+
+  // NEW: Handler for hasSheet filter
+  const handleHasSheetChange = (newHasSheet: boolean) => {
+    updateURL({ tab, sort, page: 1, search: searchQuery, hasSheet: newHasSheet, origin, alignment })
+  }
+
+  // NEW: Handler for origin filter
+  const handleOriginChange = (newOrigin: string | null) => {
+    updateURL({ tab, sort, page: 1, search: searchQuery, hasSheet, origin: newOrigin, alignment })
+  }
+
+  // NEW: Handler for alignment filter
+  const handleAlignmentChange = (newAlignment: string | null) => {
+    updateURL({ tab, sort, page: 1, search: searchQuery, hasSheet, origin, alignment: newAlignment })
+  }
+
+  // NEW: Handler for clearing all filters
+  const handleClearAllFilters = () => {
+    setSearchInput('')
+    updateURL({ tab: 'all', sort: 'desc', page: 1, search: '', hasSheet: false, origin: null, alignment: null })
+  }
+
+  // NEW: Handler for removing individual filter
+  const handleRemoveFilter = (filterType: 'hasSheet' | 'origin' | 'alignment' | 'search') => {
+    switch (filterType) {
+      case 'hasSheet':
+        updateURL({ tab, sort, page: 1, search: searchQuery, hasSheet: false, origin, alignment })
+        break
+      case 'origin':
+        updateURL({ tab, sort, page: 1, search: searchQuery, hasSheet, origin: null, alignment })
+        break
+      case 'alignment':
+        updateURL({ tab, sort, page: 1, search: searchQuery, hasSheet, origin, alignment: null })
+        break
+      case 'search':
+        setSearchInput('')
+        updateURL({ tab, sort, page: 1, search: '', hasSheet, origin, alignment })
+        break
+    }
   }
 
   const handleCharacterClick = (tokenId: number) => {
@@ -155,8 +228,33 @@ function CharactersPageContent() {
           currentSort={sort}
           onTabChange={handleTabChange}
           onSortChange={handleSortChange}
-          className="mb-8"
+          hasSheetFilter={hasSheet}
+          onHasSheetChange={handleHasSheetChange}
+          originFilter={origin}
+          availableOrigins={origins}
+          onOriginChange={handleOriginChange}
+          originsLoading={originsLoading}
+          alignmentFilter={alignment}
+          availableAlignments={alignments}
+          onAlignmentChange={handleAlignmentChange}
+          alignmentsLoading={alignmentsLoading}
+          className="mb-4"
         />
+
+        {/* Active Filters Display */}
+        {hasActiveFilters && (
+          <ActiveFilters
+            filters={{
+              hasSheet,
+              origin,
+              alignment,
+              search: searchQuery || null,
+              tab
+            }}
+            onRemoveFilter={handleRemoveFilter}
+            onClearAll={handleClearAllFilters}
+          />
+        )}
 
         {/* Owned tab warning */}
         {tab === 'owned' && !address && (
@@ -178,7 +276,13 @@ function CharactersPageContent() {
 
         {/* Empty State */}
         {!isLoading && characters.length === 0 && (
-          <Empty message="No characters found" className="my-12" />
+          <Empty
+            message={hasActiveFilters
+              ? "No characters match your current filters"
+              : "No characters found"
+            }
+            className="my-12"
+          />
         )}
 
         {/* Character Grid */}

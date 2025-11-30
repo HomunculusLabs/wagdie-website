@@ -5,13 +5,15 @@
  */
 
 import { supabase } from '../supabase'
-import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, EditableCharacterFields } from '@/types/character'
+import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, EditableCharacterFields, OriginCount, OriginsResponse, AlignmentCount, AlignmentsResponse } from '@/types/character'
 
 export interface ICharacterRepository {
   findMany(filters: CharacterFilters): Promise<CharactersResponse>
   findById(tokenId: number): Promise<Character | null>
   update(tokenId: number, updates: Partial<Pick<Character, EditableCharacterFields>>): Promise<Character | null>
   findConcords(tokenId: number): Promise<Array<CharacterConcord & { concord: Concord }>>
+  getOrigins(): Promise<OriginsResponse>
+  getAlignments(): Promise<AlignmentsResponse>
 }
 
 /**
@@ -48,6 +50,25 @@ export class CharacterRepository implements ICharacterRepository {
         // Search by name in metadata (case-insensitive)
         query = query.ilike('metadata->>name', `%${searchTerm}%`)
       }
+    }
+
+    // NEW: Has sheet filter - characters with custom name, stats, or background
+    if (filters.hasSheet) {
+      query = query.or('name.not.is.null,str.not.is.null,background_story.not.is.null')
+    }
+
+    // NEW: Origin filter - filter by Body trait in metadata JSONB
+    if (filters.origin) {
+      query = query.contains('metadata', {
+        attributes: [{ trait_type: 'Body', value: filters.origin }]
+      })
+    }
+
+    // NEW: Alignment filter - filter by Alignment trait in metadata JSONB
+    if (filters.alignment) {
+      query = query.contains('metadata', {
+        attributes: [{ trait_type: 'Alignment', value: filters.alignment }]
+      })
     }
 
     // Apply sorting
@@ -140,6 +161,102 @@ export class CharacterRepository implements ICharacterRepository {
     }
 
     return data as Array<CharacterConcord & { concord: Concord }>
+  }
+
+  /**
+   * Get all unique origins with character counts
+   * Extracts Body trait from metadata JSONB
+   */
+  async getOrigins(): Promise<OriginsResponse> {
+    // Fetch all metadata to extract Body trait
+    const { data, error, count } = await supabase
+      .from('characters')
+      .select('metadata', { count: 'exact' })
+
+    if (error) {
+      console.error('Error fetching origins:', error)
+      throw new Error(`Failed to fetch origins: ${error.message}`)
+    }
+
+    // Extract Body trait from each character's metadata
+    const originCounts = new Map<string, number>()
+
+    for (const row of data || []) {
+      const metadata = row.metadata
+      if (metadata?.attributes && Array.isArray(metadata.attributes)) {
+        const bodyAttr = metadata.attributes.find(
+          (attr: { trait_type: string; value: string }) => attr.trait_type === 'Body'
+        )
+        if (bodyAttr?.value) {
+          const origin = bodyAttr.value as string
+          originCounts.set(origin, (originCounts.get(origin) || 0) + 1)
+        }
+      }
+    }
+
+    // Convert to array and sort by count descending
+    const origins: OriginCount[] = Array.from(originCounts.entries())
+      .map(([origin, count]) => ({ origin, count }))
+      .sort((a, b) => b.count - a.count)
+
+    return {
+      origins,
+      totalCharacters: count || 0
+    }
+  }
+
+  /**
+   * Get all unique alignments with character counts
+   * Extracts Alignment trait from metadata JSONB
+   */
+  async getAlignments(): Promise<AlignmentsResponse> {
+    // Fetch all metadata to extract Alignment trait
+    const { data, error, count } = await supabase
+      .from('characters')
+      .select('metadata', { count: 'exact' })
+
+    if (error) {
+      console.error('Error fetching alignments:', error)
+      throw new Error(`Failed to fetch alignments: ${error.message}`)
+    }
+
+    // Extract Alignment trait from each character's metadata
+    const alignmentCounts = new Map<string, number>()
+    const allTraitTypes = new Set<string>()
+
+    for (const row of data || []) {
+      const metadata = row.metadata
+      if (metadata?.attributes && Array.isArray(metadata.attributes)) {
+        // Collect all trait types for debugging
+        for (const attr of metadata.attributes) {
+          if (attr.trait_type) {
+            allTraitTypes.add(attr.trait_type)
+          }
+        }
+
+        const alignmentAttr = metadata.attributes.find(
+          (attr: { trait_type: string; value: string }) => attr.trait_type === 'Alignment'
+        )
+        if (alignmentAttr?.value) {
+          const alignment = alignmentAttr.value as string
+          alignmentCounts.set(alignment, (alignmentCounts.get(alignment) || 0) + 1)
+        }
+      }
+    }
+
+    // Log available trait types for debugging
+    console.log('[getAlignments] Available trait types in metadata:', Array.from(allTraitTypes))
+    console.log('[getAlignments] Found alignments:', alignmentCounts.size)
+
+    // Convert to array and sort by alignment name
+    const alignments: AlignmentCount[] = Array.from(alignmentCounts.entries())
+      .map(([alignment, count]) => ({ alignment, count }))
+      .sort((a, b) => a.alignment.localeCompare(b.alignment))
+
+    return {
+      alignments,
+      totalCharacters: count || 0
+    }
   }
 
   /**

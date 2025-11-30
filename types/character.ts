@@ -125,10 +125,48 @@ export interface CharacterFilters {
   page: number
   perPage: number
   search?: string
+  // NEW: Character sheet filter
+  hasSheet?: boolean
+  // NEW: Origin/body type filter
+  origin?: string
+  // NEW: Alignment filter (D&D style)
+  alignment?: string
 }
 
 export interface CharactersResponse {
   characters: Character[]
   hasMore: boolean
   totalCount: number
+}
+
+/**
+ * Origin count for dropdown population
+ */
+export interface OriginCount {
+  origin: string
+  count: number
+}
+
+/**
+ * Origins endpoint response
+ */
+export interface OriginsResponse {
+  origins: OriginCount[]
+  totalCharacters: number
+}
+
+/**
+ * Alignment count for dropdown population
+ */
+export interface AlignmentCount {
+  alignment: string
+  count: number
+}
+
+/**
+ * Alignments endpoint response
+ */
+export interface AlignmentsResponse {
+  alignments: AlignmentCount[]
+  totalCharacters: number
 }

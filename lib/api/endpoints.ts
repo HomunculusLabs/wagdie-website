@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './client'
-import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord } from '@/types/character'
+import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, OriginsResponse, AlignmentsResponse } from '@/types/character'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { Tweet, TweetFilters, TweetsResponse } from '@/types/tweet'
 import type { UserSession } from '@/types/wallet'
@@ -25,6 +25,10 @@ export const characterApi = {
     searchParams.set('perPage', params.perPage.toString())
     if (params.wallet) searchParams.set('wallet', params.wallet)
     if (params.search) searchParams.set('search', params.search)
+    // NEW: Add hasSheet, origin, and alignment params
+    if (params.hasSheet) searchParams.set('hasSheet', 'true')
+    if (params.origin) searchParams.set('origin', params.origin)
+    if (params.alignment) searchParams.set('alignment', params.alignment)
 
     const url = `/api/characters?${searchParams}`;
     console.log('Fetching URL:', url);
@@ -38,6 +42,28 @@ export const characterApi = {
     const data = await response.json();
     console.log('API response data:', data);
     return data as CharactersResponse;
+  },
+
+  /**
+   * Get available origins with counts
+   */
+  getOrigins: async (): Promise<OriginsResponse> => {
+    const response = await fetch('/api/characters/origins')
+    if (!response.ok) {
+      throw new Error('Failed to fetch origins')
+    }
+    return response.json()
+  },
+
+  /**
+   * Get available alignments with counts
+   */
+  getAlignments: async (): Promise<AlignmentsResponse> => {
+    const response = await fetch('/api/characters/alignments')
+    if (!response.ok) {
+      throw new Error('Failed to fetch alignments')
+    }
+    return response.json()
   },
 
   /**

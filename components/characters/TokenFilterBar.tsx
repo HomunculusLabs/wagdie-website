@@ -8,7 +8,10 @@
 import React from 'react';
 import { Tabs } from '@/components-new'
 import type { TabItem } from '@/components-new'
-import type { CharacterFilterTab, SortOrder } from '@/types/character'
+import type { CharacterFilterTab, SortOrder, OriginCount, AlignmentCount } from '@/types/character'
+import { SheetToggle } from './SheetToggle'
+import { OriginDropdown } from './OriginDropdown'
+import { AlignmentDropdown } from './AlignmentDropdown'
 
 interface TokenFilterBarProps {
   currentTab: CharacterFilterTab
@@ -16,6 +19,19 @@ interface TokenFilterBarProps {
   onTabChange: (tab: CharacterFilterTab) => void
   onSortChange: (sort: SortOrder) => void
   className?: string
+  // NEW: Sheet filter props
+  hasSheetFilter?: boolean
+  onHasSheetChange?: (hasSheet: boolean) => void
+  // NEW: Origin filter props
+  originFilter?: string | null
+  availableOrigins?: OriginCount[]
+  onOriginChange?: (origin: string | null) => void
+  originsLoading?: boolean
+  // NEW: Alignment filter props
+  alignmentFilter?: string | null
+  availableAlignments?: AlignmentCount[]
+  onAlignmentChange?: (alignment: string | null) => void
+  alignmentsLoading?: boolean
 }
 
 const TAB_ITEMS: TabItem[] = [
@@ -31,7 +47,17 @@ export function TokenFilterBar({
   currentSort,
   onTabChange,
   onSortChange,
-  className = ''
+  className = '',
+  hasSheetFilter = false,
+  onHasSheetChange,
+  originFilter = null,
+  availableOrigins = [],
+  onOriginChange,
+  originsLoading = false,
+  alignmentFilter = null,
+  availableAlignments = [],
+  onAlignmentChange,
+  alignmentsLoading = false
 }: TokenFilterBarProps) {
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
@@ -42,8 +68,39 @@ export function TokenFilterBar({
         onChange={(id) => onTabChange(id as CharacterFilterTab)}
       />
 
-      {/* Sort Toggle */}
-      <div className="flex justify-end">
+      {/* Additional Filters Row */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Sheet Filter Toggle */}
+          {onHasSheetChange && (
+            <SheetToggle
+              checked={hasSheetFilter}
+              onChange={onHasSheetChange}
+            />
+          )}
+
+          {/* Origin Filter Dropdown */}
+          {onOriginChange && (
+            <OriginDropdown
+              value={originFilter}
+              options={availableOrigins}
+              onChange={onOriginChange}
+              isLoading={originsLoading}
+            />
+          )}
+
+          {/* Alignment Filter Dropdown */}
+          {onAlignmentChange && (
+            <AlignmentDropdown
+              value={alignmentFilter}
+              options={availableAlignments}
+              onChange={onAlignmentChange}
+              isLoading={alignmentsLoading}
+            />
+          )}
+        </div>
+
+        {/* Sort Toggle */}
         <button
           onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
           className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display uppercase tracking-wider text-sm"

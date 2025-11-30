@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10)
     const perPage = parseInt(searchParams.get('perPage') || '50', 10)
     const search = searchParams.get('search') || undefined
+    // NEW: Parse hasSheet, origin, and alignment filter params
+    const hasSheet = searchParams.get('hasSheet') === 'true'
+    const origin = searchParams.get('origin') || undefined
+    const alignment = searchParams.get('alignment') || undefined
 
     // Validate parameters
     if (page < 1 || perPage < 1 || perPage > 100) {
@@ -48,7 +52,10 @@ export async function GET(request: NextRequest) {
       sort,
       page,
       perPage,
-      search
+      search,
+      hasSheet: hasSheet || undefined,
+      origin,
+      alignment
     })
 
     return NextResponse.json(result)

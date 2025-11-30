@@ -1,0 +1,212 @@
+openapi: 3.0.3
+info:
+  title: Character Filter API
+  description: API endpoints for character filtering in WAGDIE
+  version: 1.0.0
+
+paths:
+  /api/characters:
+    get:
+      summary: Get filtered characters
+      description: Returns paginated list of characters with optional filters
+      parameters:
+        - name: tab
+          in: query
+          description: Filter by character status tab
+          schema:
+            type: string
+            enum: [all, owned, infected, cured, staked]
+            default: all
+        - name: wallet
+          in: query
+          description: Wallet address for ownership filtering (required when tab=owned)
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort order by token ID
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: perPage
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: search
+          in: query
+          description: Search by name or token ID
+          schema:
+            type: string
+        - name: hasSheet
+          in: query
+          description: Filter to only characters with character sheets
+          schema:
+            type: boolean
+        - name: origin
+          in: query
+          description: Filter by character origin/body type
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharactersResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/characters/origins:
+    get:
+      summary: Get available origins with counts
+      description: Returns list of all origin/body types with character counts
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OriginsResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Character:
+      type: object
+      required:
+        - token_id
+      properties:
+        token_id:
+          type: integer
+          description: NFT token ID
+        contract_address:
+          type: string
+        owner_address:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+          description: Custom character name (indicates has sheet)
+        class:
+          type: string
+          enum: [Warrior, Mage, Rogue, Cleric]
+          nullable: true
+        level:
+          type: integer
+        str:
+          type: integer
+          nullable: true
+        dex:
+          type: integer
+          nullable: true
+        con:
+          type: integer
+          nullable: true
+        int:
+          type: integer
+          nullable: true
+        wis:
+          type: integer
+          nullable: true
+        cha:
+          type: integer
+          nullable: true
+        background_story:
+          type: string
+          nullable: true
+        infection_status:
+          type: string
+          enum: [healthy, infected, cured]
+        staking_status:
+          type: string
+          enum: [unstaked, staked]
+        metadata:
+          type: object
+          description: NFT metadata including attributes
+        image_url:
+          type: string
+        burned:
+          type: boolean
+
+    CharactersResponse:
+      type: object
+      required:
+        - characters
+        - hasMore
+        - totalCount
+      properties:
+        characters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Character'
+        hasMore:
+          type: boolean
+          description: Whether more pages are available
+        totalCount:
+          type: integer
+          description: Total characters matching filters
+
+    OriginCount:
+      type: object
+      required:
+        - origin
+        - count
+      properties:
+        origin:
+          type: string
+          description: The origin/body type value
+        count:
+          type: integer
+          description: Number of characters with this origin
+
+    OriginsResponse:
+      type: object
+      required:
+        - origins
+        - totalCharacters
+      properties:
+        origins:
+          type: array
+          items:
+            $ref: '#/components/schemas/OriginCount'
+        totalCharacters:
+          type: integer
+          description: Total number of characters
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
