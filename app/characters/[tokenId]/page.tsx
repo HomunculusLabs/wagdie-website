@@ -105,7 +105,7 @@ export default function CharacterDetailPage() {
         setCharacter(data)
         const story = data.metadata?.background_story || data.background_story || ''
         setEditedStory(story)
-        const characterName = data.metadata?.name || data.name || ''
+        const characterName = data.name || data.metadata?.name || ''
         setEditedName(characterName)
         // Initialize core stats
         setEditedCoreStats({
@@ -142,7 +142,7 @@ export default function CharacterDetailPage() {
   const hasUnsavedChanges = useCallback(() => {
     if (!character || !isEditMode) return false
 
-    const originalName = character.metadata?.name || character.name || ''
+    const originalName = character.name || character.metadata?.name || ''
     if (editedName !== originalName) return true
 
     const originalStory = character.metadata?.background_story || character.background_story || ''
@@ -172,7 +172,7 @@ export default function CharacterDetailPage() {
   const resetEditedValues = useCallback(() => {
     const story = character?.metadata?.background_story || character?.background_story || ''
     setEditedStory(story)
-    const characterName = character?.metadata?.name || character?.name || ''
+    const characterName = character?.name || character?.metadata?.name || ''
     setEditedName(characterName)
     setEditedCoreStats({
       str: character?.str ?? null,
@@ -240,9 +240,12 @@ export default function CharacterDetailPage() {
       const updates: Record<string, unknown> = {}
 
       // Include name if changed
-      const originalName = character.metadata?.name || character.name || ''
+      const originalName = character.name || character.metadata?.name || ''
+      console.log('[handleSave] Original name:', originalName)
+      console.log('[handleSave] Edited name:', editedName)
       if (editedName !== originalName) {
         updates.name = editedName
+        console.log('[handleSave] Name changed, adding to updates')
       }
 
       // Include story if changed
@@ -286,16 +289,25 @@ export default function CharacterDetailPage() {
         return
       }
 
+      console.log('[handleSave] Final updates payload:', JSON.stringify(updates, null, 2))
+      console.log('[handleSave] Sending PATCH to:', `/api/characters/${tokenId}`)
+
       const response = await fetch(`/api/characters/${tokenId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       })
+
+      console.log('[handleSave] Response status:', response.status)
+      console.log('[handleSave] Response ok:', response.ok)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save')
+        const errorData = await response.json()
+        console.error('[handleSave] Error response:', JSON.stringify(errorData, null, 2))
+        throw new Error(errorData.error || 'Failed to update character')
       }
       const updated = await response.json()
+      console.log('[handleSave] Success! Updated character:', updated)
 
       // Optimistic update - update state immediately
       setCharacter(updated)
@@ -328,8 +340,8 @@ export default function CharacterDetailPage() {
     }
   }
 
-  // Extract character data
-  const name = character?.metadata?.name || character?.name || `Character #${tokenId}`
+  // Extract character data - prioritize the name column over metadata.name
+  const name = character?.name || character?.metadata?.name || `Character #${tokenId}`
 
   // Use local image first, fallback to IPFS if local fails
   const localImageUrl = getLocalImagePath(tokenId)

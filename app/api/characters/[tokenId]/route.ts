@@ -68,8 +68,10 @@ export async function PATCH(
   try {
     const params = await context.params
     const tokenId = parseInt(params.tokenId, 10)
+    console.log('[PATCH /api/characters] tokenId:', tokenId)
 
     if (isNaN(tokenId) || tokenId < 1 || tokenId > 6666) {
+      console.log('[PATCH] Invalid token ID')
       return NextResponse.json(
         { error: 'Invalid token ID' },
         { status: 400 }
@@ -78,8 +80,10 @@ export async function PATCH(
 
     // Get session to verify ownership
     const session = await getSession()
+    console.log('[PATCH] Session address:', session.address)
 
     if (!session.address) {
+      console.log('[PATCH] Not authenticated - no session address')
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -88,8 +92,10 @@ export async function PATCH(
 
     // Get character to check ownership
     const character = await getCharacter(tokenId)
+    console.log('[PATCH] Character owner_address:', character?.owner_address)
 
     if (!character) {
+      console.log('[PATCH] Character not found')
       return NextResponse.json(
         { error: 'Character not found' },
         { status: 404 }
@@ -98,6 +104,9 @@ export async function PATCH(
 
     // Verify ownership (case-insensitive comparison)
     if (character.owner_address?.toLowerCase() !== session.address.toLowerCase()) {
+      console.log('[PATCH] Ownership check failed')
+      console.log('[PATCH] Character owner:', character.owner_address?.toLowerCase())
+      console.log('[PATCH] Session user:', session.address.toLowerCase())
       return NextResponse.json(
         { error: 'You do not own this character' },
         { status: 403 }
@@ -106,6 +115,7 @@ export async function PATCH(
 
     // Parse updates
     const updates = await request.json()
+    console.log('[PATCH] Received updates:', JSON.stringify(updates, null, 2))
 
     // Filter to allowed fields only
     const allowedUpdates: CharacterUpdate = {}
@@ -127,7 +137,9 @@ export async function PATCH(
 
     // Validate name
     if ('name' in allowedUpdates) {
+      console.log('[PATCH] Validating name:', allowedUpdates.name)
       const result = validateName(allowedUpdates.name)
+      console.log('[PATCH] Name validation result:', result)
       if (!result.valid && result.error) {
         validationErrors.push(result.error)
       }
@@ -173,6 +185,7 @@ export async function PATCH(
 
     // Return validation errors if any
     if (validationErrors.length > 0) {
+      console.log('[PATCH] Validation errors:', validationErrors)
       return NextResponse.json(
         { error: 'Validation failed', details: validationErrors },
         { status: 400 }
@@ -180,11 +193,14 @@ export async function PATCH(
     }
 
     // Update character
+    console.log('[PATCH] Calling updateCharacter with:', JSON.stringify(allowedUpdates, null, 2))
     const updated = await updateCharacter(tokenId, allowedUpdates)
+    console.log('[PATCH] updateCharacter result:', updated ? 'success' : 'null/undefined')
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('Error updating character:', error)
+    console.error('[PATCH] Error updating character:', error)
+    console.error('[PATCH] Error stack:', error instanceof Error ? error.stack : 'N/A')
     return NextResponse.json(
       { error: 'Failed to update character' },
       { status: 500 }

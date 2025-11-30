@@ -101,6 +101,8 @@ export class CharacterRepository implements ICharacterRepository {
     tokenId: number,
     updates: Partial<Pick<Character, EditableCharacterFields>>
   ): Promise<Character | null> {
+    console.log(`[Repository] Updating character ${tokenId} with:`, JSON.stringify(updates, null, 2))
+
     const { data, error } = await (supabase
       .from('characters') as any)
       .update(updates)
@@ -109,10 +111,14 @@ export class CharacterRepository implements ICharacterRepository {
       .single()
 
     if (error) {
-      console.error(`Error updating character ${tokenId}:`, error)
+      console.error(`[Repository] Error updating character ${tokenId}:`, error)
+      console.error(`[Repository] Error code:`, error.code)
+      console.error(`[Repository] Error details:`, error.details)
+      console.error(`[Repository] Error hint:`, error.hint)
       throw new Error(`Failed to update character: ${error.message}`)
     }
 
+    console.log(`[Repository] Successfully updated character ${tokenId}`)
     return data as Character
   }
 
