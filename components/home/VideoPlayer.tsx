@@ -5,6 +5,8 @@
 
 'use client'
 
+import React from 'react';
+
 interface VideoPlayerProps {
   videoSrc: string
   posterSrc: string

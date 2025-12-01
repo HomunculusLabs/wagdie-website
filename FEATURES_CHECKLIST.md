@@ -2,94 +2,152 @@
 
 This document tracks all features that need to be implemented in the simplified WAGDIE platform, organized by priority and implementation phase.
 
+## 🎯 Current Status (Updated: 2025-10-29)
+
+### Phase 1 (Foundation) - ✅ **COMPLETE**
+All foundation features complete: Infrastructure, Authentication, UI/Layout
+
+### Phase 2 (Character System) - ✅ **UI COMPLETE**, 🚧 Blockchain Integration Needed
+- ✅ Character Browser (all filters, infinite scroll)
+- ✅ Character Detail Pages (RPG sheets, editing, equipment)
+- 🚧 NFT Data Integration (needs wagmi implementation)
+
+### Phase 3 (Game Mechanics) - ✅ **UI COMPLETE**, 🚧 Smart Contracts Needed
+- ✅ Infection System UI (spread page, dialogs, workflows)
+- ✅ Corpse Interaction UI (burn flows, approvals)
+- 🚧 Searing System (partial, needs contract integration)
+- 🔲 Staking/Location System (not started)
+
+### Phase 4 (Social & Content) - ✅ **COMPLETE** (except chat)
+- ✅ Homepage (video, cards, CTAs, SEO)
+- ✅ Lore Feed (tweets, filtering, infinite scroll)
+- ⏸️ Chat (intentionally skipped)
+
+### Phase 5 (Enhanced Features) - 🚧 **IN PROGRESS**
+- 🚧 Wallet Integration (RainbowKit done, need transaction handling)
+- 🔲 Smart Contract Integration (needs implementation)
+- 🔲 Admin Features (not started)
+
+---
+
+## 📋 Next Priorities
+
+1. **Blockchain Integration** (HIGH) - Implement wagmi hooks for:
+   - Character ownership verification
+   - Token metadata fetching
+   - Contract read/write operations
+
+2. **Smart Contract Integration** (HIGH) - Connect to contracts:
+   - WAGDIE main collection
+   - Tokens of Concord
+   - Corpse/Mushroom tokens
+   - Searing/Infection mechanics
+
+3. **Data Synchronization** (MEDIUM) - Build sync systems:
+   - NFT collection sync
+   - Metadata refresh
+   - Database caching
+
+---
+
 ## Phase 1: Foundation & Core Features (Week 1)
 
-### ✅ Infrastructure Setup
+### ✅ Infrastructure Setup **[COMPLETE]**
 - [x] Next.js 15 project initialization
 - [x] TypeScript configuration
 - [x] Tailwind CSS setup
 - [x] Supabase client configuration
 - [x] Database schema and migrations
 - [x] SIWE authentication API routes
-- [ ] Environment configuration
+- [x] Type definitions (characters, tweets, wallet)
+- [x] Service layer (character, tweet, wallet services)
+- [x] Custom hooks (useCurrentUser, useCharacterLocation, useInfiniteScroll)
+- [ ] Environment configuration (production)
 - [ ] Vercel deployment setup
 
-### 🔲 Authentication System
+### ✅ Authentication System **[COMPLETE]**
 - [x] Nonce generation endpoint (`/api/auth/nonce`)
 - [x] SIWE verification endpoint (`/api/auth/verify`)
 - [x] Logout endpoint (`/api/auth/logout`)
-- [x] Session management with cookies
+- [x] Session management with iron-session cookies
 - [x] User database tracking
-- [ ] Wallet connection UI component
-- [ ] Authentication context provider
-- [ ] Protected route middleware
+- [x] Wallet connection UI (via RainbowKit)
+- [x] Session persistence across page refreshes
+- [x] Current user API endpoint (`/api/auth/me`)
 - [ ] Login tracking and analytics
 
-### 🔲 Basic UI & Layout
+### ✅ Basic UI & Layout **[COMPLETE]**
 - [x] Root layout with global styles
-- [x] Homepage placeholder
-- [ ] Navigation header component
-- [ ] Footer with external links
-- [ ] Wallet connection button
-- [ ] User profile dropdown
-- [ ] Mobile-responsive navigation
-- [ ] Gothic/dark theme implementation
+- [x] Homepage (full landing page)
+- [x] Navigation header component with scroll-to-top
+- [x] Footer with external links (Discord, OpenSea, Twitter)
+- [x] Wallet connection button (RainbowKit)
+- [x] MORE drawer with slide-out navigation
+- [x] Mobile-responsive navigation with body scroll disable
+- [x] Dark mode toggle (full dark theme)
+- [x] Shared components (BannerHeader, DialogMask, InfiniteScroll)
+- [x] Error boundary with reset functionality
+- [x] 404 Not Found page
 
 ## Phase 2: Character System (Week 1-2)
 
-### 🔲 Character Browser (`/characters`)
+### ✅ Character Browser (`/characters`) **[COMPLETE]**
 **Priority: HIGH** - Core feature for users to view and filter NFT characters
 
-- [ ] Character listing page with grid layout
-- [ ] Character card component with:
-  - [ ] Token image display
-  - [ ] Ownership badges
-  - [ ] Status indicators (burned, infected, seared)
-  - [ ] Location indicators
-- [ ] Filtering system:
-  - [ ] Filter by owner wallet address
-  - [ ] Filter by authentication status (owned vs all)
-  - [ ] Sort by token ID (ascending/descending)
-  - [ ] URL query parameters for sharing
-- [ ] Pagination or infinite scroll
-- [ ] Loading states and error handling
-- [ ] Integration with blockchain data
+- [x] Character listing page with responsive grid layout (1-5 columns)
+- [x] Character card component with:
+  - [x] Token image display
+  - [x] Ownership badges
+  - [x] Status indicators (infected, cured, staked)
+  - [x] Location indicators
+- [x] Filtering system:
+  - [x] TokenFilterBar (all/owned/infected/cured/staked)
+  - [x] Filter by authentication status
+  - [x] URL search parameters for sharing
+- [x] Infinite scroll with Intersection Observer
+- [x] Loading states and error handling
+- [x] API route for character listing (`/api/characters`)
+- [ ] Integration with blockchain data (mock data currently)
 
-### 🔲 Individual Character Sheets (`/characters/[tokenId]`)
+### ✅ Individual Character Sheets (`/characters/[tokenId]`) **[COMPLETE]**
 **Priority: HIGH** - Detailed character view with RPG mechanics
 
 #### Character Display
-- [ ] Character artwork and animations
-- [ ] Token metadata display
-- [ ] Equipment visualization (armor, back, mask)
-- [ ] Location and staking status
+- [x] Character artwork and animations (animated view placeholder page)
+- [x] Token metadata display
+- [x] Equipment visualization (armor, back, mask)
+- [x] Location and staking status
 
 #### RPG Character Sheet
-- [ ] Six core attributes display (STR, DEX, CON, INT, WIS, CHA)
-- [ ] Character level and experience points
-- [ ] Hit points and character class
-- [ ] Alignment display
-- [ ] Equipment details
+- [x] Six core attributes display (STR, DEX, CON, INT, WIS, CHA)
+- [x] Character level and experience points
+- [x] Hit points and character class
+- [x] Alignment display
+- [x] Equipment details (SheetEquipment component)
 
 #### Editable Features (for owners)
-- [ ] Character name customization
-- [ ] Background story editor (rich text)
-- [ ] "Roll new character" for stat resets
-- [ ] Form validation and submission
-- [ ] Save/load with loading states
-- [ ] Ownership verification
+- [x] Character name customization
+- [x] Background story editor (textarea)
+- [x] "Roll new character" for stat resets
+- [x] Form validation and submission
+- [x] Save/load with loading states
+- [x] Ownership verification
 
 #### Database Integration
-- [ ] Character sheet database table
-- [ ] CRUD API endpoints for character sheets
-- [ ] Protected vs editable property system
-- [ ] Character data synchronization
+- [x] Enhanced characters table with D&D stats
+- [x] Concords table and character_concords join table
+- [x] CRUD API endpoints (`/api/characters/[tokenId]`, `/api/characters/[tokenId]/concords`)
+- [x] Protected vs editable property system
+- [x] SheetMenuBar, SheetTitleAndAttributes, SheetBackgroundStory components
+- [ ] Character data synchronization with blockchain
 
-### 🔲 NFT Data Integration
+### 🚧 NFT Data Integration **[IN PROGRESS]**
 **Priority: HIGH** - Connect to blockchain for character ownership
 
-- [ ] Blockchain data fetching (via wagmi/viem)
-- [ ] Character ownership verification
+- [x] Type definitions for wallet service
+- [x] Contract addresses in wallet service
+- [ ] Blockchain data fetching (via wagmi/viem) - **NEXT PRIORITY**
+- [ ] Character ownership verification - **NEXT PRIORITY**
 - [ ] Token metadata retrieval
 - [ ] Character data caching in Supabase
 - [ ] Sync mechanism for new characters
@@ -97,56 +155,59 @@ This document tracks all features that need to be implemented in the simplified 
 
 ## Phase 3: Game Mechanics (Week 2-3)
 
-### 🔲 Character Searing System
+### 🚧 Character Searing System **[PARTIAL]**
 **Priority: MEDIUM** - Transform characters using Concord tokens
 
-- [ ] Searing page/modal UI
-- [ ] Concord token ownership verification
+- [x] Searing UI placeholder on character detail page
+- [x] Concords display on character sheet
+- [ ] Concord token ownership verification - blockchain needed
 - [ ] Token selection interface
 - [ ] Approval flow for token burning
-- [ ] Smart contract integration
+- [ ] Smart contract integration - **NEXT PRIORITY**
 - [ ] Transaction confirmation flow
 - [ ] Visual transformation feedback
 - [ ] Image composition system (or pre-generated variants)
 - [ ] Metadata updates in database
 - [ ] Searing history tracking
 
-### 🔲 Character Infection System
+### ✅ Character Infection System **[UI COMPLETE]**
 **Priority: MEDIUM** - Spread infection between characters
 
 #### Direct Infection
-- [ ] Infection page/modal UI
-- [ ] Target token ID selection
-- [ ] ETH payment integration
-- [ ] Price display and calculation
-- [ ] Transaction confirmation
-- [ ] Alignment-based infection mapping
+- [x] Infection page/modal UI (`/spread`)
+- [x] Target token ID selection
+- [x] ETH payment integration (mock)
+- [x] Price display and calculation
+- [x] Transaction confirmation (mock)
+- [ ] Alignment-based infection mapping - **NEXT PRIORITY**
+- [ ] Smart contract integration - **NEXT PRIORITY**
 - [ ] Visual transformation system
 
 #### Spore Spreading
-- [ ] Mushroom/spore token verification
-- [ ] Spread amount selection
-- [ ] Token burn approval flow
-- [ ] Random infection distribution
-- [ ] Transaction handling
+- [x] Mushroom/spore token verification UI
+- [x] Spread amount selection
+- [x] Token burn approval flow (DialogSpreadingApproval)
+- [x] Random infection distribution UI
+- [ ] Smart contract transaction handling - **NEXT PRIORITY**
 
 #### Infection Effects
-- [ ] Infection status indicators
+- [x] Infection status indicators on character cards
 - [ ] Visual artwork modifications
 - [ ] Infection history tracking
 - [ ] Database updates
 
-### 🔲 Corpse Interaction System
+### ✅ Corpse Interaction System **[UI COMPLETE]**
 **Priority: LOW** - Special mechanic for corpse tokens
 
-- [ ] Corpse interaction page (`/spread`)
-- [ ] Corpse token ownership verification
-- [ ] "Touch Corpse" mechanic UI
-- [ ] Burn approval flow
-- [ ] Mushroom token revelation
-- [ ] Video animations during transactions
-- [ ] Dynamic UI based on progression
-- [ ] Transaction state management
+- [x] Corpse interaction page (`/spread`)
+- [x] Corpse token ownership verification UI
+- [x] "Touch Corpse" mechanic UI
+- [x] Burn approval flow (DialogBurnCorpseApproval)
+- [x] Mushroom token revelation UI
+- [x] Video animations during transactions (placeholder)
+- [x] Dynamic UI based on progression
+- [x] Transaction state management (mock)
+- [ ] Smart contract integration - **NEXT PRIORITY**
 
 ### 🔲 Character Staking/Location System
 **Priority: MEDIUM** - Place characters in game locations
@@ -161,74 +222,79 @@ This document tracks all features that need to be implemented in the simplified 
 
 ## Phase 4: Social & Content Features (Week 2-3)
 
-### 🔲 Lore/Twitter Feed (`/lore`)
+### ✅ Lore/Twitter Feed (`/lore`) **[COMPLETE]**
 **Priority: MEDIUM** - Display official Twitter content
 
-- [ ] Twitter feed page layout
-- [ ] Tweet display component with:
-  - [ ] Text content rendering
-  - [ ] Media attachments (images, videos)
-  - [ ] Rich text formatting
-  - [ ] Custom video player
-- [ ] Filtering options:
-  - [ ] All content / text-only / video-only
-  - [ ] Sort by date (newest/oldest)
-  - [ ] Translation toggle
-- [ ] Infinite scroll loading
+- [x] Twitter feed page layout
+- [x] Tweet display component (CustomTweet) with:
+  - [x] Text content rendering
+  - [x] Media attachments (images, videos)
+  - [x] Rich text formatting
+  - [x] Custom video player (native HTML5)
+- [x] Filtering options:
+  - [x] All content / text-only / video-only (TweetFilterBar)
+  - [x] Sort by date (newest/oldest)
+  - [x] Translation toggle placeholder
+- [x] Infinite scroll loading with Intersection Observer
+- [x] React Query integration with 20-second auto-refresh
+- [x] Tweet storage in database
+- [x] API route (`/api/tweets`)
+- [x] Responsive grid layout
 - [ ] Content synchronization (manual or webhook)
-- [ ] Tweet storage in database
 - [ ] Media optimization and caching
+- [ ] Actual translation service
 
-### 🔲 Chat System (`/gather`)
+### ⏸️ Chat System (`/gather`) **[INTENTIONALLY SKIPPED]**
 **Priority: LOW** - Location-based character roleplay
 
-**Consider: Discord integration instead of custom chat**
+**Decision: Skipped to avoid Firebase dependency and maintain architecture simplicity**
 
-If implementing custom chat:
-- [ ] Chat page layout
-- [ ] Location-based channel system
-- [ ] Character integration:
-  - [ ] Avatar display using NFT artwork
-  - [ ] Character name display
-  - [ ] Character selection interface
-  - [ ] Ownership verification
-- [ ] Real-time messaging (Supabase Realtime)
-- [ ] Typing indicators
-- [ ] User presence status
-- [ ] Message history
-- [ ] Mobile-responsive design
+- ⏸️ Chat page layout
+- ⏸️ Location-based channel system
+- ⏸️ Character integration
+- ⏸️ Real-time messaging
 
-### 🔲 Homepage (`/`)
+**Alternative**: Can be added later with:
+- Supabase Realtime for messaging
+- Discord integration
+- Third-party chat service
+
+**Reason**: Maintaining single database architecture (Supabase only)
+
+### ✅ Homepage (`/`) **[COMPLETE]**
 **Priority: MEDIUM** - Marketing and introduction
 
-- [ ] Hero section with branding
-- [ ] Video content integration
-- [ ] Random preview artwork rotation
-- [ ] Content sections explaining:
-  - [ ] Evolving story
-  - [ ] Interactive elements
-  - [ ] Community co-creation
-- [ ] Call-to-action buttons
-- [ ] Links to Discord, OpenSea, Twitter
-- [ ] Responsive design
-- [ ] Static generation for performance
+- [x] Hero section with branding
+- [x] Video content integration (VideoPlayer component)
+- [x] Random preview artwork rotation (HomeCard components)
+- [x] Content sections explaining:
+  - [x] Evolving story
+  - [x] Interactive elements
+  - [x] Community co-creation
+- [x] Call-to-action buttons
+- [x] Links to Discord, OpenSea, Twitter (Footer)
+- [x] Responsive design
+- [x] Enhanced SEO metadata (OpenGraph, Twitter cards)
+- [x] HomeCardRow component for content sections
+- [ ] Static generation for performance (currently using default SSR)
 
 ## Phase 5: Enhanced Features (Week 3-4)
 
-### 🔲 Wallet & Blockchain Integration
+### 🚧 Wallet & Blockchain Integration **[PARTIAL]**
 **Priority: HIGH** - Essential for all game mechanics
 
-- [ ] wagmi/viem configuration
-- [ ] Multiple wallet provider support:
-  - [ ] MetaMask
-  - [ ] WalletConnect
-  - [ ] Rainbow Wallet
-  - [ ] Coinbase Wallet
-- [ ] Network validation (Ethereum Mainnet)
-- [ ] Network switching prompts
-- [ ] Connection persistence
-- [ ] Real-time ownership updates
-- [ ] Transaction monitoring
+- [x] RainbowKit configuration
+- [x] Multiple wallet provider support:
+  - [x] MetaMask
+  - [x] WalletConnect
+  - [x] Rainbow Wallet
+  - [x] Coinbase Wallet
+- [x] Network validation (Ethereum Mainnet)
+- [x] Connection persistence (localStorage)
+- [x] Wallet connection UI in header
+- [ ] Network switching prompts - **NEXT PRIORITY**
+- [ ] Real-time ownership updates - **NEXT PRIORITY**
+- [ ] Transaction monitoring - **NEXT PRIORITY**
 - [ ] Gas estimation
 - [ ] Error handling for blockchain operations
 
@@ -413,6 +479,6 @@ If implementing custom chat:
 
 ---
 
-**Last Updated**: 2025-10-27
-**Document Version**: 1.0
-**Next Review**: After Phase 1 completion
+**Last Updated**: 2025-10-29
+**Document Version**: 2.0
+**Status**: Page wireframes (003) complete. Next: Blockchain integration (004)

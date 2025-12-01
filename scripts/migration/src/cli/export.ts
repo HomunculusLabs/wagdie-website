@@ -12,7 +12,7 @@
  *   npm run export -- --output ./data/export --validate
  */
 
-import { program } from 'commander';
+import { Command } from 'commander';
 import { existsSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -29,7 +29,8 @@ const log = logger.child({ component: 'ExportCLI' });
  * CLI configuration from environment and arguments
  */
 interface CLIConfig {
-  serviceAccountPath: string;
+  projectId: string;
+  credentialsPath: string;
   outputDir: string;
   validate: boolean;
   progressInterval: number;
@@ -39,6 +40,7 @@ interface CLIConfig {
  * Parse and validate CLI configuration
  */
 function parseConfig(): CLIConfig {
+  const program = new Command();
   program
     .name('export')
     .description('Export data from Firestore to JSON files')
@@ -46,7 +48,7 @@ function parseConfig(): CLIConfig {
     .option('-v, --validate', 'Run validation after export', false)
     .option('-p, --progress-interval <number>', 'Log progress every N records', '100')
     .option('-s, --service-account <path>', 'Path to Firebase service account JSON', process.env.FIREBASE_SERVICE_ACCOUNT)
-    .parse();
+    .parse(process.argv);
 
   const options = program.opts();
 
@@ -63,7 +65,8 @@ function parseConfig(): CLIConfig {
   }
 
   return {
-    serviceAccountPath,
+    projectId: 'wagdie-mainnet', // Default project ID
+    credentialsPath: serviceAccountPath,
     outputDir: options.output as string,
     validate: options.validate as boolean,
     progressInterval: parseInt(options.progressInterval as string, 10),
@@ -79,9 +82,10 @@ async function main() {
   const config = parseConfig();
 
   // Initialize Firestore client
-  log.info({ serviceAccountPath: config.serviceAccountPath }, 'Initializing Firestore client');
+  log.info({ credentialsPath: config.credentialsPath }, 'Initializing Firestore client');
   const firestoreClient = new FirestoreClient({
-    serviceAccountPath: config.serviceAccountPath,
+    projectId: config.projectId,
+    credentialsPath: config.credentialsPath,
     batchSize: 500,
   });
 
@@ -142,8 +146,8 @@ async function main() {
           validations: validationResult.validations,
           checksums: validationResult.checksums.map((c) => ({
             entity: c.entity,
-            checksum: c.checksum,
-            recordCount: c.record_count,
+            source_checksum: c.source_checksum,
+            match: c.match,
           })),
         },
         'Validation completed'
@@ -154,8 +158,8 @@ async function main() {
       console.log(`Status: ${validationResult.success ? '✅ PASSED' : '❌ FAILED'}`);
       console.log('\nRecord Counts:');
       for (const validation of validationResult.validations) {
-        const status = validation.match ? '✅' : '❌';
-        console.log(`  ${status} ${validation.entity}: exported=${validation.exported}, source=${validation.source}`);
+        const status = validation.checksum_match ? '✅' : '❌';
+        console.log(`  ${status} ${validation.entity}: exported=${validation.record_counts.exported}`);
         if (validation.warnings && validation.warnings.length > 0) {
           for (const warning of validation.warnings) {
             console.log(`     ⚠️  ${warning.message}`);
@@ -165,7 +169,7 @@ async function main() {
 
       console.log('\nChecksums:');
       for (const checksum of validationResult.checksums) {
-        console.log(`  - ${checksum.entity}: ${checksum.checksum} (${checksum.record_count} records)`);
+        console.log(`  - ${checksum.entity}: ${checksum.source_checksum} (match: ${checksum.match})`);
       }
 
       if (validationResult.warnings.length > 0) {
@@ -200,12 +204,10 @@ async function main() {
         summary: {
           allChecksPass: exportResult.success && validationResult.success,
           missingRecords: validationResult.validations
-            .filter((v) => !v.match)
+            .filter((v) => !v.checksum_match)
             .map((v) => ({
               entity: v.entity,
-              exported: v.exported,
-              source: v.source,
-              difference: v.source - v.exported,
+              recordCount: v.record_counts.exported,
             })),
           corruptedRecords: validationResult.warnings.filter((w) => w.level === 'error'),
           totalWarnings: validationResult.warnings.length,

@@ -2,7 +2,7 @@
 // Handles NFT ownership verification
 
 import { BaseBlockchainService, BaseServiceConfig } from './base'
-import { Address, CharacterOwnership, ContractError } from '@/types/blockchain'
+import { Address, CharacterOwnership, ContractError, ContractErrorType } from '@/types/blockchain'
 import { wagdieABI } from '@/lib/contracts/abis/wagdie'
 import { getContractAddresses } from '@/lib/contracts/addresses'
 import { normalizeAddress, validateTokenId } from '@/lib/utils/blockchain'
@@ -176,6 +176,82 @@ export class OwnershipService extends BaseBlockchainService {
 
       return approved
     }, 'isApprovedForAll')
+
+    return result
+  }
+
+  /**
+   * Get owners for multiple token IDs in batches using multicall
+   * Returns a map of tokenId -> owner address
+   * Tokens that fail to fetch (e.g., burned) will have null as owner
+   */
+  async getOwnersForTokenIds(
+    tokenIds: bigint[],
+    options: { chunkSize?: number; delayMs?: number } = {}
+  ): Promise<{ data?: Map<bigint, Address | null>; error?: ContractError }> {
+    const { chunkSize = 100, delayMs = 100 } = options
+    const ownerMap = new Map<bigint, Address | null>()
+
+    try {
+      // Process in chunks to avoid rate limiting
+      for (let i = 0; i < tokenIds.length; i += chunkSize) {
+        const chunk = tokenIds.slice(i, i + chunkSize)
+
+        const contracts = chunk.map((tokenId) => ({
+          address: this.contractAddresses.wagdie,
+          abi: wagdieABI,
+          functionName: 'ownerOf' as const,
+          args: [tokenId] as const,
+        }))
+
+        const results = await this.publicClient.multicall({
+          contracts,
+          allowFailure: true, // Allow individual failures (e.g., burned tokens)
+        })
+
+        // Process results
+        for (let j = 0; j < chunk.length; j++) {
+          const tokenId = chunk[j]
+          const result = results[j]
+
+          if (result.status === 'success') {
+            ownerMap.set(tokenId, normalizeAddress(result.result as Address))
+          } else {
+            // Token may be burned or invalid
+            ownerMap.set(tokenId, null)
+          }
+        }
+
+        // Add delay between chunks to avoid rate limiting
+        if (i + chunkSize < tokenIds.length && delayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs))
+        }
+      }
+
+      return { data: ownerMap }
+    } catch (error) {
+      const parsedError: ContractError = {
+        type: ContractErrorType.UNKNOWN,
+        message: error instanceof Error ? error.message : String(error),
+      }
+      return { error: parsedError }
+    }
+  }
+
+  /**
+   * Get total supply of WAGDIE tokens
+   */
+  async getTotalSupply(): Promise<{ data?: bigint; error?: ContractError }> {
+    const result = await this.readContract(async () => {
+      const supply = (await this.publicClient.readContract({
+        address: this.contractAddresses.wagdie,
+        abi: wagdieABI,
+        functionName: 'totalSupply',
+        args: [],
+      })) as bigint
+
+      return supply
+    }, 'getTotalSupply')
 
     return result
   }

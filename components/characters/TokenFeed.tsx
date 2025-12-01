@@ -5,6 +5,7 @@
 
 'use client'
 
+import React, { useEffect } from 'react';
 import { CharacterCard } from './CharacterCard'
 import { InfiniteScroll } from '@/components/shared/InfiniteScroll'
 import type { Character } from '@/types/character'
@@ -26,6 +27,17 @@ export function TokenFeed({
   className = ''
 }: TokenFeedProps) {
   const router = useRouter()
+
+  useEffect(() => {
+    console.log('TokenFeed: Manual fetch check starting...');
+    fetch('/api/characters?perPage=5')
+      .then(res => {
+        console.log('TokenFeed: Manual fetch status:', res.status);
+        return res.json();
+      })
+      .then(data => console.log('TokenFeed: Manual fetch data:', data))
+      .catch(err => console.error('TokenFeed: Manual fetch error:', err));
+  }, []);
 
   const handleCharacterClick = (tokenId: number) => {
     router.push(`/characters/${tokenId}`)
@@ -49,7 +61,7 @@ export function TokenFeed({
     >
       {/* Responsive Grid: 1 col mobile, 2 col tablet, 5 col desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {characters.map((character) => (
+        {characters.filter(character => character && character.token_id).map((character) => (
           <CharacterCard
             key={character.token_id}
             character={character}

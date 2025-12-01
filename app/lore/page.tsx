@@ -5,16 +5,17 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TweetFilterBar } from '@/components/lore/TweetFilterBar'
 import { CustomTweet } from '@/components/lore/CustomTweet'
 import { InfiniteScroll } from '@/components/shared/InfiniteScroll'
+import { Empty, Spinner, Button, Card, CardContent } from '@/components-new'
 import type { Tweet, TweetFilterTab, SortOrder } from '@/types/tweet'
 
-export default function LorePage() {
+function LorePageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -120,7 +121,7 @@ export default function LorePage() {
     },
     refetchInterval: false, // Disabled auto-refresh to prevent infinite loading
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Cache for 10 minutes
+    gcTime: 10 * 60 * 1000, // Cache for 10 minutes
   })
 
   // Reset tweets when filters change
@@ -155,8 +156,8 @@ export default function LorePage() {
           }
 
           // Subsequent loads - append tweets, ensuring no duplicates
-          const existingIds = new Set(prev.map(tweet => tweet.tweet_id))
-          const uniqueNewTweets = data.tweets.filter(tweet => !existingIds.has(tweet.tweet_id))
+          const existingIds = new Set(prev.map((tweet: Tweet) => tweet.tweet_id))
+          const uniqueNewTweets = data.tweets.filter((tweet: Tweet) => !existingIds.has(tweet.tweet_id))
           return [...prev, ...uniqueNewTweets]
         })
       }
@@ -229,10 +230,14 @@ export default function LorePage() {
 
         {/* Tweet Feed */}
         {tweets.length === 0 && !isLoading ? (
-          <div className="text-center py-20">
-            <p className="text-xl text-ash">No tweets found</p>
-            <p className="text-sm text-mist mt-2">Check back later for updates</p>
-          </div>
+          <Empty
+            message="No lore entries found"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+            }
+          />
         ) : (
           <>
             <InfiniteScroll
@@ -253,24 +258,47 @@ export default function LorePage() {
 
             {/* Limit reached message */}
             {reachedLimit && (
-              <div className="text-center py-8 px-4 bg-midnight rounded-lg mt-6">
-                <p className="text-lg font-semibold text-bone mb-2">
-                  📚 Maximum tweets reached
-                </p>
-                <p className="text-sm text-mist">
-                  You've loaded {tweets.length} tweets. Use the filters above to explore different content or refresh to start over.
-                </p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Refresh Page
-                </button>
-              </div>
+              <Card className="mt-6">
+                <CardContent className="text-center py-8">
+                  <p className="text-lg font-display uppercase tracking-widest text-neutral-200 mb-2">
+                    Maximum entries reached
+                  </p>
+                  <p className="text-sm text-neutral-500 font-serif mb-6">
+                    You&apos;ve loaded {tweets.length} lore entries. Use the filters above to explore different content or refresh to start over.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onClick={() => window.location.reload()}
+                  >
+                    Refresh Page
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </>
         )}
       </div>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-soul-950">
+      <div className="flex flex-col items-center gap-4">
+        <Spinner size="lg" />
+        <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
+          Loading Lore
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function LorePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LorePageContent />
+    </Suspense>
   )
 }

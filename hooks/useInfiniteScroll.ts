@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 
 interface UseInfiniteScrollOptions<T> {
   initialPage?: number
@@ -39,6 +39,10 @@ export function useInfiniteScroll<T>(
   const [error, setError] = useState<Error | null>(null)
   const [page, setPage] = useState(initialPage)
 
+  // Use a ref to store the fetchFn to prevent infinite re-renders
+  const fetchFnRef = useRef(fetchFn)
+  fetchFnRef.current = fetchFn
+
   const loadMore = useCallback(async () => {
     if (isLoading || !hasMore) return
 
@@ -46,7 +50,7 @@ export function useInfiniteScroll<T>(
       setIsLoading(true)
       setError(null)
 
-      const result = await fetchFn(page, perPage)
+      const result = await fetchFnRef.current(page, perPage)
 
       setData(prev => [...prev, ...result.items])
       setHasMore(result.hasMore)
@@ -56,7 +60,7 @@ export function useInfiniteScroll<T>(
     } finally {
       setIsLoading(false)
     }
-  }, [fetchFn, page, perPage, isLoading, hasMore])
+  }, [page, perPage, isLoading, hasMore])
 
   const reset = useCallback(() => {
     setData([])

@@ -12,7 +12,7 @@
  *   npm run transform -- --input ./data/export --output ./data/transformed --timestamp 2024-01-15T10-30-00-000Z --validate
  */
 
-import { program } from 'commander';
+import { Command } from 'commander';
 import { existsSync } from 'fs';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -73,6 +73,7 @@ interface TransformSummary {
 /**
  * Parse and validate CLI configuration
  */
+const program = new Command();
 function parseConfig(): CLIConfig {
   program
     .name('transform')
@@ -81,7 +82,7 @@ function parseConfig(): CLIConfig {
     .requiredOption('-o, --output <dir>', 'Output directory for transformed JSON files')
     .requiredOption('-t, --timestamp <timestamp>', 'Timestamp from export (for input file naming)')
     .option('-v, --validate', 'Validate foreign key relationships after transformation', false)
-    .parse();
+    .parse(process.argv);
 
   const options = program.opts();
 

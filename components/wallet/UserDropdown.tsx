@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react';
 import { useState, useEffect, useRef } from 'react'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
 import type { Address } from '@/types/wallet'

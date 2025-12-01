@@ -1,16 +1,29 @@
 'use client'
 
-// OwnershipVerificationBanner Component
-// Displays ownership verification status for a character
-
+import React from 'react';
 import { useCharacterOwnership } from '@/hooks/useCharacterOwnership'
 import { shortenAddress } from '@/lib/utils/blockchain'
 import { useAccount } from 'wagmi'
+import { Alert } from '@/components-new/Alert'
+import { Spinner } from '@/components-new/Spinner'
+import { Badge } from '@/components-new/Badge'
 
 interface OwnershipVerificationBannerProps {
   tokenId: bigint
   className?: string
 }
+
+const CheckIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+)
+
+const InfoIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+  </svg>
+)
 
 export function OwnershipVerificationBanner({
   tokenId,
@@ -19,76 +32,54 @@ export function OwnershipVerificationBanner({
   const { address } = useAccount()
   const { ownership, isLoading, error } = useCharacterOwnership(tokenId)
 
-  // Don't show banner if not connected
   if (!address) {
     return null
   }
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className={`rounded-lg border border-white/10 bg-white/5 p-4 ${className}`}>
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-blue-500" />
-          <span className="text-sm text-gray-300">Verifying ownership...</span>
-        </div>
+      <div className={`flex items-center gap-3 border border-neutral-800 bg-black/30 p-4 ${className}`}>
+        <Spinner size="sm" />
+        <span className="text-sm font-display uppercase tracking-wider text-neutral-400">Verifying ownership...</span>
       </div>
     )
   }
 
-  // Error state
   if (error) {
     return (
-      <div className={`rounded-lg border border-red-500/20 bg-red-500/5 p-4 ${className}`}>
-        <div className="flex items-center gap-3">
-          <span className="text-lg">⚠️</span>
-          <div>
-            <p className="text-sm font-medium text-red-400">Failed to verify ownership</p>
-            <p className="text-xs text-gray-400">{error.message}</p>
-          </div>
-        </div>
-      </div>
+      <Alert variant="destructive" title="Failed to verify ownership" className={className}>
+        {error.message}
+      </Alert>
     )
   }
 
-  // Owned by connected wallet
   if (ownership?.isOwned) {
     return (
-      <div className={`rounded-lg border border-green-500/20 bg-green-500/5 p-4 ${className}`}>
-        <div className="flex items-center gap-3">
-          <span className="text-lg">✅</span>
-          <div>
-            <p className="text-sm font-medium text-green-400">You own this character</p>
-            <p className="text-xs text-gray-400">
-              Connected wallet: {shortenAddress(address)}
-            </p>
-          </div>
+      <div className={`flex items-center gap-3 border border-emerald-900/50 bg-emerald-950/20 p-4 ${className}`}>
+        <div className="text-emerald-500">
+          <CheckIcon />
+        </div>
+        <div>
+          <p className="text-sm font-display uppercase tracking-wider text-emerald-400">You own this character</p>
+          <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500">
+            Connected: {shortenAddress(address)}
+          </p>
         </div>
       </div>
     )
   }
 
-  // Owned by different wallet
   if (ownership) {
     return (
-      <div className={`rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4 ${className}`}>
-        <div className="flex items-center gap-3">
-          <span className="text-lg">ℹ️</span>
-          <div>
-            <p className="text-sm font-medium text-yellow-400">Owned by another wallet</p>
-            <p className="text-xs text-gray-400">
-              Owner: {shortenAddress(ownership.owner)}
-            </p>
-          </div>
-        </div>
-      </div>
+      <Alert variant="warning" title="Owned by another wallet" icon={<InfoIcon />} className={className}>
+        Owner: <span className="font-mono">{shortenAddress(ownership.owner)}</span>
+      </Alert>
     )
   }
 
   return null
 }
 
-// Compact ownership badge for character cards
 export function OwnershipBadge({ tokenId }: { tokenId: bigint }) {
   const { address } = useAccount()
   const { ownership, isLoading } = useCharacterOwnership(tokenId)
@@ -99,37 +90,35 @@ export function OwnershipBadge({ tokenId }: { tokenId: bigint }) {
 
   if (ownership?.isOwned) {
     return (
-      <div className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400">
-        <span>✅</span>
-        <span>Owned</span>
-      </div>
+      <Badge variant="accent" className="bg-emerald-900/30 border-emerald-800/50 text-emerald-400">
+        Owned
+      </Badge>
     )
   }
 
   return null
 }
 
-// Inline ownership status text
 export function OwnershipStatusText({ tokenId }: { tokenId: bigint }) {
   const { address } = useAccount()
   const { ownership, isLoading } = useCharacterOwnership(tokenId)
 
   if (!address) {
-    return <span className="text-xs text-gray-500">Connect wallet to verify ownership</span>
+    return <span className="text-[10px] font-display uppercase tracking-widest text-neutral-600">Connect wallet to verify</span>
   }
 
   if (isLoading) {
-    return <span className="text-xs text-gray-400">Checking ownership...</span>
+    return <span className="text-[10px] font-display uppercase tracking-widest text-neutral-500">Checking...</span>
   }
 
   if (ownership?.isOwned) {
-    return <span className="text-xs text-green-400">You own this character</span>
+    return <span className="text-[10px] font-display uppercase tracking-widest text-emerald-500">You own this</span>
   }
 
   if (ownership) {
     return (
-      <span className="text-xs text-gray-400">
-        Owned by {shortenAddress(ownership.owner)}
+      <span className="text-[10px] font-display uppercase tracking-widest text-neutral-500">
+        Owner: <span className="font-mono">{shortenAddress(ownership.owner)}</span>
       </span>
     )
   }

@@ -14,7 +14,7 @@
  *   npm run import -- --rollback
  */
 
-import { program } from 'commander';
+import { Command } from 'commander';
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -43,13 +43,14 @@ interface CLIConfig {
   dryRun: boolean;
   validate: boolean;
   rollback: boolean;
-  supabaseUrl?: string;
-  supabaseKey?: string;
+  url?: string;
+  serviceRoleKey?: string;
 }
 
 /**
  * Parse and validate CLI configuration
  */
+const program = new Command();
 function parseConfig(): CLIConfig {
   program
     .name('import')
@@ -61,7 +62,7 @@ function parseConfig(): CLIConfig {
     .option('--rollback', 'Rollback previous import', false)
     .option('--supabase-url <url>', 'Supabase project URL', process.env.SUPABASE_URL)
     .option('--supabase-key <key>', 'Supabase service role key', process.env.SUPABASE_SERVICE_ROLE_KEY)
-    .parse();
+    .parse(process.argv);
 
   const options = program.opts();
 
@@ -73,8 +74,8 @@ function parseConfig(): CLIConfig {
       dryRun: false,
       validate: false,
       rollback: true,
-      supabaseUrl: options.supabaseUrl as string | undefined,
-      supabaseKey: options.supabaseKey as string | undefined,
+      url: options.supabaseUrl as string | undefined,
+      serviceRoleKey: options.supabaseKey as string | undefined,
     };
   }
 
@@ -95,8 +96,8 @@ function parseConfig(): CLIConfig {
     dryRun: options.dryRun as boolean,
     validate: options.validate as boolean,
     rollback: false,
-    supabaseUrl: options.supabaseUrl as string | undefined,
-    supabaseKey: options.supabaseKey as string | undefined,
+    url: options.supabaseUrl as string | undefined,
+    serviceRoleKey: options.supabaseKey as string | undefined,
   };
 }
 
@@ -196,7 +197,7 @@ async function performRollback(supabaseClient: SupabasePostgresClient): Promise<
       log.info({ table }, 'Deleting table data');
 
       // Use Supabase client to delete all records
-      const { error } = await supabaseClient.client!.from(table).delete().neq('id', ''); // Delete all
+      const { error } = await (supabaseClient as any).client!.from(table).delete().neq('id', ''); // Delete all
 
       if (error) {
         log.error({ table, error }, 'Failed to delete table data');
@@ -222,16 +223,16 @@ async function main() {
   const config = parseConfig();
 
   // Initialize Supabase client
-  if (!config.supabaseUrl || !config.supabaseKey) {
+  if (!config.url || !config.serviceRoleKey) {
     log.error('Supabase URL and service role key are required');
     console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables');
     process.exit(1);
   }
 
-  log.info({ supabaseUrl: config.supabaseUrl }, 'Initializing Supabase client');
+  log.info({ supabaseUrl: config.url }, 'Initializing Supabase client');
   const supabaseClient = new SupabasePostgresClient({
-    supabaseUrl: config.supabaseUrl,
-    supabaseKey: config.supabaseKey,
+    url: config.url,
+    serviceRoleKey: config.serviceRoleKey,
     batchSize: 100,
   });
 

@@ -1,5 +1,7 @@
 'use client'
 
+import React from 'react';
+
 // TransactionStatus Component
 // Displays blockchain transaction status with progress indicator
 

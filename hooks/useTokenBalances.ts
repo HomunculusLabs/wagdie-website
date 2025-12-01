@@ -3,7 +3,7 @@
 // useTokenBalances Hook
 // React hook for fetching ERC1155 token balances
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { ContractError, TokenBalance } from '@/types/blockchain'
 import { BalancesService, TokenType } from '@/lib/services/blockchain/balances'
@@ -35,7 +35,7 @@ export function useTokenBalances(): UseTokenBalancesResult {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<ContractError | null>(null)
 
-  const fetchBalances = async () => {
+  const fetchBalances = useCallback(async () => {
     if (!address || !publicClient) {
       setBalances({
         concord: null,
@@ -79,12 +79,11 @@ export function useTokenBalances(): UseTokenBalancesResult {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [address, publicClient, walletClient])
 
   useEffect(() => {
     fetchBalances()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, publicClient])
+  }, [address, fetchBalances])
 
   return {
     balances,
@@ -104,7 +103,7 @@ export function useSingleTokenBalance(tokenType: TokenType | null) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<ContractError | null>(null)
 
-  const fetchBalance = async () => {
+  const fetchBalance = useCallback(async () => {
     if (!address || !publicClient || !tokenType) {
       setBalance(null)
       return
@@ -136,12 +135,11 @@ export function useSingleTokenBalance(tokenType: TokenType | null) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [address, publicClient, walletClient, tokenType])
 
   useEffect(() => {
     fetchBalance()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, tokenType, publicClient])
+  }, [address, tokenType, fetchBalance])
 
   return {
     balance,

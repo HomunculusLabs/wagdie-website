@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { generateNonce } from '@/lib/auth/siwe'
 import { cookies } from 'next/headers'
 
-export async function GET() {
+async function handleNonceRequest() {
   try {
     const nonce = generateNonce()
 
@@ -24,4 +24,13 @@ export async function GET() {
       { status: 500 }
     )
   }
+}
+
+// Support both GET and POST requests
+export async function GET() {
+  return handleNonceRequest()
+}
+
+export async function POST() {
+  return handleNonceRequest()
 }

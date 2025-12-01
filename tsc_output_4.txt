@@ -1,0 +1,308 @@
+components/characters/CharacterCard.stories.tsx(78,5): error TS2322: Type '{ token_id: number; name: string; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; int: number; wis: number; cha: number; hp: number; max_hp: number; ... 9 more ...; staking_status: "unstaked"; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/characters/CharacterCard.stories.tsx(91,5): error TS2322: Type '{ token_id: number; name: string; infection_status: "infected"; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; int: number; wis: number; ... 11 more ...; staking_status: "unstaked"; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/characters/CharacterCard.stories.tsx(104,5): error TS2322: Type '{ token_id: number; name: string; infection_status: "cured"; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; int: number; wis: number; ... 11 more ...; staking_status: "unstaked"; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/characters/CharacterCard.stories.tsx(117,5): error TS2322: Type '{ token_id: number; name: string; staking_status: "staked"; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; int: number; wis: number; cha: number; ... 10 more ...; infection_status: "healthy"; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/characters/CharacterCard.stories.tsx(130,5): error TS2322: Type '{ token_id: number; name: string; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; int: number; wis: number; cha: number; hp: number; max_hp: number; ... 9 more ...; staking_status: "unstaked"; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/characters/CharacterCard.stories.tsx(153,5): error TS2322: Type '{ name: undefined; token_id: number; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; int: number; wis: number; cha: number; hp: number; max_hp: number; ... 9 more ...; staking_status: "unstaked"; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/characters/CharacterCard.stories.tsx(170,5): error TS2322: Type '{ staking_status: "staked"; token_id: number; name: string; infection_status: "infected"; class: string; level: number; owner_address: string; experience: number; str: number; dex: number; con: number; ... 12 more ...; image_url: string; }' is not assignable to type 'Character'.
+  Types of property 'class' are incompatible.
+    Type 'string' is not assignable to type 'CharacterClass | null | undefined'.
+components/ErrorBoundary.stories.tsx(71,5): error TS2561: Object literal may only specify known properties, but 'error' does not exist in type 'Partial<Props>'. Did you mean to write 'onError'?
+components/map/IconFactory.ts(247,7): error TS2353: Object literal may only specify known properties, and ''legend_location_on'' does not exist in type 'Record<IconType, EnhancedIconConfig>'.
+components/map/IconFactory.ts(402,9): error TS2353: Object literal may only specify known properties, and 'zIndex' does not exist in type 'IconOptions'.
+components/map/IconFactory.ts(406,26): error TS2339: Property '_icon' does not exist on type 'Icon<IconOptions>'.
+components/map/IconFactory.ts(415,11): error TS2353: Object literal may only specify known properties, and 'zIndex' does not exist in type 'IconOptions'.
+components/map/IconFactory.ts(429,9): error TS2353: Object literal may only specify known properties, and 'zIndex' does not exist in type 'IconOptions'.
+components/map/IconFactory.ts(475,5): error TS2322: Type 'number[]' is not assignable to type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+components/map/LayerControls.tsx(115,29): error TS2339: Property 'error' does not exist on type 'AssetLoadingState'.
+components/map/MarkerComponent.tsx(224,23): error TS2339: Property 'catch' does not exist on type 'void'.
+components/map/MarkerComponent.tsx(224,29): error TS7006: Parameter 'error' implicitly has an 'any' type.
+components/map/SimpleMap.tsx(230,19): error TS2322: Type 'Map<string, AssetLoadingState>' is not assignable to type 'Map<string, "loading" | "loaded" | "failed" | "retrying" | "fallback">'.
+  Type 'AssetLoadingState' is not assignable to type '"loading" | "loaded" | "failed" | "retrying" | "fallback"'.
+components/TransactionStatus.stories.tsx(84,22): error TS2339: Property 'REVERTED' does not exist on type 'typeof TransactionStatus'.
+hooks/useIconFactory.ts(64,38): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+lib/services/character-service.ts(56,12): error TS18048: 'character.owner_address' is possibly 'undefined'.
+tests/e2e/map-with-assets.spec.ts(8,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+tests/e2e/map-with-assets.spec.ts(11,28): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(19,70): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(36,88): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(62,70): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(81,68): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(83,46): error TS7006: Parameter 'route' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(106,73): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(114,63): error TS7006: Parameter 'el' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(146,70): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(150,25): error TS7006: Parameter 'response' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(186,76): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(209,60): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(225,67): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/map-with-assets.spec.ts(244,76): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(8,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+tests/e2e/responsive-map.spec.ts(25,32): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(42,63): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(59,68): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(76,71): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(88,23): error TS7006: Parameter 'el' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(114,61): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(139,66): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(165,81): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(191,69): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(218,72): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(245,66): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(268,72): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(270,50): error TS7006: Parameter 'route' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(293,80): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/e2e/responsive-map.spec.ts(338,81): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/integration/map-asset-loading.test.ts(152,69): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/integration/map-asset-loading.test.ts(177,19): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+tests/integration/map-asset-loading.test.ts(355,69): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/integration/map-asset-loading.test.ts(396,19): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+tests/map/components/IconFactory.test.ts(67,14): error TS18048: 'mobileIcon.options.iconSize' is possibly 'undefined'.
+tests/map/components/IconFactory.test.ts(67,14): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'PointExpression'.
+  Property '0' does not exist on type 'PointExpression'.
+tests/map/components/IconFactory.test.ts(67,62): error TS18048: 'desktopIcon.options.iconSize' is possibly 'undefined'.
+tests/map/components/IconFactory.test.ts(67,62): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'PointExpression'.
+  Property '0' does not exist on type 'PointExpression'.
+tests/map/components/IconFactory.test.ts(68,14): error TS18048: 'mobileIcon.options.iconSize' is possibly 'undefined'.
+tests/map/components/IconFactory.test.ts(68,14): error TS7053: Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'PointExpression'.
+  Property '1' does not exist on type 'PointExpression'.
+tests/map/components/IconFactory.test.ts(68,62): error TS18048: 'desktopIcon.options.iconSize' is possibly 'undefined'.
+tests/map/components/IconFactory.test.ts(68,62): error TS7053: Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'PointExpression'.
+  Property '1' does not exist on type 'PointExpression'.
+tests/map/components/IconFactory.test.ts(76,14): error TS18048: 'icon.options.iconSize' is possibly 'undefined'.
+tests/map/components/IconFactory.test.ts(76,14): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'PointExpression'.
+  Property '0' does not exist on type 'PointExpression'.
+tests/map/components/IconFactory.test.ts(77,14): error TS18048: 'icon.options.iconSize' is possibly 'undefined'.
+tests/map/components/IconFactory.test.ts(77,14): error TS7053: Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'PointExpression'.
+  Property '1' does not exist on type 'PointExpression'.
+tests/map/components/IconFactory.test.ts(131,15): error TS2339: Property 'preloadIcons' does not exist on type 'EnhancedIconFactoryImpl'.
+tests/map/components/MarkerComponent.test.tsx(80,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(95,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(110,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(125,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(140,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(158,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(184,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(199,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(219,22): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(241,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(257,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(274,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(289,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(304,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(334,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(354,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/MarkerComponent.test.tsx(375,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/performance-tests.test.tsx(63,25): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/performance-tests.test.tsx(90,25): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/performance-tests.test.tsx(203,15): error TS2339: Property 'preloadIcons' does not exist on type 'EnhancedIconFactoryImpl'.
+tests/map/components/performance-tests.test.tsx(395,12): error TS2322: Type '{ key: string; id: string; type: "location" | "character" | "burn" | "death" | "fight"; data: Location | CharacterLocation; position: [number, number]; onClick: Mock<...>; isMobile: false; }' is not assignable to type 'IntrinsicAttributes & MarkerProps'.
+  Type '{ key: string; id: string; type: "location" | "character" | "burn" | "death" | "fight"; data: Location | CharacterLocation; position: [number, number]; onClick: Mock<...>; isMobile: false; }' is not assignable to type 'FightMarkerProps'.
+    Types of property 'type' are incompatible.
+      Type '"location" | "character" | "burn" | "death" | "fight"' is not assignable to type '"fight"'.
+        Type '"location"' is not assignable to type '"fight"'.
+tests/map/components/popup-renderer-verification.test.tsx(26,5): error TS2322: Type 'string' is not assignable to type 'number'.
+tests/map/components/popup-renderer-verification.test.tsx(71,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/popup-renderer-verification.test.tsx(89,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/popup-renderer-verification.test.tsx(106,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/popup-renderer-verification.test.tsx(123,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/popup-renderer-verification.test.tsx(140,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/popup-renderer-verification.test.tsx(206,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(65,49): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(80,68): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(100,41): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(101,54): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(102,41): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(103,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(129,47): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Matchers<void, HTMLElement | null>'.
+tests/map/components/PopupRenderer.test.tsx(146,51): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(147,48): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(180,29): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(198,31): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(223,22): error TS2339: Property 'toBeDisabled' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(254,51): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(266,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(278,46): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(290,47): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(302,47): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/PopupRenderer.test.tsx(333,36): error TS2339: Property 'toHaveClass' does not exist on type 'JestMatchers<ChildNode | null>'.
+tests/map/components/shared-component-verification.test.tsx(65,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/shared-component-verification.test.tsx(83,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/shared-component-verification.test.tsx(100,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/shared-component-verification.test.tsx(117,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/shared-component-verification.test.tsx(134,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(65,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(83,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(100,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(117,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(134,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(191,23): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/tooltip-renderer-verification.test.tsx(213,25): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(43,49): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(58,46): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(70,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Matchers<void, HTMLElement | null>'.
+tests/map/components/TooltipRenderer.test.tsx(82,46): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(83,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Matchers<void, HTMLElement | null>'.
+tests/map/components/TooltipRenderer.test.tsx(97,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(109,53): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(121,46): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(133,47): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(145,47): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(162,40): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(175,36): error TS2339: Property 'toHaveClass' does not exist on type 'JestMatchers<ChildNode | null>'.
+tests/map/components/TooltipRenderer.test.tsx(190,40): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(205,40): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(219,40): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(282,43): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(296,46): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(311,48): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/components/TooltipRenderer.test.tsx(312,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/map/IconFactory.test.ts(13,11): error TS18046: 'options' is of type 'unknown'.
+tests/map/responsive-scaling.test.ts(136,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(153,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(165,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(210,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(227,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(264,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(281,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(317,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(334,45): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(408,26): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/map/responsive-scaling.test.ts(425,50): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/map/responsive-scaling.test.ts(430,50): error TS2345: Argument of type 'number[]' is not assignable to parameter of type '[number, number]'.
+  Target requires 2 element(s) but source may have fewer.
+tests/performance/load-times.test.ts(101,28): error TS18046: 'endMeasure' is of type 'unknown'.
+tests/performance/load-times.test.ts(154,49): error TS7006: Parameter 'm' implicitly has an 'any' type.
+tests/performance/load-times.test.ts(155,49): error TS7006: Parameter 'm' implicitly has an 'any' type.
+tests/performance/load-times.test.ts(159,37): error TS7006: Parameter 'm' implicitly has an 'any' type.
+tests/performance/load-times.test.ts(203,72): error TS2345: Argument of type '(id: string, time: number) => void' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'id' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+tests/performance/load-times.test.ts(207,72): error TS2345: Argument of type '(id: string) => void' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'id' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+tests/performance/load-times.test.ts(211,73): error TS2345: Argument of type '(id: string) => void' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'id' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+tests/performance/load-times.test.ts(215,69): error TS2345: Argument of type '(id: string, error: Error) => void' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'id' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+tests/performance/load-times.test.ts(309,51): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+tests/performance/load-times.test.ts(309,56): error TS7006: Parameter 'm' implicitly has an 'any' type.
+tests/performance/load-times.test.ts(388,13): error TS2322: Type 'Error' is not assignable to type 'null'.
+tests/services/asset-loading-service.test.ts(143,69): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/services/asset-loading-service.test.ts(159,28): error TS7006: Parameter 'r' implicitly has an 'any' type.
+tests/services/asset-loading-service.test.ts(169,69): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/services/asset-loading-service.test.ts(196,69): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/services/asset-loading-service.test.ts(324,69): error TS2538: Type 'unknown' cannot be used as an index type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(13,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(16,28): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(21,66): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(27,66): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(42,68): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(54,70): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(66,53): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(82,52): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(94,59): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(112,55): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(125,61): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/character-location-flow.spec.ts(134,59): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(12,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(15,28): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(20,55): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(28,48): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(44,61): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(59,59): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(69,57): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(78,56): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(90,63): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(104,74): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/map-user-flow.spec.ts(119,56): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(13,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(16,28): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(21,68): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(34,64): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(52,51): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(65,55): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(79,60): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(91,67): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(103,55): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(118,70): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(134,59): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(151,66): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(165,47): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(178,68): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(191,70): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/e2e/stake-character-flow.spec.ts(221,61): error TS7031: Binding element 'page' implicitly has an 'any' type.
+tests/TODO-integration/integration/character-location.test.tsx(14,38): error TS2307: Cannot find module '@/hooks/map/useCharacterLocation' or its corresponding type declarations.
+tests/TODO-integration/integration/character-location.test.tsx(15,30): error TS2307: Cannot find module '@/hooks/map/useLocations' or its corresponding type declarations.
+tests/TODO-integration/integration/character-location.test.tsx(116,42): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/character-location.test.tsx(130,42): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(15,36): error TS2307: Cannot find module '@/hooks/map/useLocationStaking' or its corresponding type declarations.
+tests/TODO-integration/integration/location-staking.test.tsx(16,34): error TS2307: Cannot find module '@/components/map/LocationSelector' or its corresponding type declarations.
+tests/TODO-integration/integration/location-staking.test.tsx(17,35): error TS2307: Cannot find module '@/components/map/TransactionStatus' or its corresponding type declarations.
+tests/TODO-integration/integration/location-staking.test.tsx(97,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(110,5): error TS2588: Cannot assign to 'isPending' because it is a constant.
+tests/TODO-integration/integration/location-staking.test.tsx(140,44): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(141,42): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(163,44): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(164,43): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(189,42): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/location-staking.test.tsx(190,66): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(174,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(184,24): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(194,27): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(205,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(214,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(225,31): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(226,48): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(227,49): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(239,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(248,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(259,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(271,31): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(273,48): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(274,49): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(275,44): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(276,45): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(277,45): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(287,51): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(288,52): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(299,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(320,55): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(343,55): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(347,41): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(358,26): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(368,28): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement | null>'.
+tests/TODO-integration/integration/map-page.test.tsx(369,28): error TS2339: Property 'toHaveAttribute' does not exist on type 'JestMatchers<HTMLElement | null>'.
+tests/TODO-integration/integration/map-page.test.tsx(370,28): error TS2339: Property 'toHaveAttribute' does not exist on type 'JestMatchers<HTMLElement | null>'.
+tests/TODO-integration/integration/map-page.test.tsx(380,27): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(381,27): error TS2339: Property 'toHaveAttribute' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(399,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(411,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(421,50): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.
+tests/TODO-integration/integration/map-page.test.tsx(422,70): error TS2339: Property 'toBeInTheDocument' does not exist on type 'JestMatchers<HTMLElement>'.

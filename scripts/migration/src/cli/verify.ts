@@ -11,7 +11,7 @@
  *   npm run verify -- --export-dir ./data/export --timestamp 2024-01-15T10-30-00-000Z
  */
 
-import { program } from 'commander';
+import { Command } from 'commander';
 import { existsSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -32,13 +32,14 @@ interface CLIConfig {
   exportDir: string;
   timestamp: string;
   spotCheckPercentage: number;
-  supabaseUrl?: string;
-  supabaseKey?: string;
+  url?: string;
+  serviceRoleKey?: string;
 }
 
 /**
  * Parse and validate CLI configuration
  */
+const program = new Command();
 function parseConfig(): CLIConfig {
   program
     .name('verify')
@@ -48,7 +49,7 @@ function parseConfig(): CLIConfig {
     .option('-s, --spot-check <percentage>', 'Percentage of records to spot-check', '1')
     .option('--supabase-url <url>', 'Supabase project URL', process.env.SUPABASE_URL)
     .option('--supabase-key <key>', 'Supabase service role key', process.env.SUPABASE_SERVICE_ROLE_KEY)
-    .parse();
+    .parse(process.argv);
 
   const options = program.opts();
 
@@ -62,8 +63,8 @@ function parseConfig(): CLIConfig {
     exportDir: options.exportDir as string,
     timestamp: options.timestamp as string,
     spotCheckPercentage: parseFloat(options.spotCheck as string),
-    supabaseUrl: options.supabaseUrl as string | undefined,
-    supabaseKey: options.supabaseKey as string | undefined,
+    url: options.supabaseUrl as string | undefined,
+    serviceRoleKey: options.supabaseKey as string | undefined,
   };
 }
 
@@ -76,16 +77,16 @@ async function main() {
   const config = parseConfig();
 
   // Initialize Supabase client
-  if (!config.supabaseUrl || !config.supabaseKey) {
+  if (!config.url || !config.serviceRoleKey) {
     log.error('Supabase URL and service role key are required');
     console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables');
     process.exit(1);
   }
 
-  log.info({ supabaseUrl: config.supabaseUrl }, 'Initializing Supabase client');
+  log.info({ url: config.url }, 'Initializing Supabase client');
   const supabaseClient = new SupabasePostgresClient({
-    supabaseUrl: config.supabaseUrl,
-    supabaseKey: config.supabaseKey,
+    url: config.url,
+    serviceRoleKey: config.serviceRoleKey,
     batchSize: 100,
   });
 

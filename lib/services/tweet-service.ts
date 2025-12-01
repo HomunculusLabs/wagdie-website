@@ -5,7 +5,7 @@
  */
 
 import { tweetRepository, type ITweetRepository } from '../repositories'
-import type { Tweet, TweetFilters, TweetsResponse } from '@/types/tweet'
+import type { TweetFilters, TweetsResponse } from '@/types/tweet'
 
 /**
  * Tweet Service
@@ -26,7 +26,7 @@ export class TweetService {
    * Get tweets with auto-refresh capability
    * Useful for real-time lore updates
    */
-  async getTweetsWithRefresh(filters: TweetFilters, lastFetchTime?: Date): Promise<TweetsResponse> {
+  async getTweetsWithRefresh(filters: TweetFilters, _lastFetchTime?: Date): Promise<TweetsResponse> {
     const result = await this.getTweets(filters)
 
     // Additional business logic can be added here

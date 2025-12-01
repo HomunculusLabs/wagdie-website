@@ -3,6 +3,8 @@
  * Container for a row of HomeCard components with title
  */
 
+import React from 'react';
+
 interface HomeCardRowProps {
   title: string
   children: React.ReactNode

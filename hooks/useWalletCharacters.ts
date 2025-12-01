@@ -3,7 +3,7 @@
 // useWalletCharacters Hook
 // React hook for fetching all characters owned by a wallet
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { ContractError } from '@/types/blockchain'
 import { OwnershipService } from '@/lib/services/blockchain/ownership'
@@ -32,7 +32,7 @@ export function useWalletCharacters(): UseWalletCharactersResult {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<ContractError | null>(null)
 
-  const fetchCharacters = async () => {
+  const fetchCharacters = useCallback(async () => {
     if (!address || !publicClient) {
       setCharacters([])
       setTotalBalance(0n)
@@ -79,12 +79,11 @@ export function useWalletCharacters(): UseWalletCharactersResult {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [address, publicClient, walletClient])
 
   useEffect(() => {
     fetchCharacters()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, publicClient])
+  }, [address, publicClient, fetchCharacters])
 
   return {
     characters,
@@ -105,7 +104,7 @@ export function useMultipleOwnership(tokenIds: bigint[]) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<ContractError | null>(null)
 
-  const fetchOwnerships = async () => {
+  const fetchOwnerships = useCallback(async () => {
     if (!address || !publicClient || tokenIds.length === 0) {
       setOwnerships([])
       return
@@ -141,12 +140,11 @@ export function useMultipleOwnership(tokenIds: bigint[]) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [address, publicClient, walletClient, tokenIds])
 
   useEffect(() => {
     fetchOwnerships()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address, tokenIds.join(','), publicClient])
+  }, [address, fetchOwnerships])
 
   return {
     ownerships,

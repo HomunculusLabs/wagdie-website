@@ -14,10 +14,19 @@
     "test": "jest",
     "test:unit": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
+    "test:performance": "jest --testPathPattern=tests/performance",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src --ext .ts",
-    "type-check": "tsc --noEmit"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "migration:start": "node dist/cli/index.js start",
+    "migration:status": "node dist/cli/index.js status",
+    "migration:resume": "node dist/cli/index.js resume",
+    "migration:validate": "node dist/cli/index.js validate",
+    "migration:rollback": "node dist/cli/index.js rollback",
+    "migration:pause": "node dist/cli/index.js pause",
+    "migration:logs": "node dist/cli/index.js logs"
   },
   "keywords": [
     "migration",
@@ -36,7 +45,10 @@
     "pino": "^8.17.0",
     "pino-pretty": "^10.3.0",
     "dotenv": "^16.3.1",
-    "commander": "^11.1.0"
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.6"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

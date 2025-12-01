@@ -65,10 +65,10 @@ export function useAuth(): UseAuthReturn {
 
       // Step 2: Create SIWE message
       const message = new SiweMessage({
-        domain: window.location.host,
+        domain: typeof window !== 'undefined' ? window.location.host : 'localhost',
         address: wallet.address,
         statement: 'Sign in to WAGDIE',
-        uri: window.location.origin,
+        uri: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
         version: '1',
         chainId: 1,
         nonce,

@@ -232,7 +232,7 @@ export class SearingService extends BaseBlockchainService {
         address: this.contractAddresses.searing,
         abi: searingABI,
         functionName: 'searConcords',
-        args: [params],
+        args: [params as any],
         account,
       })
 
@@ -262,7 +262,7 @@ export class SearingService extends BaseBlockchainService {
         address: this.contractAddresses.searing,
         abi: searingABI,
         functionName: 'tameBeasts',
-        args: [params],
+        args: [params as any],
         account,
       })
 

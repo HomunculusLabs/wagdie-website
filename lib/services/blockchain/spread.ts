@@ -5,6 +5,7 @@ import { BaseBlockchainService, BaseServiceConfig } from './base'
 import { Address, ContractError } from '@/types/blockchain'
 import { spreadABI } from '@/lib/contracts/abis/spread'
 import { getContractAddresses } from '@/lib/contracts/addresses'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { parseEther } from 'viem'
 
 export class SpreadService extends BaseBlockchainService {

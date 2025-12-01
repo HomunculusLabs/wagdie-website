@@ -22,6 +22,7 @@ export interface TransactionState {
   status: TransactionStatus
   error?: string
   confirmations?: number
+  metadata?: Record<string, unknown>
 }
 
 // Token balance

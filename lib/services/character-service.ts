@@ -5,7 +5,7 @@
  */
 
 import { characterRepository, type ICharacterRepository } from '../repositories'
-import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord } from '@/types/character'
+import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, EditableCharacterFields } from '@/types/character'
 
 /**
  * Character Service
@@ -29,12 +29,12 @@ export class CharacterService {
   }
 
   /**
-   * Update character data (background story, equipment)
+   * Update character data (name, stats, background story, equipment)
    * Business rule: Ownership validation should be done at API route level
    */
   async updateCharacter(
     tokenId: number,
-    updates: Partial<Pick<Character, 'background_story' | 'equipment'>>
+    updates: Partial<Pick<Character, EditableCharacterFields>>
   ): Promise<Character | null> {
     // Additional business logic can be added here (validation, transformation, etc.)
     return this.repository.update(tokenId, updates)
@@ -52,7 +52,7 @@ export class CharacterService {
    */
   async isOwner(tokenId: number, walletAddress: string): Promise<boolean> {
     const character = await this.getCharacter(tokenId)
-    if (!character) return false
+    if (!character || !character.owner_address) return false
     return character.owner_address.toLowerCase() === walletAddress.toLowerCase()
   }
 }
@@ -63,6 +63,6 @@ export const characterService = new CharacterService(characterRepository)
 // Export individual functions for backward compatibility
 export const getCharacters = (filters: CharacterFilters) => characterService.getCharacters(filters)
 export const getCharacter = (tokenId: number) => characterService.getCharacter(tokenId)
-export const updateCharacter = (tokenId: number, updates: Partial<Pick<Character, 'background_story' | 'equipment'>>) =>
+export const updateCharacter = (tokenId: number, updates: Partial<Pick<Character, EditableCharacterFields>>) =>
   characterService.updateCharacter(tokenId, updates)
 export const getCharacterConcords = (tokenId: number) => characterService.getCharacterConcords(tokenId)

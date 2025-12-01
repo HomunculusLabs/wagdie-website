@@ -9,25 +9,23 @@ import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import toast from 'react-hot-toast'
 import { BannerHeader } from '@/components/shared/BannerHeader'
-import { DialogBurnCorpseApproval } from '@/components/spread/DialogBurnCorpseApproval'
-import { DialogSpreadingApproval } from '@/components/spread/DialogSpreadingApproval'
 import { SpreadInfect } from '@/components/spread/SpreadInfect'
 import { InfectionModal } from '@/components/modals/InfectionModal'
 import { CorpseBurningModal } from '@/components/modals/CorpseBurningModal'
+import { Card, CardHeader, CardTitle, CardContent, Button, Empty } from '@/components-new'
 import { useSpread } from '@/hooks/useSpread'
 import { useSingleTokenBalance } from '@/hooks/useTokenBalances'
 import { useCorpseBurning } from '@/hooks/useCorpseBurning'
-import { CONTRACTS } from '@/lib/services/wallet-service'
 import { formatEther } from 'viem'
 
 export default function SpreadPage() {
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
 
   // Blockchain hooks
   const { balance: mushroomBalance, refetch: refetchMushroom } = useSingleTokenBalance('mushroom')
   const { balance: corpseBalance, refetch: refetchCorpse } = useSingleTokenBalance('corpse')
   const { infectionPrice, fetchInfectionPrice } = useSpread()
-  const { corpseBalance: corpseBalanceFromHook, fetchBalances } = useCorpseBurning()
+  const { fetchBalances } = useCorpseBurning()
 
   // State
   const [mode, setMode] = useState<'spread' | 'infect'>('spread')
@@ -61,13 +59,13 @@ export default function SpreadPage() {
   }
 
   // Open infection modal for random spread
-  const handleSpread = async (amount: number) => {
+  const handleSpread = async (_amount: number) => {
     setShowInfectionModal(true)
   }
 
   // Open infection modal for targeted infection
-  const handleInfect = async (tokenId: number) => {
-    toast.info('Use the character detail page to infect specific characters')
+  const handleInfect = async (_tokenId: number) => {
+    toast('Use the character detail page to infect specific characters')
   }
 
   if (!isConnected) {
@@ -78,8 +76,15 @@ export default function SpreadPage() {
           subtitle="Burn corpses and spread the plague across the realm"
         />
 
-        <div className="container mx-auto px-4 py-20 text-center">
-          <p className="text-xl text-ash">Connect your wallet to participate in spreading the infection</p>
+        <div className="container mx-auto px-4 py-20 max-w-4xl">
+          <Empty
+            message="Connect your wallet to spread the infection"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+              </svg>
+            }
+          />
         </div>
       </div>
     )
@@ -92,50 +97,58 @@ export default function SpreadPage() {
         subtitle="Burn corpses for mushrooms, then spread the plague"
       />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="space-y-6">
           {/* Step 1: Burn Corpses */}
-          <div className="bg-midnight rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-bone mb-4">Step 1: Touch Corpse</h2>
-            <p className="text-ash mb-4">
-              Burn your corpse tokens to receive Strange Mushrooms (Concord #15).
-            </p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 1: Touch Corpse</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-neutral-400 font-serif mb-6">
+                Burn your corpse tokens to receive Strange Mushrooms (Concord #15).
+              </p>
 
-            <button
-              onClick={handleTouchCorpse}
-              disabled={(corpseBalance?.balance ?? 0n) === 0n}
-              className="px-8 py-3 bg-gold text-abyss font-bold rounded hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Touch Corpse ({corpseBalance?.balance.toString() ?? '0'} available)
-            </button>
-          </div>
+              <Button
+                variant="primary"
+                onClick={handleTouchCorpse}
+                disabled={(corpseBalance?.balance ?? 0n) === 0n}
+              >
+                Touch Corpse ({corpseBalance?.balance.toString() ?? '0'} available)
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Step 2: Mode Selection */}
-          <div className="bg-midnight rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-bone mb-4">Step 2: Choose Your Method</h2>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setMode('spread')}
-                className={`flex-1 px-6 py-3 rounded font-bold transition-colors ${
-                  mode === 'spread'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-shadow text-ash hover:text-bone'
-                }`}
-              >
-                Release Spores (Random)
-              </button>
-              <button
-                onClick={() => setMode('infect')}
-                className={`flex-1 px-6 py-3 rounded font-bold transition-colors ${
-                  mode === 'infect'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-shadow text-ash hover:text-bone'
-                }`}
-              >
-                Infect Pilgrim (Targeted)
-              </button>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 2: Choose Your Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => setMode('spread')}
+                  className={`flex-1 px-6 py-4 border font-display uppercase tracking-wider text-sm transition-all duration-300 ${
+                    mode === 'spread'
+                      ? 'bg-arcane/20 border-arcane text-arcane shadow-[0_0_15px_rgba(106,76,147,0.3)]'
+                      : 'bg-transparent border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300'
+                  }`}
+                >
+                  Release Spores (Random)
+                </button>
+                <button
+                  onClick={() => setMode('infect')}
+                  className={`flex-1 px-6 py-4 border font-display uppercase tracking-wider text-sm transition-all duration-300 ${
+                    mode === 'infect'
+                      ? 'bg-red-950/30 border-red-900 text-red-500 shadow-[0_0_15px_rgba(153,27,27,0.3)]'
+                      : 'bg-transparent border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300'
+                  }`}
+                >
+                  Infect Pilgrim (Targeted)
+                </button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Step 3: Execute */}
           <SpreadInfect

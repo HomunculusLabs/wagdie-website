@@ -1,9 +1,8 @@
-/**
- * SheetBackgroundStory Component
- * Editable character background story (owners only)
- */
-
 'use client'
+
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components-new/Card'
+import { TextArea } from '@/components-new/TextArea'
 
 interface SheetBackgroundStoryProps {
   story: string | null
@@ -19,34 +18,36 @@ export function SheetBackgroundStory({
   onChange
 }: SheetBackgroundStoryProps) {
   return (
-    <div className="bg-midnight rounded-lg p-6">
-      <h3 className="text-2xl font-bold text-bone mb-4">Background Story</h3>
-
-      {isEditMode ? (
-        <textarea
-          value={story || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Write your character's story..."
-          maxLength={5000}
-          className="w-full h-64 bg-shadow text-bone border border-shadow rounded p-4 focus:border-gold focus:outline-none resize-none"
-        />
-      ) : (
-        <div className="text-ash whitespace-pre-wrap">
-          {story || (
-            <p className="text-mist italic">
-              {isOwner
-                ? 'No story yet. Click Edit to add your character\'s background.'
-                : 'No story has been written for this character.'}
+    <Card>
+      <CardHeader>
+        <CardTitle>Background Story</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isEditMode ? (
+          <div className="space-y-2">
+            <TextArea
+              value={story || ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Write your character's story..."
+              maxLength={5000}
+              className="min-h-[200px]"
+            />
+            <p className="text-xs text-neutral-500 font-display uppercase tracking-widest">
+              {(story || '').length} / 5000 characters
             </p>
-          )}
-        </div>
-      )}
-
-      {isEditMode && (
-        <p className="text-sm text-mist mt-2">
-          {(story || '').length} / 5000 characters
-        </p>
-      )}
-    </div>
+          </div>
+        ) : (
+          <div className="text-neutral-400 font-serif whitespace-pre-wrap leading-relaxed">
+            {story || (
+              <p className="italic text-neutral-600">
+                {isOwner
+                  ? 'No story yet. Click Edit to add your character\'s background.'
+                  : 'No story has been written for this character.'}
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

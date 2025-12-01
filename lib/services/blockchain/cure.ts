@@ -149,7 +149,7 @@ export class CureService extends BaseBlockchainService {
         address: this.contractAddresses.mushroom,
         abi: mushroomABI,
         functionName: 'burn',
-        args: [account, TOKEN_IDS.mushroom, amount],
+        args: [amount],
         account,
       })
 

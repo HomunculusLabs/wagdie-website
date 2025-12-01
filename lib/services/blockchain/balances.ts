@@ -8,6 +8,7 @@ import { corpseABI } from '@/lib/contracts/abis/corpse'
 import { mushroomABI } from '@/lib/contracts/abis/mushroom'
 import { getContractAddresses } from '@/lib/contracts/addresses'
 import { TOKEN_IDS } from '@/lib/contracts/addresses'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { normalizeAddress } from '@/lib/utils/blockchain'
 
 export type TokenType = 'concord' | 'corpse' | 'mushroom'

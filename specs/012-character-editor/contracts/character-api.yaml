@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: Character Editor API
+  description: API endpoints for editing character stats and name
+  version: 1.0.0
+
+paths:
+  /api/characters/{tokenId}:
+    patch:
+      summary: Update character
+      description: |
+        Updates a character's editable fields. Requires authentication
+        and ownership verification.
+      operationId: updateCharacter
+      tags:
+        - Characters
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 6666
+          description: The NFT token ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterUpdate'
+            examples:
+              updateName:
+                summary: Update character name
+                value:
+                  name: "Grimholt the Unburnt"
+              updateCoreStats:
+                summary: Update core stats
+                value:
+                  str: 16
+                  dex: 14
+                  con: 15
+                  int: 10
+                  wis: 12
+                  cha: 8
+              updateDerivedStats:
+                summary: Update derived stats
+                value:
+                  hp: 45
+                  max_hp: 52
+                  ac: 16
+                  speed: 30
+                  level: 5
+                  experience: 6500
+              updateAll:
+                summary: Update all editable fields
+                value:
+                  name: "Grimholt the Unburnt"
+                  str: 16
+                  dex: 14
+                  con: 15
+                  int: 10
+                  wis: 12
+                  cha: 8
+                  hp: 45
+                  max_hp: 52
+                  ac: 16
+                  speed: 30
+                  level: 5
+                  experience: 6500
+      responses:
+        '200':
+          description: Character updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                noUpdates:
+                  summary: No valid updates provided
+                  value:
+                    error: "No valid updates provided"
+                invalidStat:
+                  summary: Invalid stat value
+                  value:
+                    error: "Invalid value for str: must be between 1 and 30"
+                invalidName:
+                  summary: Name too long
+                  value:
+                    error: "Name must be 100 characters or less"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not authenticated"
+        '403':
+          description: Not the character owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "You do not own this character"
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Character not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Failed to update character"
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Iron session cookie with wallet address
+
+  schemas:
+    CharacterUpdate:
+      type: object
+      description: Editable character fields. All fields are optional.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Character display name
+          example: "Grimholt the Unburnt"
+        str:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Strength
+          example: 16
+        dex:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Dexterity
+          example: 14
+        con:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Constitution
+          example: 15
+        int:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Intelligence
+          example: 10
+        wis:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Wisdom
+          example: 12
+        cha:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Charisma
+          example: 8
+        hp:
+          type: integer
+          minimum: 0
+          maximum: 999
+          description: Current hit points
+          example: 45
+        max_hp:
+          type: integer
+          minimum: 1
+          maximum: 999
+          description: Maximum hit points
+          example: 52
+        ac:
+          type: integer
+          minimum: 0
+          maximum: 30
+          description: Armor class
+          example: 16
+        speed:
+          type: integer
+          minimum: 0
+          maximum: 120
+          description: Movement speed in feet
+          example: 30
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Character level
+          example: 5
+        experience:
+          type: integer
+          minimum: 0
+          maximum: 999999
+          description: Experience points
+          example: 6500
+        background_story:
+          type: string
+          description: Character background story (existing field)
+        equipment:
+          type: object
+          description: Character equipment (existing field)
+          properties:
+            weapons:
+              type: array
+              items:
+                type: string
+            armor:
+              type: array
+              items:
+                type: string
+            items:
+              type: array
+              items:
+                type: string
+            gold:
+              type: integer
+      additionalProperties: false
+
+    Character:
+      type: object
+      description: Full character object returned after update
+      properties:
+        token_id:
+          type: integer
+        name:
+          type: string
+          nullable: true
+        owner_address:
+          type: string
+          nullable: true
+        str:
+          type: integer
+          nullable: true
+        dex:
+          type: integer
+          nullable: true
+        con:
+          type: integer
+          nullable: true
+        int:
+          type: integer
+          nullable: true
+        wis:
+          type: integer
+          nullable: true
+        cha:
+          type: integer
+          nullable: true
+        hp:
+          type: integer
+          nullable: true
+        max_hp:
+          type: integer
+          nullable: true
+        ac:
+          type: integer
+          nullable: true
+        speed:
+          type: integer
+          nullable: true
+        level:
+          type: integer
+          nullable: true
+        experience:
+          type: integer
+          nullable: true
+        class:
+          type: string
+          nullable: true
+        background_story:
+          type: string
+          nullable: true
+        equipment:
+          type: object
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+        infection_status:
+          type: string
+          enum: [healthy, infected, cured]
+        staking_status:
+          type: string
+          enum: [unstaked, staked]
+        image_url:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - token_id
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+      required:
+        - error

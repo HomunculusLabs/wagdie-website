@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySiweMessage, upsertUser } from '@/lib/auth/siwe'
 import { cookies } from 'next/headers'
+import { getSession } from '@/lib/auth/session'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +49,18 @@ export async function POST(request: NextRequest) {
     // Clear the nonce cookie
     cookieStore.delete('siwe-nonce')
 
-    // Set session cookie with eth address
+    // Set iron-session with user data
+    const session = await getSession()
+    session.address = verification.address
+    session.siwe = {
+      message,
+      signature,
+      nonce,
+    }
+    session.expires = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
+    await session.save()
+
+    // Also set the simple siwe-session cookie for backwards compatibility
     cookieStore.set('siwe-session', verification.address, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
