@@ -42,3 +42,4 @@ scripts/migration/.env
 # storybook
 storybook-static/
 .vite/
+volumes/db/data/
