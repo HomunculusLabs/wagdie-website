@@ -1,0 +1,8 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#1a1a1a"/>
+  <rect x="100" y="80" width="200" height="200" rx="8" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="2"/>
+  <circle cx="200" cy="150" r="40" fill="#3a3a3a"/>
+  <path d="M140 220 Q200 280 260 220" fill="#3a3a3a"/>
+  <text x="200" y="330" font-family="serif" font-size="24" fill="#666" text-anchor="middle">WAGDIE</text>
+  <text x="200" y="360" font-family="serif" font-size="14" fill="#444" text-anchor="middle">Image Not Available</text>
+</svg>

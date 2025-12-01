@@ -17,6 +17,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cloudflare-ipfs.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      },
     ],
     // Enable optimization for character images (Leaflet uses direct URLs, not Next/Image)
   },

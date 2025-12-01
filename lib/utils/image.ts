@@ -40,11 +40,12 @@ export function getCharacterImageUrl(
 
 /**
  * Get fallback URL for when local image fails to load
+ * Always uses local placeholder - no external IPFS calls
  */
 export function getCharacterImageFallback(
-  ipfsUri?: string | null,
-  fallbackUrl?: string | null
+  _ipfsUri?: string | null,
+  _fallbackUrl?: string | null
 ): string {
-  const ipfsUrl = getIpfsUrl(ipfsUri)
-  return ipfsUrl || fallbackUrl || '/images/placeholder-character.png'
+  // Always use local placeholder to avoid external image loading issues
+  return '/images/placeholder-character.svg'
 }
