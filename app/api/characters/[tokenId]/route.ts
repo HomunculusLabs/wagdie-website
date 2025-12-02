@@ -149,7 +149,7 @@ export async function PATCH(
     for (const stat of coreStats) {
       if (stat in allowedUpdates) {
         const value = allowedUpdates[stat]
-        const result = validateCoreStat(value, stat.to())
+        const result = validateCoreStat(value, stat.toUpperCase())
         if (!result.valid && result.error) {
           validationErrors.push(result.error)
         }

@@ -383,14 +383,10 @@ export default function CharacterDetailPage() {
     }
   }
 
-<<<<<<< HEAD
   // T010-T014: Check if character has any core stats (all 6 abilities)
   const hasAnyCoreStats = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0 ||
     attrs.int > 0 || attrs.wis > 0 || attrs.cha > 0
   const hasCharacterSheet = hasAnyCoreStats
-=======
-  const hasCharacterSheet = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0
->>>>>>> 016-character-editor-chat-v2
 
   // Check if character has any stats (for empty stats prompt)
   const hasAnyStats = character && (
@@ -512,8 +508,9 @@ export default function CharacterDetailPage() {
                   alt={name}
                   fill
                   sizes="(max-width: 1024px) 100vw, 40vw"
-                  className="object-cover"
+                  className="object-cover [image-rendering:pixelated]"
                   priority
+                  unoptimized
                   onError={() => useLocalImage && setUseLocalImage(false)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -671,7 +668,7 @@ export default function CharacterDetailPage() {
 
           {activeTab === 'equipment' && (
             <SheetEquipment
-              equipment={character.equipment}
+              equipment={character.equipment ?? null}
               metadataEquipment={character.metadata?.equipment}
               isEditMode={isEditMode}
             />

@@ -56,7 +56,8 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-          className={`object-cover grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          className={`object-cover [image-rendering:pixelated] grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          unoptimized
           onLoad={() => setIsLoading(false)}
           onError={handleImageError}
         />
