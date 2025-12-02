@@ -13,6 +13,7 @@ import { CoreStatsEditor } from '@/components/characters/CoreStatsEditor'
 import { DerivedStatsEditor } from '@/components/characters/DerivedStatsEditor'
 import { LevelExperienceEditor } from '@/components/characters/LevelExperienceEditor'
 import { EmptyStatsPrompt } from '@/components/characters/EmptyStatsPrompt'
+import { NFTTraitsDisplay } from '@/components/characters/NFTTraitsDisplay'
 import { OwnershipVerificationBanner } from '@/components/OwnershipVerificationBanner'
 import { TokenBalancesCard } from '@/components/TokenBalancesCard'
 import { StakingStatusCard } from '@/components/StakingStatusCard'
@@ -29,10 +30,9 @@ import {
   Separator,
   Badge,
   Tabs,
-  ProgressBar,
 } from '@/components-new'
 import type { TabItem } from '@/components-new'
-import type { Character, Equipment } from '@/types/character'
+import type { Character } from '@/types/character'
 
 // Icons
 const BackIcon = () => (
@@ -374,16 +374,10 @@ export default function CharacterDetailPage() {
     }
   }
 
-  const attributes = [
-    { label: 'STR', value: attrs.str },
-    { label: 'DEX', value: attrs.dex },
-    { label: 'CON', value: attrs.con },
-    { label: 'INT', value: attrs.int },
-    { label: 'WIS', value: attrs.wis },
-    { label: 'CHA', value: attrs.cha },
-  ]
-
-  const hasCharacterSheet = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0
+  // T010-T014: Check if character has any core stats (all 6 abilities)
+  const hasAnyCoreStats = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0 ||
+    attrs.int > 0 || attrs.wis > 0 || attrs.cha > 0
+  const hasCharacterSheet = hasAnyCoreStats
 
   // Check if character has any stats (for empty stats prompt)
   const hasAnyStats = character && (
@@ -541,6 +535,12 @@ export default function CharacterDetailPage() {
                   isEditMode={isEditMode}
                   onChange={setEditedLevelExp}
                 />
+                {/* T023-T024: Identity traits (Body, Alignment) displayed prominently below name */}
+                <NFTTraitsDisplay
+                  metadata={character.metadata}
+                  showIdentityOnly
+                  className="mt-3"
+                />
               </div>
 
               {/* Quick Stats - Derived Stats */}
@@ -621,6 +621,12 @@ export default function CharacterDetailPage() {
           </div>
         </div>
 
+        {/* T025: Full NFT Traits Section (cosmetic traits) */}
+        <NFTTraitsDisplay
+          metadata={character.metadata}
+          className="mb-8"
+        />
+
         <Separator className="mb-8" />
 
         {/* Tabbed Content */}
@@ -638,7 +644,8 @@ export default function CharacterDetailPage() {
 
           {activeTab === 'equipment' && (
             <SheetEquipment
-              equipment={(character.equipment || character.metadata?.equipment) as Equipment | null}
+              equipment={character.equipment}
+              metadataEquipment={character.metadata?.equipment}
               isEditMode={isEditMode}
             />
           )}

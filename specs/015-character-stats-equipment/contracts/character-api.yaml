@@ -1,0 +1,230 @@
+openapi: 3.0.3
+info:
+  title: Character Stats & Equipment API
+  description: |
+    Existing API contract for character data retrieval.
+    **No changes required for this feature** - documenting for reference only.
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: Next.js API routes
+
+paths:
+  /characters/{tokenId}:
+    get:
+      summary: Get character details
+      description: |
+        Retrieves complete character data including stats, equipment, and NFT metadata.
+        All data required for the stats/equipment display feature is already returned.
+      operationId: getCharacter
+      tags:
+        - Characters
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 6666
+          description: WAGDIE token ID
+      responses:
+        '200':
+          description: Character found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Invalid token ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Character:
+      type: object
+      required:
+        - token_id
+      properties:
+        token_id:
+          type: integer
+          description: WAGDIE NFT token ID
+        name:
+          type: string
+          nullable: true
+          description: User-assigned character name
+        class:
+          type: string
+          enum: [Warrior, Mage, Rogue, Cleric]
+          nullable: true
+        # Core Stats
+        str:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          description: Strength
+        dex:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          description: Dexterity
+        con:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          description: Constitution
+        int:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          description: Intelligence
+        wis:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          description: Wisdom
+        cha:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+          description: Charisma
+        # Derived Stats
+        hp:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Current hit points
+        max_hp:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Maximum hit points
+        ac:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Armor class
+        speed:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Movement speed in feet
+        # Progression
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+          nullable: true
+        experience:
+          type: integer
+          minimum: 0
+          nullable: true
+        # Equipment
+        equipment:
+          $ref: '#/components/schemas/Equipment'
+        # NFT Metadata
+        metadata:
+          $ref: '#/components/schemas/CharacterMetadata'
+        # Status
+        owner_address:
+          type: string
+          nullable: true
+        infection_status:
+          type: string
+          enum: [healthy, infected, cured]
+        staking_status:
+          type: string
+          enum: [unstaked, staked]
+        image_url:
+          type: string
+          nullable: true
+
+    Equipment:
+      type: object
+      nullable: true
+      properties:
+        weapons:
+          type: array
+          items:
+            type: string
+        armor:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            type: string
+        gold:
+          type: integer
+          minimum: 0
+
+    CharacterMetadata:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+        description:
+          type: string
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/NFTAttribute'
+        equipment:
+          $ref: '#/components/schemas/NFTEquipment'
+
+    NFTAttribute:
+      type: object
+      properties:
+        trait_type:
+          type: string
+          description: Trait category (e.g., Body, Alignment, Head)
+        value:
+          oneOf:
+            - type: string
+            - type: number
+          description: Trait value
+
+    NFTEquipment:
+      type: object
+      properties:
+        armor:
+          type: string
+        back:
+          type: string
+        mask:
+          type: string
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message

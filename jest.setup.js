@@ -5,74 +5,90 @@ require('@testing-library/jest-dom')
 
 const React = require('react');
 
-// IMPORTANT: Mock react-leaflet BEFORE any imports
-jest.mock('react-leaflet', () => {
-  return {
-    MapContainer: ({ children }) => (
-      React.createElement('div', { 'data-testid': 'map-container' }, children)
-    ),
-    TileLayer: () => React.createElement('div', { 'data-testid': 'tile-layer' }),
-    Marker: ({ children, position }) => {
-      return React.createElement(
-        'div',
-        {
-          'data-testid': 'leaflet-marker',
-          'data-position': JSON.stringify(position),
-        },
-        children
-      );
-    },
-    Popup: ({ children }) => (
-      React.createElement('div', { 'data-testid': 'leaflet-popup' }, children)
-    ),
-    Tooltip: ({ children }) => (
-      React.createElement('div', { 'data-testid': 'leaflet-tooltip' }, children)
-    ),
-    useMap: () => ({
-      setView: jest.fn(),
-      fitBounds: jest.fn(),
-      invalidateSize: jest.fn(),
-      getBounds: jest.fn(() => ({
-        getSouth: () => 0,
-        getNorth: () => 100,
-        getWest: () => 0,
-        getEast: () => 100,
-      })),
-    }),
-  };
-});
+// Helper to check if module exists before mocking
+const moduleExists = (moduleName) => {
+  try {
+    require.resolve(moduleName);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
-// Mock react-leaflet-markercluster
-jest.mock('react-leaflet-markercluster', () => {
-  const MarkerClusterGroup = ({ children }) =>
-    React.createElement('div', { 'data-testid': 'marker-cluster-group' }, children);
-  return { default: MarkerClusterGroup };
-});
-
-// Mock leaflet module
-jest.mock('leaflet', () => {
-  const mockIcon = (options) => ({
-    options,
+// Only mock react-leaflet if it's installed
+if (moduleExists('react-leaflet')) {
+  jest.mock('react-leaflet', () => {
+    return {
+      MapContainer: ({ children }) => (
+        React.createElement('div', { 'data-testid': 'map-container' }, children)
+      ),
+      TileLayer: () => React.createElement('div', { 'data-testid': 'tile-layer' }),
+      Marker: ({ children, position }) => {
+        return React.createElement(
+          'div',
+          {
+            'data-testid': 'leaflet-marker',
+            'data-position': JSON.stringify(position),
+          },
+          children
+        );
+      },
+      Popup: ({ children }) => (
+        React.createElement('div', { 'data-testid': 'leaflet-popup' }, children)
+      ),
+      Tooltip: ({ children }) => (
+        React.createElement('div', { 'data-testid': 'leaflet-tooltip' }, children)
+      ),
+      useMap: () => ({
+        setView: jest.fn(),
+        fitBounds: jest.fn(),
+        invalidateSize: jest.fn(),
+        getBounds: jest.fn(() => ({
+          getSouth: () => 0,
+          getNorth: () => 100,
+          getWest: () => 0,
+          getEast: () => 100,
+        })),
+      }),
+    };
   });
+}
 
-  mockIcon.Default = {
-    mergeOptions: jest.fn(),
-    prototype: {
-      _getIconUrl: jest.fn(),
-    },
-  };
+// Only mock react-leaflet-markercluster if it's installed
+if (moduleExists('react-leaflet-markercluster')) {
+  jest.mock('react-leaflet-markercluster', () => {
+    const MarkerClusterGroup = ({ children }) =>
+      React.createElement('div', { 'data-testid': 'marker-cluster-group' }, children);
+    return { default: MarkerClusterGroup };
+  });
+}
 
-  return {
-    ...mockIcon,
-    icon: (options) => mockIcon(options),
-    divIcon: (options) => ({
+// Only mock leaflet if it's installed
+if (moduleExists('leaflet')) {
+  jest.mock('leaflet', () => {
+    const mockIcon = (options) => ({
       options,
-    }),
-    CRS: {
-      Simple: 'simple',
-    },
-  };
-});
+    });
+
+    mockIcon.Default = {
+      mergeOptions: jest.fn(),
+      prototype: {
+        _getIconUrl: jest.fn(),
+      },
+    };
+
+    return {
+      ...mockIcon,
+      icon: (options) => mockIcon(options),
+      divIcon: (options) => ({
+        options,
+      }),
+      CRS: {
+        Simple: 'simple',
+      },
+    };
+  });
+}
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({

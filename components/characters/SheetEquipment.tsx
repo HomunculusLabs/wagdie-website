@@ -5,8 +5,18 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components-new/Card'
 import { Empty } from '@/components-new/Empty'
 import type { Equipment } from '@/types/character'
 
+// NFT format equipment type
+interface NFTEquipment {
+  armor?: string
+  back?: string
+  mask?: string
+}
+
 interface SheetEquipmentProps {
+  /** Database equipment (game format with arrays) */
   equipment: Equipment | null
+  /** NFT metadata equipment (single strings) */
+  metadataEquipment?: NFTEquipment | null
   isEditMode?: boolean
 }
 
@@ -28,28 +38,49 @@ function EquipmentSection({ title, items }: { title: string, items: string[] }) 
   )
 }
 
-export function SheetEquipment({ equipment }: SheetEquipmentProps) {
+/**
+ * T017-T020: SheetEquipment Component
+ * Merges equipment from both database (game format) and NFT metadata format.
+ * Filters out "None" values and shows appropriate empty state.
+ */
+export function SheetEquipment({ equipment, metadataEquipment }: SheetEquipmentProps) {
   let weapons: string[] = []
   let armor: string[] = []
   let items: string[] = []
   let gold = 0
 
+  // Handle legacy prop format where equipment could be NFT format
   if (equipment) {
     if ('armor' in equipment && typeof equipment.armor === 'string') {
+      // NFT format passed as equipment prop (legacy support)
       if (equipment.armor && equipment.armor !== 'None') {
         armor.push(equipment.armor)
       }
-      if ('back' in equipment && typeof (equipment as any).back === 'string' && (equipment as any).back !== 'None') {
-        items.push((equipment as any).back)
+      if ('back' in equipment && typeof (equipment as unknown as NFTEquipment).back === 'string' && (equipment as unknown as NFTEquipment).back !== 'None') {
+        items.push((equipment as unknown as NFTEquipment).back!)
       }
-      if ('mask' in equipment && typeof (equipment as any).mask === 'string' && (equipment as any).mask !== 'None') {
-        items.push((equipment as any).mask)
+      if ('mask' in equipment && typeof (equipment as unknown as NFTEquipment).mask === 'string' && (equipment as unknown as NFTEquipment).mask !== 'None') {
+        items.push((equipment as unknown as NFTEquipment).mask!)
       }
     } else {
-      weapons = equipment.weapons || []
-      armor = Array.isArray(equipment.armor) ? equipment.armor : []
-      items = equipment.items || []
+      // Game format (arrays)
+      weapons = (equipment.weapons || []).filter(w => w && w !== 'None')
+      armor = (Array.isArray(equipment.armor) ? equipment.armor : []).filter(a => a && a !== 'None')
+      items = (equipment.items || []).filter(i => i && i !== 'None')
       gold = equipment.gold || 0
+    }
+  }
+
+  // T017: Merge in NFT metadata equipment (if provided separately)
+  if (metadataEquipment) {
+    if (metadataEquipment.armor && metadataEquipment.armor !== 'None' && !armor.includes(metadataEquipment.armor)) {
+      armor.push(metadataEquipment.armor)
+    }
+    if (metadataEquipment.back && metadataEquipment.back !== 'None' && !items.includes(metadataEquipment.back)) {
+      items.push(metadataEquipment.back)
+    }
+    if (metadataEquipment.mask && metadataEquipment.mask !== 'None' && !items.includes(metadataEquipment.mask)) {
+      items.push(metadataEquipment.mask)
     }
   }
 
