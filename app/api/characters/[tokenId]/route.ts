@@ -16,7 +16,6 @@ import {
   validateSpeed,
   validateLevel,
   validateExperience,
-  type ValidationResult
 } from '@/lib/utils/stat-validation'
 import type { CharacterUpdate } from '@/types/character'
 

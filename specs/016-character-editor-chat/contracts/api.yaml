@@ -1,0 +1,460 @@
+openapi: 3.0.3
+info:
+  title: WAGDIE Eliza Proxy API
+  description: |
+    API endpoints for proxying Eliza SDK calls through WAGDIE backend.
+    Handles authentication token management and provides SSO experience.
+  version: 1.0.0
+
+servers:
+  - url: /api/eliza
+    description: WAGDIE backend proxy
+
+paths:
+  /auth/token:
+    post:
+      summary: Get or refresh Eliza access token
+      description: |
+        Exchanges WAGDIE session for Eliza access token.
+        Backend manages SIWE flow with Eliza API on behalf of user.
+      operationId: getElizaToken
+      tags:
+        - Authentication
+      security:
+        - wagdieSession: []
+      responses:
+        '200':
+          description: Access token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Not authenticated (wallet not connected)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /characters/{tokenId}:
+    get:
+      summary: Get AI character by WAGDIE token ID
+      description: |
+        Retrieves AI character linked to WAGDIE character.
+        Returns null if no AI profile exists yet.
+      operationId: getAICharacter
+      tags:
+        - AI Characters
+      security:
+        - wagdieSession: []
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: WAGDIE character token ID
+      responses:
+        '200':
+          description: AI character found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICharacter'
+        '404':
+          description: No AI character exists for this token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Create or update AI character
+      description: |
+        Creates AI character if none exists, or updates existing.
+        Only character owner can update.
+      operationId: upsertAICharacter
+      tags:
+        - AI Characters
+      security:
+        - wagdieSession: []
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AICharacterInput'
+      responses:
+        '200':
+          description: AI character updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICharacter'
+        '201':
+          description: AI character created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AICharacter'
+        '403':
+          description: Not character owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chat:
+    post:
+      summary: Send chat message (streaming)
+      description: |
+        Sends message to AI character and streams response.
+        Uses Server-Sent Events for token-by-token streaming.
+      operationId: sendChatMessage
+      tags:
+        - Chat
+      security:
+        - wagdieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageInput'
+      responses:
+        '200':
+          description: Streaming response
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  SSE stream with events:
+                  - event: token, data: {"token": "word"}
+                  - event: complete, data: {"id": "...", "content": "full response", "conversationId": "..."}
+                  - event: error, data: {"message": "error description"}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /conversations:
+    get:
+      summary: List user's conversations
+      description: |
+        Returns all conversations for authenticated user,
+        optionally filtered by character.
+      operationId: listConversations
+      tags:
+        - Conversations
+      security:
+        - wagdieSession: []
+      parameters:
+        - name: characterId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by AI character ID
+        - name: tokenId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by WAGDIE token ID
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+
+  /conversations/{conversationId}:
+    get:
+      summary: Get conversation with messages
+      description: |
+        Returns conversation details with message history.
+        Supports pagination for long conversations.
+      operationId: getConversation
+      tags:
+        - Conversations
+      security:
+        - wagdieSession: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Max messages to return
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Message ID cursor for pagination
+      responses:
+        '200':
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete conversation
+      description: Permanently deletes conversation and all messages.
+      operationId: deleteConversation
+      tags:
+        - Conversations
+      security:
+        - wagdieSession: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Conversation deleted
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    wagdieSession:
+      type: apiKey
+      in: cookie
+      name: wagdie-session
+      description: WAGDIE session cookie (from wallet SIWE auth)
+
+  schemas:
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - expiresAt
+      properties:
+        accessToken:
+          type: string
+          description: Eliza API access token
+        expiresAt:
+          type: string
+          format: date-time
+          description: Token expiration time
+
+    AICharacter:
+      type: object
+      required:
+        - id
+        - externalId
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        externalId:
+          type: string
+          description: WAGDIE token ID
+        name:
+          type: string
+          maxLength: 100
+        personality:
+          type: string
+          maxLength: 2000
+          nullable: true
+        backstory:
+          type: string
+          maxLength: 5000
+          nullable: true
+        systemPrompt:
+          type: string
+          maxLength: 4000
+          nullable: true
+        exampleMessages:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ExampleMessage'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AICharacterInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        personality:
+          type: string
+          maxLength: 2000
+        backstory:
+          type: string
+          maxLength: 5000
+        systemPrompt:
+          type: string
+          maxLength: 4000
+        exampleMessages:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ExampleMessage'
+
+    ExampleMessage:
+      type: object
+      required:
+        - userMessage
+        - assistantMessage
+      properties:
+        userMessage:
+          type: string
+          maxLength: 500
+        assistantMessage:
+          type: string
+          maxLength: 1000
+
+    ChatMessageInput:
+      type: object
+      required:
+        - tokenId
+        - message
+      properties:
+        tokenId:
+          type: string
+          description: WAGDIE character token ID
+        message:
+          type: string
+          maxLength: 10000
+        conversationId:
+          type: string
+          format: uuid
+          description: Optional - continue existing conversation
+
+    Conversation:
+      type: object
+      required:
+        - id
+        - characterId
+        - userId
+        - messageCount
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        characterId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          description: Wallet address
+        title:
+          type: string
+          nullable: true
+        messageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ConversationDetail:
+      allOf:
+        - $ref: '#/components/schemas/Conversation'
+        - type: object
+          required:
+            - messages
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/ChatMessage'
+            hasMore:
+              type: boolean
+              description: More messages available for pagination
+
+    ChatMessage:
+      type: object
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context

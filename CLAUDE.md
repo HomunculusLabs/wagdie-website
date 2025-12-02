@@ -26,6 +26,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-05
 - Supabase PostgreSQL (existing `characters` table with `metadata` JSONB) (012-character-filter)
 - TypeScript 5+, Node.js 18+ + Next.js 15 (App Router), React 18, Tailwind CSS 3.4, @supabase/supabase-js v2 (015-character-stats-equipment)
 - Supabase PostgreSQL (characters table with dedicated stat columns + metadata JSONB) (015-character-stats-equipment)
+- TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), @eliza/sdk, wagmi v2, viem v2, RainbowKit 2.2+, Tailwind CSS 3.4, @tanstack/react-query (016-character-editor-chat)
+- Supabase PostgreSQL (existing characters table), Eliza API backend (AI characters, conversations) (016-character-editor-chat)
 
 - TypeScript 5+ (Node.js 18+ for migration scripts) + Firebase Admin SDK, Supabase JS client, ethers.js (for address normalization) (001-migration-plan)
 
@@ -63,9 +65,9 @@ npm run lint
 TypeScript 5+ (Node.js 18+ for migration scripts): Follow standard conventions
 
 ## Recent Changes
+- 016-character-editor-chat: Added TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), @eliza/sdk, wagmi v2, viem v2, RainbowKit 2.2+, Tailwind CSS 3.4, @tanstack/react-query
 - 015-character-stats-equipment: Added TypeScript 5+, Node.js 18+ + Next.js 15 (App Router), React 18, Tailwind CSS 3.4, @supabase/supabase-js v2
 - 012-character-filter: Added TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), React Query (@tanstack/react-query), Tailwind CSS 3.4, Supabase JS
-- 012-character-editor: Added TypeScript 5+, React 18, Node.js 18+ + Next.js 15 (App Router), wagmi v2, viem v2, Tailwind CSS 3.4, @tanstack/react-query
 
   - ✅ Modular architecture with separation of concerns
   - ✅ SimpleMap reduced from 735 to 150 lines (80% reduction)

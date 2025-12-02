@@ -20,6 +20,8 @@ import { StakingStatusCard } from '@/components/StakingStatusCard'
 import { SearingModal } from '@/components/modals/SearingModal'
 import { InfectionModal } from '@/components/modals/InfectionModal'
 import { CureModal } from '@/components/modals/CureModal'
+import { ChatSidebar } from '@/components/chat'
+import { AIPersonaTab } from '@/components/characters/ai-editor'
 import {
   Card,
   CardTitle,
@@ -59,6 +61,12 @@ const HeartIcon = () => (
   </svg>
 )
 
+const ChatIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>
+)
+
 export default function CharacterDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -92,6 +100,7 @@ export default function CharacterDetailPage() {
   const [isSearingModalOpen, setIsSearingModalOpen] = useState(false)
   const [isInfectionModalOpen, setIsInfectionModalOpen] = useState(false)
   const [isCureModalOpen, setIsCureModalOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('story')
   const [useLocalImage, setUseLocalImage] = useState(true)
 
@@ -374,10 +383,14 @@ export default function CharacterDetailPage() {
     }
   }
 
+<<<<<<< HEAD
   // T010-T014: Check if character has any core stats (all 6 abilities)
   const hasAnyCoreStats = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0 ||
     attrs.int > 0 || attrs.wis > 0 || attrs.cha > 0
   const hasCharacterSheet = hasAnyCoreStats
+=======
+  const hasCharacterSheet = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0
+>>>>>>> 016-character-editor-chat-v2
 
   // Check if character has any stats (for empty stats prompt)
   const hasAnyStats = character && (
@@ -409,6 +422,7 @@ export default function CharacterDetailPage() {
   // Tabs configuration
   const tabs: TabItem[] = [
     { id: 'story', label: 'Story' },
+    { id: 'ai-persona', label: 'AI Persona' },
     { id: 'equipment', label: 'Equipment' },
     { id: 'wallet', label: 'Wallet' },
   ]
@@ -471,6 +485,10 @@ export default function CharacterDetailPage() {
                   )}
                 </>
               )}
+              <Button variant="secondary" onClick={() => setIsChatOpen(true)} className="gap-2">
+                <ChatIcon />
+                <span className="hidden sm:inline">Chat</span>
+              </Button>
               <Button variant="secondary" onClick={() => router.push(`/characters/${tokenId}/animated`)}>
                 Animated
               </Button>
@@ -642,6 +660,15 @@ export default function CharacterDetailPage() {
             />
           )}
 
+          {activeTab === 'ai-persona' && (
+            <AIPersonaTab
+              tokenId={String(tokenId)}
+              isOwner={isOwner}
+              characterName={name}
+              characterBackstory={editedStory}
+            />
+          )}
+
           {activeTab === 'equipment' && (
             <SheetEquipment
               equipment={character.equipment}
@@ -695,6 +722,14 @@ export default function CharacterDetailPage() {
           />
         </>
       )}
+
+      {/* Chat Sidebar */}
+      <ChatSidebar
+        tokenId={String(tokenId)}
+        characterName={name}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </div>
   )
 }

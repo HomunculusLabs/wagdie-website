@@ -181,7 +181,10 @@ export class CharacterRepository implements ICharacterRepository {
     // Extract Body trait from each character's metadata
     const originCounts = new Map<string, number>()
 
-    for (const row of data || []) {
+    // Type the data since Supabase may not infer correctly for JSONB selection
+    const rows = (data || []) as Array<{ metadata: { attributes?: Array<{ trait_type: string; value: string }> } | null }>
+
+    for (const row of rows) {
       const metadata = row.metadata
       if (metadata?.attributes && Array.isArray(metadata.attributes)) {
         const bodyAttr = metadata.attributes.find(
@@ -224,7 +227,10 @@ export class CharacterRepository implements ICharacterRepository {
     const alignmentCounts = new Map<string, number>()
     const allTraitTypes = new Set<string>()
 
-    for (const row of data || []) {
+    // Type the data since Supabase may not infer correctly for JSONB selection
+    const rows = (data || []) as Array<{ metadata: { attributes?: Array<{ trait_type: string; value: string }> } | null }>
+
+    for (const row of rows) {
       const metadata = row.metadata
       if (metadata?.attributes && Array.isArray(metadata.attributes)) {
         // Collect all trait types for debugging
