@@ -28,7 +28,7 @@ export const MenubarMenu: React.FC<{ trigger: string; children: React.ReactNode 
     <div className="relative" ref={containerRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`px-3 py-1 text-sm font-display uppercase tracking-wider transition-colors rounded-sm ${isOpen ? 'bg-neutral-900 text-neutral-200' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50'}`}
+        className={`px-3 py-1 text-sm font-display  tracking-wider transition-colors rounded-sm ${isOpen ? 'bg-neutral-900 text-neutral-200' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50'}`}
       >
         {trigger}
       </button>
@@ -44,7 +44,7 @@ export const MenubarMenu: React.FC<{ trigger: string; children: React.ReactNode 
 export const MenubarItem: React.FC<{ children: React.ReactNode; shortcut?: string; onClick?: () => void }> = ({ children, shortcut, onClick }) => (
     <button 
         onClick={onClick}
-        className="w-full text-left px-4 py-1.5 text-sm font-serif text-neutral-400 hover:bg-neutral-900 hover:text-soul-accent transition-colors flex justify-between items-center group"
+        className="w-full text-left px-4 py-1.5 text-sm font-eskapade text-neutral-400 hover:bg-neutral-900 hover:text-soul-accent transition-colors flex justify-between items-center group"
     >
         <span>{children}</span>
         {shortcut && <span className="text-xs text-neutral-600 font-mono group-hover:text-neutral-500">{shortcut}</span>}

@@ -46,7 +46,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ trigger, children }) =
 
 export const ContextMenuItem: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({ className = '', ...props }) => (
     <button
-      className={`block w-full text-left px-4 py-2 text-sm font-serif text-neutral-400 hover:bg-neutral-900 hover:text-soul-accent transition-colors ${className}`}
+      className={`block w-full text-left px-4 py-2 text-sm font-eskapade text-neutral-400 hover:bg-neutral-900 hover:text-soul-accent transition-colors ${className}`}
       {...props}
     />
 );
@@ -56,7 +56,7 @@ export const ContextMenuSeparator: React.FC = () => (
 );
 
 export const ContextMenuLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="px-4 py-1 text-xs font-display uppercase tracking-widest text-neutral-600">
+    <div className="px-4 py-1 text-xs font-display  tracking-widest text-neutral-600">
         {children}
     </div>
 );

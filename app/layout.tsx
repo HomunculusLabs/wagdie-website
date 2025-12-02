@@ -40,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="flex flex-col min-h-screen bg-soul-950 text-neutral-300 font-serif selection:bg-soul-blood selection:text-white">
+      <body className="flex flex-col min-h-screen bg-soul-950 text-neutral-300 font-eskapade selection:bg-soul-blood selection:text-white">
         <Providers>
           <Header />
           <main className="flex-1">{children}</main>

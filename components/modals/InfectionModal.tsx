@@ -79,7 +79,7 @@ export function InfectionModal({
       <div className="w-full max-w-md rounded-lg border border-white/20 bg-black p-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-display text-white">
             {mode === 'specific' ? 'Infect Character' : 'Spread Infection'}
           </h2>
           <button
@@ -97,7 +97,7 @@ export function InfectionModal({
           {mode === 'specific' && tokenId && (
             <div className="rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-gray-400">Infecting Character</p>
-              <p className="text-lg font-bold text-white">
+              <p className="text-lg font-display text-white">
                 {tokenName} #{tokenId.toString()}
               </p>
             </div>
@@ -106,7 +106,7 @@ export function InfectionModal({
           {/* Quantity Input (random mode) */}
           {mode === 'random' && (
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-300">
+              <label className="mb-2 block text-sm font-display text-gray-300">
                 Number of Infections
               </label>
               <input
@@ -128,14 +128,14 @@ export function InfectionModal({
           <div className="rounded-lg border border-white/10 bg-white/5 p-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Infection Price</p>
-              <p className="text-lg font-bold text-white">
+              <p className="text-lg font-display text-white">
                 {infectionPrice ? formatEther(infectionPrice) : '...'} ETH
               </p>
             </div>
             {mode === 'random' && quantityNum > 1 && (
               <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-2">
-                <p className="text-sm font-medium text-gray-300">Total Cost</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-sm font-display text-gray-300">Total Cost</p>
+                <p className="text-xl font-display text-white">
                   {formatEther(totalCost)} ETH
                 </p>
               </div>
@@ -146,7 +146,7 @@ export function InfectionModal({
           <div className="rounded-lg border border-white/10 bg-white/5 p-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Your ETH Balance</p>
-              <p className="text-lg font-bold text-white">
+              <p className="text-lg font-display text-white">
                 {ethBalance ? formatEther(ethBalance) : '...'} ETH
               </p>
             </div>
@@ -161,7 +161,7 @@ export function InfectionModal({
           <button
             onClick={handleInfect}
             disabled={!hasEnoughEth || isSpreading || !infectionPrice}
-            className="w-full rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-red-600 px-4 py-3 font-display text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSpreading
               ? 'Spreading...'

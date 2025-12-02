@@ -17,8 +17,8 @@ interface StakingStatusCardProps {
 function InfoRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="bg-black/30 border border-neutral-800 p-3">
-      <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">{label}</p>
-      <p className={`text-sm text-neutral-200 ${mono ? 'font-mono' : 'font-display uppercase tracking-wider'}`}>
+      <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">{label}</p>
+      <p className={`text-sm text-neutral-200 ${mono ? 'font-mono' : 'font-display  tracking-wider'}`}>
         {value}
       </p>
     </div>
@@ -62,10 +62,10 @@ export function StakingStatusCard({ tokenId, className = '' }: StakingStatusCard
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-display uppercase tracking-wider text-neutral-200">Staked</p>
+                      <p className="text-sm font-display  tracking-wider text-neutral-200">Staked</p>
                       <Badge variant="accent">Active</Badge>
                     </div>
-                    <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500">Character is currently staked</p>
+                    <p className="text-[10px] font-display  tracking-widest text-neutral-500">Character is currently staked</p>
                   </div>
                 </div>
 
@@ -90,8 +90,8 @@ export function StakingStatusCard({ tokenId, className = '' }: StakingStatusCard
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
                 <div>
-                  <p className="text-sm font-display uppercase tracking-wider text-neutral-400">Not Staked</p>
-                  <p className="text-[10px] font-display uppercase tracking-widest text-neutral-600">Character is in your wallet</p>
+                  <p className="text-sm font-display  tracking-wider text-neutral-400">Not Staked</p>
+                  <p className="text-[10px] font-display  tracking-widest text-neutral-600">Character is in your wallet</p>
                 </div>
               </div>
             )}

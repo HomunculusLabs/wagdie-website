@@ -30,7 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
   onClick,
   children,
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-sm font-bold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-abyss font-wagdie border-2 uppercase';
+  const baseStyles = 'inline-flex items-center justify-center rounded-sm font-bold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-abyss font-wagdie border-2 ';
 
   const variantStyles = {
     primary: 'bg-midnight text-bone border-gold hover:bg-gold hover:text-abyss hover:shadow-[0_0_20px_rgba(212,175,55,0.5)] focus:ring-gold shadow-[0_4px_0_0_#d4af37]',

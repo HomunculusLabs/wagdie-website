@@ -201,7 +201,7 @@ function CharactersPageContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by name or token ID..."
-              className="w-full bg-black/40 border border-neutral-800 rounded-sm py-2.5 pl-10 pr-10 text-sm font-serif text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-soul-accent/50 focus:ring-1 focus:ring-soul-accent/30 transition-all"
+              className="w-full bg-black/40 border border-neutral-800 rounded-sm py-2.5 pl-10 pr-10 text-md font-eskapade text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-soul-accent/50 focus:ring-1 focus:ring-soul-accent/30 transition-all"
             />
             {searchInput && (
               <button
@@ -216,7 +216,7 @@ function CharactersPageContent() {
             )}
           </div>
           {searchQuery && (
-            <p className="mt-2 text-xs text-neutral-500 font-serif">
+            <p className="mt-2 text-xs text-neutral-500 font-eskapade">
               Searching for &ldquo;{searchQuery}&rdquo;
             </p>
           )}
@@ -290,7 +290,7 @@ function CharactersPageContent() {
           <>
             {/* Results count */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-xs font-display uppercase tracking-widest text-neutral-500">
+              <p className="text-md font-display text-neutral-500">
                 Showing {((page - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(page * ITEMS_PER_PAGE, totalCount)} of {totalCount} characters
               </p>
               {isFetching && !isLoading && (
@@ -330,7 +330,7 @@ function LoadingFallback() {
     <div className="min-h-screen flex items-center justify-center bg-soul-950">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
-        <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
+        <p className="text-neutral-500 font-display text-md">
           Loading Characters
         </p>
       </div>

@@ -38,14 +38,14 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
   return (
     <div className="flex flex-col gap-2 w-full" ref={containerRef}>
         {label && (
-        <label className="text-xs uppercase tracking-widest text-neutral-500 font-display">
+        <label className="text-xs  tracking-widest text-neutral-500 font-display">
           {label}
         </label>
       )}
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-between flex items-center bg-black/20 border border-neutral-800 px-3 py-2 text-sm font-serif text-neutral-300 hover:bg-neutral-900 transition-colors"
+          className="w-full justify-between flex items-center bg-black/20 border border-neutral-800 px-3 py-2 text-sm font-eskapade text-neutral-300 hover:bg-neutral-900 transition-colors"
         >
           {selectedLabel || placeholder}
           <svg className="ml-2 h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>

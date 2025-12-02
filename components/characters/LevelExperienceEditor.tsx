@@ -93,7 +93,7 @@ export function LevelExperienceEditor({
   // Display mode
   if (!isEditMode || !isOwner) {
     return (
-      <p className={`text-sm font-display uppercase tracking-widest text-soul-accent ${className}`}>
+      <p className={`text-sm font-display  tracking-widest text-soul-accent ${className}`}>
         {characterClass ? `${characterClass} • ` : ''}Level {stats.level ?? 1}
         {stats.experience !== null && stats.experience > 0 && (
           <span className="text-neutral-500 text-xs ml-2">({stats.experience.toLocaleString()} XP)</span>
@@ -106,12 +106,12 @@ export function LevelExperienceEditor({
   return (
     <div className={`flex flex-wrap items-center gap-3 ${className}`}>
       {characterClass && (
-        <span className="text-sm font-display uppercase tracking-widest text-soul-accent">
+        <span className="text-sm font-display  tracking-widest text-soul-accent">
           {characterClass} •
         </span>
       )}
       <div className="flex items-center gap-2">
-        <label className="text-sm font-display uppercase tracking-widest text-neutral-500">
+        <label className="text-sm font-display  tracking-widest text-neutral-500">
           Level
         </label>
         <input
@@ -137,7 +137,7 @@ export function LevelExperienceEditor({
         )}
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-sm font-display uppercase tracking-widest text-neutral-500">
+        <label className="text-sm font-display  tracking-widest text-neutral-500">
           XP
         </label>
         <input

@@ -19,11 +19,11 @@ export function BannerHeader({ title, subtitle, className = '' }: BannerHeaderPr
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-[1px] bg-gradient-to-r from-transparent via-soul-accent/40 to-transparent" />
 
       <div className="relative max-w-7xl mx-auto text-center">
-        <h1 className="text-3xl md:text-5xl font-display uppercase tracking-widest text-neutral-200 mb-3 drop-shadow-lg">
+        <h1 className="text-3xl md:text-5xl font-display text-neutral-200 mb-3 drop-shadow-lg">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-neutral-500 font-serif text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+          <p className="text-neutral-500 font-eskapade text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             {subtitle}
           </p>
         )}

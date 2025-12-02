@@ -35,7 +35,7 @@ export function Footer() {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-neutral-600 hover:text-soul-accent transition-colors duration-300 min-h-[44px] flex items-center font-display uppercase tracking-widest text-xs"
+              className="text-neutral-600 hover:text-soul-accent transition-colors duration-300 min-h-[44px] flex items-center font-display text-lg"
             >
               {link.label}
               <svg className="w-3 h-3 ml-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@ export function Footer() {
         </div>
 
         {/* Copyright and Description */}
-        <p className="text-center text-neutral-700 text-xs font-serif">
+        <p className="text-center text-neutral-700 text-xs font-eskapade">
           © 2025 WAGDIE. Community-driven dark fantasy NFT project.
         </p>
       </div>

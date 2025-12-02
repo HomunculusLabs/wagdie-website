@@ -103,7 +103,7 @@ export function TokenFilterBar({
         {/* Sort Toggle */}
         <button
           onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
-          className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display uppercase tracking-wider text-sm"
+          className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display text-md"
           title={`Sort ${currentSort === 'asc' ? 'descending' : 'ascending'}`}
         >
           <span>Token ID</span>

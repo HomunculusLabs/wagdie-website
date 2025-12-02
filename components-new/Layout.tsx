@@ -6,7 +6,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center bg-soul-950 text-neutral-300 font-serif selection:bg-soul-blood selection:text-white overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-soul-950 text-neutral-300 font-eskapade selection:bg-soul-blood selection:text-white overflow-x-hidden">
       {/* Top Vignette */}
       <div className="fixed top-0 left-0 w-full h-32 bg-gradient-to-b from-black to-transparent pointer-events-none z-10" />
       

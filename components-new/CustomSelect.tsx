@@ -197,7 +197,7 @@ export const CustomSelectTrigger = React.memo<{ placeholder?: string; className?
         ${className}
       `}
     >
-      <span className="font-serif block truncate">{context.value || placeholder || "Select..."}</span>
+      <span className="font-eskapade block truncate">{context.value || placeholder || "Select..."}</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"
@@ -280,7 +280,7 @@ export const CustomSelectItem = React.memo<{ value: string; children: React.Reac
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       className={`
-        relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors font-serif
+        relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors font-eskapade
         ${disabled ? 'cursor-not-allowed opacity-50' : ''}
         ${isHighlighted ? 'bg-neutral-800' : ''}
         ${isSelected ? 'bg-neutral-900 text-soul-accent' : 'text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'}
@@ -300,7 +300,7 @@ export const CustomSelectItem = React.memo<{ value: string; children: React.Reac
 CustomSelectItem.displayName = 'CustomSelectItem';
 
 export const CustomSelectLabel: React.FC<{ children: React.ReactNode; id?: string }> = ({ children, id }) => (
-  <div id={id} className="px-2 py-1.5 text-xs font-display uppercase tracking-widest text-neutral-500">
+  <div id={id} className="px-2 py-1.5 text-xs font-display  tracking-widest text-neutral-500">
     {children}
   </div>
 );

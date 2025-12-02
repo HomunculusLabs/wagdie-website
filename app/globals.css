@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom font faces */
+@font-face {
+  font-family: 'Wagdie Fraktur';
+  src: url('/fonts/Wagdie_Fraktur_21.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Eskapade Fraktur';
+  src: url('/fonts/EskapadeFraktur-Black.ttf') format('truetype');
+  font-display: swap;
+}
+
+@layer base {
+  /* Wagdie Fraktur titles are always  */
+  .font-wagdie,
+  .font-display {
+    @apply capitalize;
+  }
+
+  /* Eskapade Fraktur for paragraphs */
+  p {
+    font-family: 'Eskapade Fraktur', serif;
+  }
+}
+
 @layer components {
   /* Button styles */
   .btn-primary {

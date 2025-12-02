@@ -8,13 +8,13 @@ export const Calendar: React.FC = () => {
   return (
     <div className="w-full max-w-[280px] border border-neutral-800 bg-black/40 p-4">
       <div className="flex justify-between items-center mb-4 border-b border-neutral-800 pb-2">
-        <h4 className="font-display uppercase text-soul-accent tracking-widest text-sm">Moon of Frost</h4>
+        <h4 className="font-display  text-soul-accent tracking-widest text-sm">Moon of Frost</h4>
         <div className="text-xs text-neutral-500">Year 4092</div>
       </div>
       
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
         {days.map(d => (
-            <div key={d} className="text-[10px] uppercase text-neutral-600 font-display">{d}</div>
+            <div key={d} className="text-[10px]  text-neutral-600 font-display">{d}</div>
         ))}
       </div>
       
@@ -26,7 +26,7 @@ export const Calendar: React.FC = () => {
                 <button 
                     key={date} 
                     className={`
-                        aspect-square flex items-center justify-center text-xs font-serif transition-colors
+                        aspect-square flex items-center justify-center text-xs font-eskapade transition-colors
                         ${isToday ? 'text-soul-accent border border-soul-accent' : 'text-neutral-400 hover:bg-neutral-800'}
                         ${isSelected ? 'bg-soul-900 text-soul-accent shadow-inner' : ''}
                     `}

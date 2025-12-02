@@ -13,7 +13,7 @@ export const Table: React.FC<React.TableHTMLAttributes<HTMLTableElement>> = ({ c
 
 export const TableCaption: React.FC<React.HTMLAttributes<HTMLTableCaptionElement>> = ({ className = '', children, ...props }) => {
   return (
-    <caption className={`mt-4 text-xs font-serif text-neutral-600 italic ${className}`} {...props}>
+    <caption className={`mt-4 text-xs font-eskapade text-neutral-600 italic ${className}`} {...props}>
       {children}
     </caption>
   );
@@ -53,7 +53,7 @@ export const Tr: React.FC<React.HTMLAttributes<HTMLTableRowElement>> = ({ classN
 
 export const Th: React.FC<React.ThHTMLAttributes<HTMLTableHeaderCellElement>> = ({ className = '', children, ...props }) => {
   return (
-    <th className={`px-4 py-3 text-xs font-display uppercase tracking-widest text-neutral-500 font-normal border-b border-neutral-800 ${className}`} {...props}>
+    <th className={`px-4 py-3 text-xs font-display  tracking-widest text-neutral-500 font-normal border-b border-neutral-800 ${className}`} {...props}>
       {children}
     </th>
   );
@@ -61,7 +61,7 @@ export const Th: React.FC<React.ThHTMLAttributes<HTMLTableHeaderCellElement>> = 
 
 export const Td: React.FC<React.TdHTMLAttributes<HTMLTableDataCellElement>> = ({ className = '', children, ...props }) => {
   return (
-    <td className={`px-4 py-3 text-sm font-serif text-neutral-400 group-hover:text-neutral-200 transition-colors ${className}`} {...props}>
+    <td className={`px-4 py-3 text-sm font-eskapade text-neutral-400 group-hover:text-neutral-200 transition-colors ${className}`} {...props}>
       {children}
     </td>
   );

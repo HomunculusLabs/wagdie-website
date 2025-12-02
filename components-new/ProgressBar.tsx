@@ -46,7 +46,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   return (
     <div className="w-full space-y-1">
       {(label || showValue) && (
-        <div className="flex justify-between items-end text-xs font-display tracking-widest uppercase">
+        <div className="flex justify-between items-end text-xs font-display tracking-widest ">
             <span className="text-neutral-500">{label}</span>
             {showValue && (
                 <span className="text-neutral-400">

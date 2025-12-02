@@ -40,24 +40,24 @@ export function CustomTweet({
             shape="square"
           />
           <div>
-            <p className="font-display uppercase tracking-wider text-sm text-neutral-200">
+            <p className="font-display  tracking-wider text-sm text-neutral-200">
               @{tweet.author_username}
             </p>
-            <p className="text-xs text-neutral-600 font-serif">{formatDate(tweet.created_at)}</p>
+            <p className="text-xs text-neutral-600 font-eskapade">{formatDate(tweet.created_at)}</p>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <CardContent className="p-4">
-        <p className="text-neutral-300 font-serif leading-relaxed whitespace-pre-wrap mb-4">
+        <p className="text-neutral-300 font-eskapade leading-relaxed whitespace-pre-wrap mb-4">
           {tweet.text}
         </p>
 
         {/* Translation (placeholder) */}
         {translationEnabled && (
           <div className="bg-black/30 border border-neutral-800 p-3 mb-4">
-            <p className="text-sm text-neutral-600 font-serif italic">
+            <p className="text-sm text-neutral-600 font-eskapade italic">
               Translation feature coming soon...
             </p>
           </div>

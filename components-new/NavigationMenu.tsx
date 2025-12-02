@@ -14,7 +14,7 @@ export const NavigationMenuItem: React.FC<{ href?: string; children: React.React
     <a 
         href={href || '#'}
         className={`
-            text-sm font-display uppercase tracking-widest transition-all duration-300 relative group
+            text-sm font-display  tracking-widest transition-all duration-300 relative group
             ${active ? 'text-soul-accent' : 'text-neutral-500 hover:text-neutral-300'}
         `}
     >

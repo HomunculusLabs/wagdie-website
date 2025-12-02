@@ -196,7 +196,7 @@ generate_branch_name() {
     # Convert to lowercase and split into words
     local clean_name=$(echo "$description" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/ /g')
     
-    # Filter words: remove stop words and words shorter than 3 chars (unless they're uppercase acronyms in original)
+    # Filter words: remove stop words and words shorter than 3 chars (unless they're  acronyms in original)
     local meaningful_words=()
     for word in $clean_name; do
         # Skip empty words
@@ -207,7 +207,7 @@ generate_branch_name() {
             if [ ${#word} -ge 3 ]; then
                 meaningful_words+=("$word")
             elif echo "$description" | grep -q "\b${word^^}\b"; then
-                # Keep short words if they appear as uppercase in original (likely acronyms)
+                # Keep short words if they appear as  in original (likely acronyms)
                 meaningful_words+=("$word")
             fi
         fi

@@ -61,7 +61,7 @@ export function OriginDropdown({
         className={`
           flex items-center gap-2 px-3 py-2 min-w-[160px]
           bg-black/40 border rounded-sm
-          font-display text-xs uppercase tracking-wider
+          font-display text-md  tracking-wider
           transition-all duration-200
           ${isOpen ? 'border-soul-accent text-soul-accent' : 'border-neutral-700 text-neutral-400'}
           ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-600'}
@@ -81,7 +81,7 @@ export function OriginDropdown({
           <>
             <span className="flex-1 text-left truncate">{displayValue}</span>
             {value && (
-              <span className="text-[10px] text-neutral-500">
+              <span className="text-[12px] text-neutral-500">
                 ({selectedOrigin?.count})
               </span>
             )}
@@ -112,7 +112,7 @@ export function OriginDropdown({
               setIsOpen(false)
             }}
             className={`
-              w-full px-3 py-2 text-left text-xs font-display uppercase tracking-wider
+              w-full px-3 py-2 text-left text-md font-display  tracking-wider
               transition-colors hover:bg-neutral-800/50
               ${!value ? 'text-soul-accent bg-soul-accent/10' : 'text-neutral-400'}
             `}
@@ -134,7 +134,7 @@ export function OriginDropdown({
                 setIsOpen(false)
               }}
               className={`
-                w-full px-3 py-2 text-left text-xs font-serif
+                w-full px-3 py-2 text-left text-md font-eskapade
                 transition-colors hover:bg-neutral-800/50
                 flex items-center justify-between
                 ${value === option.origin ? 'text-soul-accent bg-soul-accent/10' : 'text-neutral-300'}
@@ -143,14 +143,14 @@ export function OriginDropdown({
               aria-selected={value === option.origin}
             >
               <span className="truncate">{option.origin}</span>
-              <span className="text-[10px] text-neutral-500 ml-2">
+              <span className="text-[12px] text-neutral-500 ml-2">
                 {option.count}
               </span>
             </button>
           ))}
 
           {options.length === 0 && (
-            <div className="px-3 py-4 text-center text-xs text-neutral-500">
+            <div className="px-3 py-4 text-center text-md text-neutral-500">
               No origins available
             </div>
           )}

@@ -83,14 +83,14 @@ function TokenBalanceRow({
     <div className="flex items-center justify-between bg-black/30 border border-neutral-800 p-3">
       <div className="flex items-center gap-3">
         <div
-          className="flex h-9 w-9 items-center justify-center text-sm font-display uppercase"
+          className="flex h-9 w-9 items-center justify-center text-sm font-display "
           style={{ backgroundColor: `${info.color}15`, color: info.color, border: `1px solid ${info.color}40` }}
         >
           {info.symbol[0]}
         </div>
         <div>
-          <p className="text-sm font-display uppercase tracking-wider text-neutral-200">{info.name}</p>
-          <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500">{info.symbol}</p>
+          <p className="text-sm font-display  tracking-wider text-neutral-200">{info.name}</p>
+          <p className="text-[10px] font-display  tracking-widest text-neutral-500">{info.symbol}</p>
         </div>
       </div>
       <div className="text-right">
@@ -111,7 +111,7 @@ export function TokenBalancesInline({ className = '' }: { className?: string }) 
   }
 
   return (
-    <div className={`flex items-center gap-3 text-sm font-display uppercase tracking-wider ${className}`}>
+    <div className={`flex items-center gap-3 text-sm font-display  tracking-wider ${className}`}>
       <span className="text-neutral-500">Balances:</span>
       <span className="text-neutral-200">
         {formatBalanceWithSymbol('concord', balances.concord?.balance ?? 0n)}

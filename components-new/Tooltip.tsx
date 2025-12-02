@@ -21,7 +21,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children }) => {
         className={`
             absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs
             px-3 py-2 bg-neutral-900 border border-neutral-700 shadow-xl
-            text-xs text-neutral-300 font-serif text-center pointer-events-none
+            text-xs text-neutral-300 font-eskapade text-center pointer-events-none
             transition-all duration-200 z-50
             ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
         `}

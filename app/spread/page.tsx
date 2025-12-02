@@ -105,7 +105,7 @@ export default function SpreadPage() {
               <CardTitle>Step 1: Touch Corpse</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-neutral-400 font-serif mb-6">
+              <p className="text-neutral-400 font-eskapade mb-6">
                 Burn your corpse tokens to receive Strange Mushrooms (Concord #15).
               </p>
 
@@ -128,7 +128,7 @@ export default function SpreadPage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={() => setMode('spread')}
-                  className={`flex-1 px-6 py-4 border font-display uppercase tracking-wider text-sm transition-all duration-300 ${
+                  className={`flex-1 px-6 py-4 border font-display  tracking-wider text-sm transition-all duration-300 ${
                     mode === 'spread'
                       ? 'bg-arcane/20 border-arcane text-arcane shadow-[0_0_15px_rgba(106,76,147,0.3)]'
                       : 'bg-transparent border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300'
@@ -138,7 +138,7 @@ export default function SpreadPage() {
                 </button>
                 <button
                   onClick={() => setMode('infect')}
-                  className={`flex-1 px-6 py-4 border font-display uppercase tracking-wider text-sm transition-all duration-300 ${
+                  className={`flex-1 px-6 py-4 border font-display  tracking-wider text-sm transition-all duration-300 ${
                     mode === 'infect'
                       ? 'bg-red-950/30 border-red-900 text-red-500 shadow-[0_0_15px_rgba(153,27,27,0.3)]'
                       : 'bg-transparent border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-neutral-300'

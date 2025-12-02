@@ -8,7 +8,7 @@ interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => {
-  const baseStyles = "inline-flex items-center px-2 py-0.5 text-[10px] uppercase tracking-widest font-display border";
+  const baseStyles = "inline-flex items-center px-2 py-0.5 text-[12px]  tracking-widest font-display border";
 
   const variants = {
     default: "bg-neutral-900 border-neutral-700 text-neutral-400",

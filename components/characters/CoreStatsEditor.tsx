@@ -55,7 +55,7 @@ export function CoreStatsEditor({
   if (!isEditMode || !isOwner) {
     return (
       <div className={className}>
-        <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-3">Attributes</p>
+        <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-3">Attributes</p>
         <div className="grid grid-cols-3 gap-2">
           {CORE_STAT_LABELS.map(({ key, label }) => {
             const value = stats[key] ?? 0
@@ -64,7 +64,7 @@ export function CoreStatsEditor({
                 key={key}
                 className="bg-black/40 border border-neutral-800 p-3 text-center"
               >
-                <p className="text-[10px] font-display uppercase tracking-widest text-neutral-600 mb-1">{label}</p>
+                <p className="text-[10px] font-display  tracking-widest text-neutral-600 mb-1">{label}</p>
                 <p className="text-xl font-display text-neutral-200 mb-2">{value}</p>
                 <ProgressBar value={value} max={20} showValue={false} variant="souls" />
               </div>
@@ -78,7 +78,7 @@ export function CoreStatsEditor({
   // Edit mode
   return (
     <div className={className}>
-      <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-3">
+      <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-3">
         Attributes <span className="text-neutral-600">(edit mode)</span>
       </p>
       <div className="grid grid-cols-3 gap-2">

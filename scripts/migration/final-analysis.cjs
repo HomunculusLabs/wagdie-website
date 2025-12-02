@@ -18,7 +18,7 @@ try {
   const entityAnalysis = {};
 
   for (const env of environments) {
-    console.log(`\n--- ${env.toUpperCase()} Environment ---`);
+    console.log(`\n--- ${env.to()} Environment ---`);
     const envData = wagdieData[env] || {};
     const entityTypes = new Set();
     const entityCounts = {};

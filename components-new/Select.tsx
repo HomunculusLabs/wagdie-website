@@ -10,13 +10,13 @@ export const Select: React.FC<SelectProps> = ({ label, options, className = '', 
   return (
     <div className="flex flex-col gap-2 w-full">
       {label && (
-        <label className="text-xs uppercase tracking-widest text-neutral-500 font-display">
+        <label className="text-xs  tracking-widest text-neutral-500 font-display">
           {label}
         </label>
       )}
       <div className="relative group">
         <select
-          className={`appearance-none w-full bg-black/20 border-b border-neutral-800 py-2 pl-1 pr-8 text-lg font-serif text-neutral-300 focus:outline-none focus:border-soul-accent focus:bg-soul-accent/5 transition-all duration-300 cursor-pointer ${className}`}
+          className={`appearance-none w-full bg-black/20 border-b border-neutral-800 py-2 pl-1 pr-8 text-lg font-eskapade text-neutral-300 focus:outline-none focus:border-soul-accent focus:bg-soul-accent/5 transition-all duration-300 cursor-pointer ${className}`}
           {...props}
         >
           {options.map((opt) => (

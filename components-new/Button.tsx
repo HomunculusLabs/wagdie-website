@@ -11,7 +11,7 @@ const variants = {
   danger: "bg-soul-900 border-red-900/50 text-red-700 hover:bg-red-950/30 hover:border-red-800 hover:text-red-500",
 } as const;
 
-const baseStyles = "relative px-6 py-2 font-display uppercase tracking-widest text-sm transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden";
+const baseStyles = "relative px-6 py-2 font-display text-lg transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden";
 
 export const Button = React.memo<ButtonProps>(({
   children,

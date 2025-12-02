@@ -68,7 +68,7 @@ export const Toast: React.FC<ToastProps> = ({
     >
       <div className="shrink-0">{icons[variant]}</div>
       <div className="flex-1">
-        <p className="font-display tracking-wide uppercase text-sm">{message}</p>
+        <p className="font-display tracking-wide  text-sm">{message}</p>
       </div>
       {/* Progress bar for timer */}
       <div className="absolute bottom-0 left-0 h-[2px] bg-current opacity-30 animate-[width_3s_linear_forwards]" style={{width: '100%'}} />

@@ -129,7 +129,7 @@ export const Tabs = React.memo<TabsProps>(({
               onKeyDown={(e) => !isDisabled && handleKeyDown(e, item.id)}
               className={`
                 flex items-center gap-2 px-4 md:px-6 py-3
-                font-display uppercase text-sm tracking-wider
+                font-display  text-lg
                 transition-all duration-300 border-b-2
                 group relative overflow-hidden
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent/50

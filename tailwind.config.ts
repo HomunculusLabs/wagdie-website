@@ -11,9 +11,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        'wagdie': ['Wagdie_Fraktur_21', 'serif'],
-        'eskapade': ['EskapadeFraktur-Black', 'serif'],
-        'display': ['Wagdie_Fraktur_21', 'EskapadeFraktur-Black', 'serif'],
+        'wagdie': ['Wagdie Fraktur', 'serif'],
+        'eskapade': ['Eskapade Fraktur', 'serif'],
+        'display': ['Wagdie Fraktur', 'serif'],
         'serif': ['Georgia', 'Times New Roman', 'serif'],
       },
       colors: {

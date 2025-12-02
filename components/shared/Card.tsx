@@ -43,7 +43,7 @@ export const Card: React.FC<CardProps> = ({
     <div className={combinedClassName}>
       {title && (
         <div className="mb-4 pb-3 border-b-2 border-midnight">
-          <h3 className="text-xl font-bold text-bone font-wagdie tracking-wide uppercase">{title}</h3>
+          <h3 className="text-xl font-bold text-bone font-wagdie tracking-wide ">{title}</h3>
         </div>
       )}
       <div className={isLoading ? 'animate-pulse' : ''}>

@@ -73,7 +73,7 @@ export const SidebarHeader = React.memo<{ children: React.ReactNode; className?:
   children,
   className = ''
 }) => (
-  <div className={`h-14 flex items-center px-4 border-b border-neutral-800 font-display uppercase tracking-widest text-sm text-soul-accent whitespace-nowrap overflow-hidden ${className}`}>
+  <div className={`h-14 flex items-center px-4 border-b border-neutral-800 font-display  tracking-widest text-sm text-soul-accent whitespace-nowrap overflow-hidden ${className}`}>
     {children}
   </div>
 ));
@@ -157,7 +157,7 @@ export const SidebarItem = React.memo<SidebarItemProps>(({
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       className={`
-        w-full flex items-center gap-3 px-3 py-2 text-sm font-serif transition-colors relative group
+        w-full flex items-center gap-3 px-3 py-2 text-sm font-eskapade transition-colors relative group
         focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-soul-accent/50
         ${active ? 'bg-neutral-900 text-soul-accent' : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-200'}
         ${!isOpen ? 'justify-center' : ''}

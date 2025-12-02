@@ -424,7 +424,7 @@ export default function CharacterDetailPage() {
       <div className="min-h-screen flex items-center justify-center bg-soul-950">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-neutral-500 font-display uppercase tracking-widest text-sm">
+          <p className="text-neutral-500 font-display  tracking-widest text-sm">
             Loading Character
           </p>
         </div>
@@ -460,7 +460,7 @@ export default function CharacterDetailPage() {
               <span className="hidden sm:inline">Back</span>
             </Button>
 
-            <h1 className="text-sm font-display uppercase tracking-widest text-neutral-400">
+            <h1 className="text-sm font-display  tracking-widest text-neutral-400">
               Character #{tokenId}
             </h1>
 
@@ -565,7 +565,7 @@ export default function CharacterDetailPage() {
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <Card className="bg-black/30">
                       <CardContent className="p-3 text-center">
-                        <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-1">Token</p>
+                        <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">Token</p>
                         <p className="text-xl font-display text-neutral-200">#{tokenId}</p>
                       </CardContent>
                     </Card>
@@ -600,7 +600,7 @@ export default function CharacterDetailPage() {
               {isOwner && (
                 <Card className="mt-auto">
                   <CardContent className="p-4">
-                    <p className="text-[10px] font-display uppercase tracking-widest text-neutral-500 mb-3">Blockchain Actions</p>
+                    <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-3">Blockchain Actions</p>
                     <div className="flex flex-wrap gap-2">
                       <Button variant="primary" onClick={() => setIsSearingModalOpen(true)} className="gap-2">
                         <FireIcon /> Sear Concords

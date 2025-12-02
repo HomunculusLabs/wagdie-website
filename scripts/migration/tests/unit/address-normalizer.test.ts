@@ -32,9 +32,9 @@ describe('Address Normalizer', () => {
       expect(result).toBe(checksummed);
     });
 
-    it('should handle uppercase address', () => {
-      const uppercase = '0X5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED';
-      const result = normalizeAddress(uppercase);
+    it('should handle  address', () => {
+      const  = '0X5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED';
+      const result = normalizeAddress();
 
       expect(result).toBe('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed');
     });

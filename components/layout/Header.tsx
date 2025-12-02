@@ -61,10 +61,10 @@ export function Header() {
           <Link
             href="/"
             onClick={scrollToTop}
-            className="text-xl font-display uppercase tracking-[0.3em] text-neutral-200 hover:text-soul-accent transition-colors duration-300 cursor-pointer"
+            className="text-2xl font-display text-neutral-200 hover:text-soul-accent transition-colors duration-300 cursor-pointer"
             title="Scroll to top"
           >
-            WAGDIE
+            Wagdie
           </Link>
 
           {/* Desktop Navigation */}
@@ -91,7 +91,7 @@ export function Header() {
             {/* MORE button */}
             <button
               onClick={toggleDrawer}
-              className="px-4 py-2 text-neutral-500 hover:text-soul-accent transition-colors font-display uppercase tracking-widest text-xs"
+              className="px-4 py-2 text-neutral-500 hover:text-soul-accent transition-colors font-display text-xl"
               title="More options"
               aria-label="Open menu drawer"
             >
@@ -112,7 +112,7 @@ export function Header() {
                   closeMobileMenu()
                   toggleDrawer()
                 }}
-                className="text-left px-4 py-3 text-neutral-500 hover:text-soul-accent transition-colors font-display uppercase tracking-widest text-xs"
+                className="text-left px-4 py-3 text-neutral-500 hover:text-soul-accent transition-colors font-display text-xl"
               >
                 More Options
               </button>
@@ -136,7 +136,7 @@ export function Header() {
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-800">
-              <h2 className="text-lg font-display uppercase tracking-widest text-neutral-200">Menu</h2>
+              <h2 className="text-xl font-display text-neutral-200">Menu</h2>
               <button
                 onClick={closeDrawer}
                 className="p-2 text-neutral-500 hover:text-red-500 transition-colors"
@@ -153,21 +153,21 @@ export function Header() {
               <Link
                 href="/map"
                 onClick={closeDrawer}
-                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display text-xl"
               >
                 World Map
               </Link>
               <Link
                 href="/about"
                 onClick={closeDrawer}
-                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display text-xl"
               >
-                About WAGDIE
+                About Wagdie
               </Link>
               <Link
                 href="/spread"
                 onClick={closeDrawer}
-                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display text-xl"
               >
                 Spread Infection
               </Link>
@@ -178,7 +178,7 @@ export function Header() {
                 href="https://discord.gg/wagdie"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
+                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display text-xl"
               >
                 <span>Discord</span>
                 <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,7 +189,7 @@ export function Header() {
                 href="https://twitter.com/WAGDIE_ETH"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
+                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display text-xl"
               >
                 <span>Twitter</span>
                 <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +200,7 @@ export function Header() {
                 href="https://opensea.io/collection/wagdie"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display uppercase tracking-wider text-sm"
+                className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-display text-xl"
               >
                 <span>OpenSea</span>
                 <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

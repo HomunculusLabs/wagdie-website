@@ -73,7 +73,7 @@ export const RadarChart: React.FC<ChartProps> = ({ stats }) => {
                     dominantBaseline="middle" 
                     fill="#737373" 
                     fontSize="10" 
-                    className="font-display uppercase tracking-widest"
+                    className="font-display  tracking-widest"
                 >
                     {s.label}
                 </text>

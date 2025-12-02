@@ -46,7 +46,7 @@ export function Navigation({ className = '', isMobile = false, onNavClick }: Nav
             href={item.path}
             className={`
               relative px-4 py-3 min-h-[44px] flex items-center
-              text-sm font-display uppercase tracking-widest
+              text-xl font-display
               transition-all duration-300 group
               ${isActive
                 ? 'text-soul-accent'

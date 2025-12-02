@@ -18,7 +18,7 @@ export const InputGroup: React.FC<InputGroupProps> = ({ children, className = ''
 };
 
 export const InputGroupAddon: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="px-3 text-neutral-500 text-sm font-serif bg-neutral-900/30 h-full flex items-center justify-center">
+    <div className="px-3 text-neutral-500 text-sm font-eskapade bg-neutral-900/30 h-full flex items-center justify-center">
         {children}
     </div>
 );

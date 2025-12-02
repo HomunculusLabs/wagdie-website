@@ -44,19 +44,19 @@ export function SpreadInfect({
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="bg-shadow rounded p-4 text-center">
           <p className="text-sm text-mist mb-1">Corpses</p>
-          <p className="text-3xl font-bold text-bone">{corpseBalance}</p>
+          <p className="text-3xl font-display text-bone">{corpseBalance}</p>
         </div>
         <div className="bg-shadow rounded p-4 text-center">
           <p className="text-sm text-mist mb-1">Mushrooms</p>
-          <p className="text-3xl font-bold text-gold">{mushroomBalance}</p>
+          <p className="text-3xl font-display text-gold">{mushroomBalance}</p>
         </div>
       </div>
 
       {/* Mode: Spread (Random) */}
       {mode === 'spread' && (
         <div>
-          <h3 className="text-xl font-bold text-bone mb-4">Release Spores (Random)</h3>
-          <p className="text-ash mb-4">
+          <h3 className="text-xl font-display text-bone mb-4">Release Spores (Random)</h3>
+          <p className="text-ash mb-4 font-eskapade">
             Use your mushrooms to spread the infection randomly across the collection.
           </p>
 
@@ -78,7 +78,7 @@ export function SpreadInfect({
           <button
             onClick={() => onSpread(spreadAmount)}
             disabled={mushroomBalance === 0 || spreadAmount > mushroomBalance}
-            className="w-full px-6 py-3 bg-purple-600 text-white font-bold rounded hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-purple-600 text-white font-display rounded hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Release Spores
           </button>
@@ -88,8 +88,8 @@ export function SpreadInfect({
       {/* Mode: Infect (Targeted) */}
       {mode === 'infect' && (
         <div>
-          <h3 className="text-xl font-bold text-bone mb-4">Infect Pilgrim (Targeted)</h3>
-          <p className="text-ash mb-4">
+          <h3 className="text-xl font-display text-bone mb-4">Infect Pilgrim (Targeted)</h3>
+          <p className="text-ash mb-4 font-eskapade">
             Target a specific character to infect. Requires 1 mushroom + {infectionPrice} ETH.
           </p>
 
@@ -111,14 +111,14 @@ export function SpreadInfect({
 
           <div className="bg-shadow rounded p-4 mb-4">
             <p className="text-sm text-mist">
-              Cost: <span className="text-gold font-bold">1 mushroom + {infectionPrice} ETH</span>
+              Cost: <span className="text-gold font-display">1 mushroom + {infectionPrice} ETH</span>
             </p>
           </div>
 
           <button
             onClick={handleInfect}
             disabled={mushroomBalance === 0 || !targetTokenId}
-            className="w-full px-6 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-red-600 text-white font-display rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Infect Character
           </button>

@@ -58,7 +58,7 @@ export function CureModal({
       <div className="w-full max-w-md rounded-lg border border-white/20 bg-black p-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-white">Cure Character</h2>
+          <h2 className="text-2xl font-display text-white">Cure Character</h2>
           <button
             onClick={onClose}
             className="text-gray-400 transition-colors hover:text-white"
@@ -73,7 +73,7 @@ export function CureModal({
           {/* Character Info */}
           <div className="rounded-lg border border-white/10 bg-white/5 p-4">
             <p className="text-sm text-gray-400">Curing Character</p>
-            <p className="text-lg font-bold text-white">
+            <p className="text-lg font-display text-white">
               {characterName} #{characterId}
             </p>
             <p className="mt-1 text-xs text-gray-500">
@@ -85,11 +85,11 @@ export function CureModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-gray-400">Your Mushrooms</p>
-              <p className="text-2xl font-bold text-white">{mushroomBalance.toString()}</p>
+              <p className="text-2xl font-display text-white">{mushroomBalance.toString()}</p>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-gray-400">Required</p>
-              <p className="text-2xl font-bold text-white">{mushroomsRequired.toString()}</p>
+              <p className="text-2xl font-display text-white">{mushroomsRequired.toString()}</p>
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export function CureModal({
           <button
             onClick={handleCure}
             disabled={!canCure || isCuring}
-            className="w-full rounded-lg bg-green-600 px-4 py-3 font-bold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-green-600 px-4 py-3 font-display text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isCuring ? 'Curing...' : `Cure for ${mushroomsRequired} Mushroom${mushroomsRequired > 1n ? 's' : ''}`}
           </button>

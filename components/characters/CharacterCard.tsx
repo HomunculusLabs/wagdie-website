@@ -68,17 +68,17 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
         <div className="absolute top-2 right-2 flex flex-col gap-1">
           <OwnershipBadge tokenId={BigInt(character.token_id)} />
           {character.infection_status === 'infected' && (
-            <span className="px-2 py-0.5 bg-red-950/80 border border-red-900/50 text-red-400 text-[10px] font-display uppercase tracking-widest">
+            <span className="px-2 py-0.5 bg-red-950/80 border border-red-900/50 text-red-400 text-[12px] font-display  tracking-widest">
               Infected
             </span>
           )}
           {character.infection_status === 'cured' && (
-            <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-[10px] font-display uppercase tracking-widest">
+            <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-[12px] font-display  tracking-widest">
               Cured
             </span>
           )}
           {character.staking_status === 'staked' && (
-            <span className="px-2 py-0.5 bg-blue-950/80 border border-blue-900/50 text-blue-400 text-[10px] font-display uppercase tracking-widest">
+            <span className="px-2 py-0.5 bg-blue-950/80 border border-blue-900/50 text-blue-400 text-[12px] font-display  tracking-widest">
               Staked
             </span>
           )}
@@ -92,11 +92,11 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
 
       {/* Character Info */}
       <CardContent className="p-4">
-        <h3 className="text-base font-display uppercase tracking-wider text-neutral-200 group-hover:text-soul-accent transition-colors duration-300 truncate">
+        <h3 className="text-lg font-display  tracking-wider text-neutral-200 group-hover:text-soul-accent transition-colors duration-300 truncate">
           {name}
         </h3>
         {(characterClass || level) && (
-          <p className="text-sm text-neutral-500 font-serif mt-1">
+          <p className="text-md text-neutral-500 font-eskapade mt-1">
             {characterClass && `${characterClass}`}
             {characterClass && level && ' · '}
             {level && `Level ${level}`}
