@@ -95,7 +95,7 @@ export function CoreStatsEditor({
           />
         ))}
       </div>
-      <p className="mt-2 text-xs text-neutral-500 text-center">
+      <p className="my-2 text-md text-neutral-500 text-center">
         Valid range: {min}-{max}
       </p>
     </div>

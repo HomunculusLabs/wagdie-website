@@ -93,10 +93,10 @@ export function LevelExperienceEditor({
   // Display mode
   if (!isEditMode || !isOwner) {
     return (
-      <p className={`text-sm font-display  tracking-widest text-soul-accent ${className}`}>
+      <p className={`text-lg font-display  tracking-widest text-soul-accent ${className}`}>
         {characterClass ? `${characterClass} • ` : ''}Level {stats.level ?? 1}
         {stats.experience !== null && stats.experience > 0 && (
-          <span className="text-neutral-500 text-xs ml-2">({stats.experience.toLocaleString()} XP)</span>
+          <span className="text-neutral-500 text-md ml-2">({stats.experience.toLocaleString()} XP)</span>
         )}
       </p>
     )
@@ -111,7 +111,7 @@ export function LevelExperienceEditor({
         </span>
       )}
       <div className="flex items-center gap-2">
-        <label className="text-sm font-display  tracking-widest text-neutral-500">
+        <label className="text-lg font-display  tracking-widest text-neutral-500">
           Level
         </label>
         <input
@@ -122,7 +122,7 @@ export function LevelExperienceEditor({
           max={STAT_CONSTRAINTS.level.max}
           className={`
             w-16 bg-black/40 border px-2 py-1
-            text-sm font-display text-soul-accent text-center
+            text-md font-display text-soul-accent text-center
             focus:outline-none focus:ring-1 focus:ring-soul-accent/50
             [appearance:textfield]
             [&::-webkit-outer-spin-button]:appearance-none
@@ -137,7 +137,7 @@ export function LevelExperienceEditor({
         )}
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-sm font-display  tracking-widest text-neutral-500">
+        <label className="text-lg font-display  tracking-widest text-neutral-500">
           XP
         </label>
         <input
@@ -148,7 +148,7 @@ export function LevelExperienceEditor({
           max={STAT_CONSTRAINTS.experience.max}
           className={`
             w-24 bg-black/40 border px-2 py-1
-            text-sm font-display text-neutral-300 text-center
+            text-md font-display text-neutral-300 text-center
             focus:outline-none focus:ring-1 focus:ring-soul-accent/50
             [appearance:textfield]
             [&::-webkit-outer-spin-button]:appearance-none

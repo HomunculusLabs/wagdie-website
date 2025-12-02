@@ -60,8 +60,8 @@ export function OwnershipVerificationBanner({
           <CheckIcon />
         </div>
         <div>
-          <p className="text-sm font-display  tracking-wider text-emerald-400">You own this character</p>
-          <p className="text-[10px] font-display  tracking-widest text-neutral-500">
+          <p className="text-lg font-display text-emerald-400">You own this character</p>
+          <p className="text-[14px] font-display  tracking-widest text-neutral-500">
             Connected: {shortenAddress(address)}
           </p>
         </div>

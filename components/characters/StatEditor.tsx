@@ -82,7 +82,7 @@ export function StatEditor({
   // Edit mode
   return (
     <div className={`bg-black/40 border p-3 text-center ${error ? 'border-red-500' : 'border-neutral-700'} ${className}`}>
-      <label className="text-[10px] font-display  tracking-widest text-neutral-600 mb-1 block">
+      <label className="text-[16px] font-display  tracking-widest text-neutral-600 mb-1 block">
         {label}
       </label>
       <input
@@ -93,7 +93,7 @@ export function StatEditor({
         max={max}
         className={`
           w-full bg-transparent text-center
-          text-xl font-display text-neutral-200
+          text-2xl font-display text-neutral-200
           focus:outline-none
           [appearance:textfield]
           [&::-webkit-outer-spin-button]:appearance-none

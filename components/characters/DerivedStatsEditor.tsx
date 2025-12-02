@@ -47,25 +47,25 @@ export function DerivedStatsEditor({
       <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${className}`}>
         {stats.hp !== null && (
           <div className="bg-black/30 border border-neutral-800 p-3 text-center">
-            <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">HP</p>
-            <p className="text-xl font-display text-soul-accent">
+            <p className="text-[18px] font-display  tracking-widest text-neutral-500 mb-1">HP</p>
+            <p className="text-2xl font-display text-soul-accent">
               {stats.hp}
               {stats.max_hp !== null && (
-                <span className="text-neutral-500 text-xs">/{stats.max_hp}</span>
+                <span className="text-neutral-500 text-md">/{stats.max_hp}</span>
               )}
             </p>
           </div>
         )}
         {stats.ac !== null && (
           <div className="bg-black/30 border border-neutral-800 p-3 text-center">
-            <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">AC</p>
-            <p className="text-xl font-display text-neutral-200">{stats.ac}</p>
+            <p className="text-[18px] font-display  tracking-widest text-neutral-500 mb-1">AC</p>
+            <p className="text-2xl font-display text-neutral-200">{stats.ac}</p>
           </div>
         )}
         {stats.speed !== null && (
           <div className="bg-black/30 border border-neutral-800 p-3 text-center">
-            <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">Speed</p>
-            <p className="text-xl font-display text-neutral-200">
+            <p className="text-[18px] font-display  tracking-widest text-neutral-500 mb-1">Speed</p>
+            <p className="text-2xl font-display text-neutral-200">
               {stats.speed}<span className="text-xs text-neutral-500"> ft</span>
             </p>
           </div>
@@ -77,7 +77,7 @@ export function DerivedStatsEditor({
   // Edit mode
   return (
     <div className={className}>
-      <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-3">
+      <p className="text-[22px] font-display  tracking-widest text-neutral-500 mb-3">
         Quick Stats <span className="text-neutral-600">(edit mode)</span>
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -119,7 +119,7 @@ export function DerivedStatsEditor({
         />
       </div>
       {hpWarning && (
-        <p className="mt-2 text-xs text-amber-400 text-center">
+        <p className="mt-2 text-md text-amber-400 text-center">
           Warning: HP exceeds Max HP
         </p>
       )}
