@@ -100,7 +100,7 @@
 - [x] T033 Verify no tsc_output*.txt files exist with `ls tsc_output*.txt 2>/dev/null` - PASS
 - [x] T034 Verify docs/archive/ contains 12 items with `ls docs/archive/ | wc -l` - PASS (12 items)
 - [x] T035 Stage all changes with `git add -A`
-- [ ] T036 Commit cleanup with descriptive message
+- [x] T036 Commit cleanup with descriptive message
 
 ---
 
