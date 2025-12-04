@@ -32,6 +32,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-05
 - File system only (015-root-cleanup)
 - TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), @eliza/sdk (local), wagmi v2, Tailwind CSS 3.4, Zod (validation) (017-eliza-persona-editor)
 - Eliza backend (via SDK), localStorage (drafts), file upload (knowledge docs) (017-eliza-persona-editor)
+- TypeScript 5+, React 18+, Node.js 18+ + Next.js 15, Phaser 3.90, wagmi v2, viem v2, Tailwind CSS 3.4, @supabase/supabase-js v2 (018-map-editor)
+- Supabase PostgreSQL (existing `locations` table with `metadata.coordinates`) (018-map-editor)
 
 - TypeScript 5+ (Node.js 18+ for migration scripts) + Firebase Admin SDK, Supabase JS client, ethers.js (for address normalization) (001-migration-plan)
 
@@ -69,9 +71,9 @@ npm run lint
 TypeScript 5+ (Node.js 18+ for migration scripts): Follow standard conventions
 
 ## Recent Changes
+- 018-map-editor: Added TypeScript 5+, React 18+, Node.js 18+ + Next.js 15, Phaser 3.90, wagmi v2, viem v2, Tailwind CSS 3.4, @supabase/supabase-js v2
 - 017-eliza-persona-editor: Added TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), @eliza/sdk (local), wagmi v2, Tailwind CSS 3.4, Zod (validation)
 - 015-root-cleanup: Added N/A (file operations only) + Git, Bash/shell commands
-- 016-character-editor-chat: Added TypeScript 5+, React 18+, Node.js 18+ + Next.js 15 (App Router), @eliza/sdk, wagmi v2, viem v2, RainbowKit 2.2+, Tailwind CSS 3.4, @tanstack/react-query
 
   - ✅ Modular architecture with separation of concerns
   - ✅ SimpleMap reduced from 735 to 150 lines (80% reduction)

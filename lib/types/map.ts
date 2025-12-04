@@ -51,6 +51,8 @@ export interface LocationMetadata {
     special?: boolean;
   };
   special_properties?: string[];
+  // Editor coordinates (x, y position for map editor pins)
+  coordinates?: { x: number; y: number };
 }
 
 /**
@@ -326,4 +328,62 @@ export class LocationError extends MapError {
     super(message, 'LOCATION_ERROR', details);
     this.name = 'LocationError';
   }
+}
+
+// ============================================================================
+// Map Editor Types (018-map-editor)
+// ============================================================================
+
+/**
+ * Input for creating a new location
+ */
+export interface CreateLocationInput {
+  name: string // Required, non-empty, 1-200 chars
+  description?: string // Optional, max 2000 chars
+  coordinates: { x: number; y: number } // Required for placement
+}
+
+/**
+ * Input for updating an existing location
+ */
+export interface UpdateLocationInput {
+  name?: string // Optional update, 1-200 chars if provided
+  description?: string // Optional update, max 2000 chars
+  coordinates?: { x: number; y: number } // For repositioning
+}
+
+/**
+ * Standard API response for single location
+ */
+export interface LocationResponse {
+  success: boolean
+  data?: Location
+  error?: string
+  details?: string[]
+}
+
+/**
+ * Standard API response for location list
+ */
+export interface LocationListResponse {
+  success: boolean
+  data?: Location[]
+  error?: string
+}
+
+/**
+ * Editor mode state
+ */
+export type EditorMode = 'view' | 'create' | 'edit'
+
+/**
+ * Editor state for map editor component
+ */
+export interface EditorState {
+  mode: EditorMode
+  selectedLocation: Location | null
+  pendingLocation: { x: number; y: number } | null
+  locations: Location[]
+  isLoading: boolean
+  error: string | null
 }

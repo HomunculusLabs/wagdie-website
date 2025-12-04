@@ -60,6 +60,14 @@ export const MapEvents = {
   MARKER_UNHOVERED: 'marker-unhovered',
   CAMERA_CHANGED: 'camera-changed',
   MAP_READY: 'map-ready',
+
+  // Editor events (018-map-editor)
+  EDITOR_MODE_CHANGED: 'editor-mode-changed',
+  MAP_CLICKED: 'map-clicked',
+  MARKER_DRAGGED: 'marker-dragged',
+  LOCATION_CREATED: 'location-created',
+  LOCATION_UPDATED: 'location-updated',
+  LOCATION_DELETED: 'location-deleted',
 } as const;
 
 export type MapEventType = typeof MapEvents[keyof typeof MapEvents];

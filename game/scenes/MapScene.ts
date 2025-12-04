@@ -52,12 +52,17 @@ export class MapScene extends Phaser.Scene {
     fights: true,
   };
 
-  // Drag state
+  // Drag state (for camera panning)
   private isDragging = false;
   private dragStartX = 0;
   private dragStartY = 0;
   private cameraStartX = 0;
   private cameraStartY = 0;
+
+  // Editor mode state
+  private editorMode: 'view' | 'create' | 'edit' = 'view';
+  private draggingMarker: Phaser.GameObjects.Sprite | null = null;
+  private draggingMarkerId: string | null = null;
 
   // Tooltip
   private tooltip!: Phaser.GameObjects.Container;
@@ -156,9 +161,23 @@ export class MapScene extends Phaser.Scene {
       }
     });
 
-    // Drag to pan
+    // Drag to pan (or drag marker in edit mode)
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.leftButtonDown()) {
+        // Check if we're in create mode and clicked on the map (not a marker)
+        if (this.editorMode === 'create') {
+          // Get world coordinates
+          const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+          // Convert back to 0-1000 coordinate system
+          const x = worldPoint.x / COORD_SCALE;
+          const y = worldPoint.y / COORD_SCALE;
+
+          // Emit map clicked event to React
+          EventBus.emit(MapEvents.MAP_CLICKED, { x, y });
+          return;
+        }
+
+        // Normal camera drag
         this.isDragging = true;
         this.dragStartX = pointer.x;
         this.dragStartY = pointer.y;
@@ -168,6 +187,14 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      // Handle marker dragging
+      if (this.draggingMarker && this.draggingMarkerId) {
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        this.draggingMarker.setPosition(worldPoint.x, worldPoint.y);
+        return;
+      }
+
+      // Handle camera dragging
       if (this.isDragging) {
         const dx = (this.dragStartX - pointer.x) / camera.zoom;
         const dy = (this.dragStartY - pointer.y) / camera.zoom;
@@ -177,6 +204,25 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.input.on('pointerup', () => {
+      // Handle marker drag end
+      if (this.draggingMarker && this.draggingMarkerId) {
+        const worldPoint = camera.getWorldPoint(this.input.activePointer.x, this.input.activePointer.y);
+        // Convert back to 0-1000 coordinate system
+        const x = worldPoint.x / COORD_SCALE;
+        const y = worldPoint.y / COORD_SCALE;
+
+        // Emit marker dragged event to React
+        EventBus.emit(MapEvents.MARKER_DRAGGED, {
+          id: this.draggingMarkerId.replace('location-', ''),
+          x,
+          y,
+        });
+
+        this.draggingMarker = null;
+        this.draggingMarkerId = null;
+        return;
+      }
+
       if (this.isDragging) {
         this.isDragging = false;
         this.emitCameraChanged();
@@ -184,6 +230,17 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.input.on('pointerupoutside', () => {
+      // Cancel marker drag
+      if (this.draggingMarker && this.draggingMarkerId) {
+        // Restore original position
+        const data = this.markerData.get(this.draggingMarkerId);
+        if (data) {
+          this.draggingMarker.setPosition(data.x, data.y);
+        }
+        this.draggingMarker = null;
+        this.draggingMarkerId = null;
+      }
+
       if (this.isDragging) {
         this.isDragging = false;
         this.emitCameraChanged();
@@ -225,6 +282,23 @@ export class MapScene extends Phaser.Scene {
     // Update events (burns, deaths, fights) from React
     EventBus.on(MapEvents.UPDATE_EVENTS, (events: { burns: any[]; deaths: any[]; fights: any[] }) => {
       this.updateEvents(events);
+    });
+
+    // Editor mode changes from React (018-map-editor)
+    EventBus.on(MapEvents.EDITOR_MODE_CHANGED, (data: { mode: 'view' | 'create' | 'edit' }) => {
+      this.editorMode = data.mode;
+      this.updateMarkerDraggability();
+    });
+
+    // Location deleted - remove marker
+    EventBus.on(MapEvents.LOCATION_DELETED, (data: { id: string }) => {
+      const markerId = `location-${data.id}`;
+      const marker = this.markers.get(markerId);
+      if (marker) {
+        marker.destroy();
+        this.markers.delete(markerId);
+        this.markerData.delete(markerId);
+      }
     });
   }
 
@@ -359,13 +433,23 @@ export class MapScene extends Phaser.Scene {
       // Create new marker
       marker = this.add.sprite(data.x, data.y, iconKey);
       marker.setScale(scale);
-      marker.setInteractive({ useHandCursor: true });
+
+      // Set interactive with drag support for location markers in edit mode
+      const isDraggable = data.type === 'location' && this.editorMode === 'edit';
+      marker.setInteractive({ useHandCursor: true, draggable: isDraggable });
       marker.setDepth(this.getMarkerDepth(data.type));
 
       // Set up marker events
       marker.on('pointerover', () => this.onMarkerHover(data));
       marker.on('pointerout', () => this.onMarkerOut(data));
-      marker.on('pointerdown', () => this.onMarkerClick(data));
+      marker.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        // Start drag if in edit mode and it's a location marker
+        if (this.editorMode === 'edit' && data.type === 'location') {
+          this.draggingMarker = marker!;
+          this.draggingMarkerId = data.id;
+        }
+        this.onMarkerClick(data);
+      });
 
       this.markers.set(data.id, marker);
     } else {
@@ -443,6 +527,24 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Update marker draggability based on editor mode
+   */
+  private updateMarkerDraggability(): void {
+    this.markers.forEach((marker, id) => {
+      const data = this.markerData.get(id);
+      if (data && data.type === 'location') {
+        // Location markers are draggable in edit mode
+        const isDraggable = this.editorMode === 'edit';
+        if (isDraggable) {
+          marker.setInteractive({ useHandCursor: true, draggable: true });
+        } else {
+          marker.setInteractive({ useHandCursor: true, draggable: false });
+        }
+      }
+    });
+  }
+
   private onMarkerHover(data: MarkerData): void {
     // Update tooltip
     this.tooltipText.setText(data.name);
@@ -488,5 +590,9 @@ export class MapScene extends Phaser.Scene {
     EventBus.off(MapEvents.UPDATE_LOCATIONS);
     EventBus.off(MapEvents.UPDATE_CHARACTERS);
     EventBus.off(MapEvents.UPDATE_EVENTS);
+
+    // Remove editor event listeners
+    EventBus.off(MapEvents.EDITOR_MODE_CHANGED);
+    EventBus.off(MapEvents.LOCATION_DELETED);
   }
 }
