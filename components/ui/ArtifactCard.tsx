@@ -20,10 +20,10 @@ export const ArtifactCard: React.FC<Props> = ({ data }) => {
       
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-neutral-800 pb-4 mb-4 gap-2">
-            <h2 className="text-2xl text-neutral-200 font-display  tracking-wider group-hover:text-soul-accent transition-colors duration-500">
+            <h2 className="text-2xl text-neutral-200 font-display  tracking-normal group-hover:text-soul-accent transition-colors duration-500">
             {data.name}
             </h2>
-            <span className="text-xs  tracking-widest text-neutral-500 border border-neutral-800 px-2 py-1">
+            <span className="text-xs  tracking-normal text-neutral-500 border border-neutral-800 px-2 py-1">
                 {data.type}
             </span>
         </div>
@@ -42,7 +42,7 @@ export const ArtifactCard: React.FC<Props> = ({ data }) => {
             <div className="col-span-1 space-y-4">
                 <div className="p-4 bg-black/40 border border-neutral-800 h-full flex flex-col justify-center">
                     <h4 className="text-neutral-500 text-xs font-display  mb-2 text-center">Attribute Scaling</h4>
-                    <div className="text-center text-xl font-display text-neutral-300 tracking-widest">
+                    <div className="text-center text-xl font-display text-neutral-300 tracking-normal">
                         {data.scaling}
                     </div>
                 </div>

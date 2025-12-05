@@ -54,7 +54,7 @@ export function SheetToggle({
           `} />
         </div>
       </span>
-      <span className="text-md font-display  tracking-wider text-neutral-400">
+      <span className="text-md font-display  tracking-normal text-neutral-400">
         Has Sheet
       </span>
     </label>

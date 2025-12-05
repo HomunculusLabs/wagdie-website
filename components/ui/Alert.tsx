@@ -22,8 +22,8 @@ export const Alert: React.FC<AlertProps> = ({ title, children, variant = 'defaul
     <div className={`relative w-full rounded-sm border p-4 ${styles[variant]} flex gap-4 items-start ${className}`}>
       {icon && <div className="shrink-0 mt-0.5">{icon}</div>}
       <div className="space-y-1">
-        {title && <h5 className="font-display  tracking-wider text-sm font-bold leading-none">{title}</h5>}
-        <div className="text-sm font-eskapade opacity-90 leading-relaxed">
+        {title && <h5 className="font-display  tracking-normal text-sm font-bold leading-none">{title}</h5>}
+        <div className="text-sm font-body opacity-90 leading-relaxed">
           {children}
         </div>
       </div>
@@ -51,8 +51,8 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({ isOpen, onClose, onCon
             <div className="mx-auto text-red-800 mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
-            <h2 className="text-xl font-display  text-neutral-200 tracking-widest">{title}</h2>
-            <p className="text-neutral-400 font-eskapade text-sm">{description}</p>
+            <h2 className="text-xl font-display  text-neutral-200 tracking-normal">{title}</h2>
+            <p className="text-neutral-400 font-body text-sm">{description}</p>
         </div>
         <div className="flex justify-center gap-4">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>

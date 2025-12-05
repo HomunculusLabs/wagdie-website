@@ -260,10 +260,10 @@ function LorePageContent() {
             {reachedLimit && (
               <Card className="mt-6">
                 <CardContent className="text-center py-8">
-                  <p className="text-lg font-display  tracking-widest text-neutral-200 mb-2">
+                  <p className="text-lg font-display  tracking-normal text-neutral-200 mb-2">
                     Maximum entries reached
                   </p>
-                  <p className="text-sm text-neutral-500 font-eskapade mb-6">
+                  <p className="text-sm text-neutral-500 font-body mb-6">
                     You&apos;ve loaded {tweets.length} lore entries. Use the filters above to explore different content or refresh to start over.
                   </p>
                   <Button
@@ -287,7 +287,7 @@ function LoadingFallback() {
     <div className="min-h-screen flex items-center justify-center bg-soul-950">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
-        <p className="text-neutral-500 font-display  tracking-widest text-sm">
+        <p className="text-neutral-500 font-display  tracking-normal text-sm">
           Loading Lore
         </p>
       </div>

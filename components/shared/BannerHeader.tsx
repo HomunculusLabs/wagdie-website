@@ -23,7 +23,7 @@ export function BannerHeader({ title, subtitle, className = '' }: BannerHeaderPr
           {title}
         </h1>
         {subtitle && (
-          <p className="text-body md:text-body text-neutral-500 font-eskapade max-w-2xl mx-auto leading-relaxed">
+          <p className="text-body md:text-body text-neutral-500 font-body max-w-2xl mx-auto leading-relaxed">
             {subtitle}
           </p>
         )}

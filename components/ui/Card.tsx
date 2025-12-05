@@ -16,7 +16,7 @@ export const CardTitle = React.memo<React.HTMLAttributes<HTMLHeadingElement>>(({
 CardTitle.displayName = 'CardTitle';
 
 export const CardDescription = React.memo<React.HTMLAttributes<HTMLParagraphElement>>(({ className = '', ...props }) => (
-  <p className={`text-body-sm text-neutral-500 font-eskapade ${className}`} {...props} />
+  <p className={`text-body-sm text-neutral-500 font-body ${className}`} {...props} />
 ));
 CardDescription.displayName = 'CardDescription';
 

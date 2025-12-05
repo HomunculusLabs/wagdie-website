@@ -14,7 +14,7 @@ interface BreadcrumbProps {
 export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
   return (
     <nav aria-label="Breadcrumb">
-      <ol className="flex items-center gap-2 text-sm font-display  tracking-widest">
+      <ol className="flex items-center gap-2 text-sm font-display  tracking-normal">
         {items.map((item, index) => (
           <li key={index} className="flex items-center">
             {index > 0 && (

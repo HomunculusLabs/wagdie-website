@@ -38,14 +38,14 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
   return (
     <div className="flex flex-col gap-2 w-full" ref={containerRef}>
         {label && (
-        <label className="text-caption tracking-widest uppercase text-neutral-500 font-display">
+        <label className="text-caption tracking-normal uppercase text-neutral-500 font-display">
           {label}
         </label>
       )}
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-between flex items-center bg-black/20 border border-neutral-800 px-3 py-2 text-body font-eskapade text-neutral-300 hover:bg-neutral-900 transition-colors"
+          className="w-full justify-between flex items-center bg-black/20 border border-neutral-800 px-3 py-2 text-body font-body text-neutral-300 hover:bg-neutral-900 transition-colors"
         >
           {selectedLabel || placeholder}
           <svg className="ml-2 h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -72,7 +72,7 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
                                 setSearch("");
                             }}
                             className={`
-                                cursor-pointer px-2 py-1.5 text-body-sm font-eskapade flex items-center
+                                cursor-pointer px-2 py-1.5 text-body-sm font-body flex items-center
                                 ${value === opt.value ? 'text-soul-accent bg-neutral-900' : 'text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'}
                             `}
                         >

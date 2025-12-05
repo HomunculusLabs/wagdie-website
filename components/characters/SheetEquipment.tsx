@@ -25,10 +25,10 @@ function EquipmentSection({ title, items }: { title: string, items: string[] }) 
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-display  tracking-widest text-soul-accent">{title}</h4>
+      <h4 className="text-xs font-display  tracking-normal text-soul-accent">{title}</h4>
       <ul className="space-y-1">
         {items.map((item, index) => (
-          <li key={index} className="text-neutral-400 font-eskapade flex items-center gap-2">
+          <li key={index} className="text-neutral-400 font-body flex items-center gap-2">
             <span className="w-1 h-1 bg-soul-accent/50 rotate-45" />
             {item}
           </li>
@@ -102,7 +102,7 @@ export function SheetEquipment({ equipment, metadataEquipment }: SheetEquipmentP
 
             {gold > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-display  tracking-widest text-soul-accent">Gold</h4>
+                <h4 className="text-xs font-display  tracking-normal text-soul-accent">Gold</h4>
                 <p className="text-2xl font-display text-neutral-200">{gold} <span className="text-soul-accent text-sm">gp</span></p>
               </div>
             )}

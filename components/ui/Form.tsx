@@ -198,7 +198,7 @@ export const FormDescription = React.memo<React.HTMLAttributes<HTMLParagraphElem
   return (
     <p
       id={id}
-      className={`text-[0.8rem] text-neutral-500 font-eskapade ${className}`}
+      className={`text-[0.8rem] text-neutral-500 font-body ${className}`}
       {...props}
     />
   );
@@ -231,7 +231,7 @@ export const FormMessage = React.memo<FormMessageProps>(({
       id={id}
       role="alert"
       aria-live="polite"
-      className={`text-[0.8rem] font-medium text-red-500 font-eskapade ${className}`}
+      className={`text-[0.8rem] font-medium text-red-500 font-body ${className}`}
       {...props}
     >
       {error || children}

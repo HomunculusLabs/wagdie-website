@@ -251,7 +251,7 @@ export const DropdownItem = React.memo<DropdownItemProps>(({
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       className={`
-        block w-full text-left px-4 py-2 text-sm font-eskapade text-neutral-400
+        block w-full text-left px-4 py-2 text-sm font-body text-neutral-400
         transition-colors focus:outline-none
         ${isHighlighted ? 'bg-neutral-900 text-soul-accent' : 'hover:bg-neutral-900 hover:text-soul-accent'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -269,7 +269,7 @@ DropdownItem.displayName = 'DropdownItem';
 export const DropdownLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
     role="presentation"
-    className="px-4 py-2 text-xs font-display  tracking-widest text-neutral-600 border-b border-neutral-900 mb-1"
+    className="px-4 py-2 text-xs font-display  tracking-normal text-neutral-600 border-b border-neutral-900 mb-1"
   >
     {children}
   </div>

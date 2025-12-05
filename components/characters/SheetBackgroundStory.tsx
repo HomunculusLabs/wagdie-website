@@ -32,12 +32,12 @@ export function SheetBackgroundStory({
               maxLength={5000}
               className="min-h-[200px]"
             />
-            <p className="text-xs text-neutral-500 font-display  tracking-widest">
+            <p className="text-xs text-neutral-500 font-display  tracking-normal">
               {(story || '').length} / 5000 characters
             </p>
           </div>
         ) : (
-          <div className="text-neutral-400 font-eskapade whitespace-pre-wrap leading-relaxed">
+          <div className="text-neutral-400 font-body whitespace-pre-wrap leading-relaxed">
             {story || (
               <p className="italic text-neutral-600">
                 {isOwner

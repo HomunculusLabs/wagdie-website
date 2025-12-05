@@ -21,7 +21,7 @@ export const Switch: React.FC<SwitchProps> = ({ label, className = '', ...props 
         </div>
       </div>
       {label && (
-        <span className="text-sm font-eskapade text-neutral-500 group-hover:text-neutral-300 transition-colors select-none">
+        <span className="text-sm font-body text-neutral-500 group-hover:text-neutral-300 transition-colors select-none">
           {label}
         </span>
       )}

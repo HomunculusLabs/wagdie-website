@@ -140,7 +140,7 @@ export const Modal = React.memo<ModalProps>(({
         <div className="flex items-center justify-between p-6 border-b border-neutral-900">
           <h3
             id={`${modalId.current}-title`}
-            className="text-xl font-display  tracking-widest text-neutral-200"
+            className="text-xl font-display  tracking-normal text-neutral-200"
           >
             {title}
           </h3>
@@ -171,7 +171,7 @@ export const Modal = React.memo<ModalProps>(({
         {/* Body */}
         <div
           id={`${modalId.current}-body`}
-          className="p-6 text-neutral-400 font-eskapade"
+          className="p-6 text-neutral-400 font-body"
         >
           {children}
         </div>

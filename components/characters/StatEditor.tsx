@@ -69,7 +69,7 @@ export function StatEditor({
   if (!isEditMode || !isOwner) {
     return (
       <div className={`bg-black/40 border border-neutral-800 p-3 text-center ${className}`}>
-        <p className="text-[10px] font-display  tracking-widest text-neutral-600 mb-1">
+        <p className="text-[10px] font-display  tracking-normal text-neutral-600 mb-1">
           {label}
         </p>
         <p className="text-xl font-display text-neutral-200">
@@ -82,7 +82,7 @@ export function StatEditor({
   // Edit mode
   return (
     <div className={`bg-black/40 border p-3 text-center ${error ? 'border-red-500' : 'border-neutral-700'} ${className}`}>
-      <label className="text-[16px] font-display  tracking-widest text-neutral-600 mb-1 block">
+      <label className="text-[16px] font-display  tracking-normal text-neutral-600 mb-1 block">
         {label}
       </label>
       <input

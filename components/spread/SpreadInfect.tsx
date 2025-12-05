@@ -56,7 +56,7 @@ export function SpreadInfect({
       {mode === 'spread' && (
         <div>
           <h3 className="text-xl font-display text-bone mb-4">Release Spores (Random)</h3>
-          <p className="text-ash mb-4 font-eskapade">
+          <p className="text-ash mb-4 font-body">
             Use your mushrooms to spread the infection randomly across the collection.
           </p>
 
@@ -89,7 +89,7 @@ export function SpreadInfect({
       {mode === 'infect' && (
         <div>
           <h3 className="text-xl font-display text-bone mb-4">Infect Pilgrim (Targeted)</h3>
-          <p className="text-ash mb-4 font-eskapade">
+          <p className="text-ash mb-4 font-body">
             Target a specific character to infect. Requires 1 mushroom + {infectionPrice} ETH.
           </p>
 

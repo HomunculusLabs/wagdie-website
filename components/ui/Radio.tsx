@@ -18,7 +18,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ name, options, value, on
   return (
     <div className="flex flex-col gap-3">
       {label && (
-        <span className="text-xs  tracking-widest text-neutral-500 font-display">
+        <span className="text-xs  tracking-normal text-neutral-500 font-display">
           {label}
         </span>
       )}
@@ -36,7 +36,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ name, options, value, on
               />
               <div className="absolute w-2 h-2 bg-soul-accent rotate-45 opacity-0 peer-checked:opacity-100 transition-opacity duration-300 pointer-events-none shadow-[0_0_8px_rgba(200,170,110,0.8)]" />
             </div>
-            <span className={`text-sm font-eskapade transition-colors duration-300 ${value === option.value ? 'text-neutral-200' : 'text-neutral-500 group-hover:text-neutral-400'}`}>
+            <span className={`text-sm font-body transition-colors duration-300 ${value === option.value ? 'text-neutral-200' : 'text-neutral-500 group-hover:text-neutral-400'}`}>
               {option.label}
             </span>
           </label>

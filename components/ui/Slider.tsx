@@ -11,7 +11,7 @@ export const Slider: React.FC<SliderProps> = ({ label, valueDisplay = false, cla
     <div className="flex flex-col gap-4 w-full">
       <div className="flex justify-between items-end">
         {label && (
-          <label className="text-xs  tracking-widest text-neutral-500 font-display">
+          <label className="text-xs  tracking-normal text-neutral-500 font-display">
             {label}
           </label>
         )}

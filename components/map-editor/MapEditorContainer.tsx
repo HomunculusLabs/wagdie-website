@@ -25,7 +25,7 @@ const PhaserGame = dynamic(() => import('@/game/PhaserGame'), {
     <div className="absolute inset-0 flex items-center justify-center bg-abyss">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
-        <p className="text-soul-mist font-display tracking-widest text-sm">
+        <p className="text-soul-mist font-display tracking-normal text-sm">
           Loading Map Editor
         </p>
       </div>
