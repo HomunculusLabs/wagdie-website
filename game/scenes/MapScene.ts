@@ -7,6 +7,14 @@
 
 import * as Phaser from 'phaser';
 import { EventBus, MapEvents } from '../EventBus';
+import {
+  type MarkerType,
+  type LayerVisibilityKey,
+  getMarkerIcon,
+  getMarkerScale,
+  getMarkerDepth,
+  isMarkerVisible,
+} from '../config/markerConfig';
 
 // Map dimensions (matches original Leaflet implementation)
 const MAP_WIDTH = 2222;
@@ -20,9 +28,6 @@ const MIN_ZOOM = 1.0;
 const MAX_ZOOM = 3;
 const DEFAULT_ZOOM = 1.0;
 
-// Marker types
-type MarkerType = 'location' | 'character' | 'burn' | 'death' | 'fight';
-
 interface MarkerData {
   id: string;
   type: MarkerType;
@@ -32,13 +37,7 @@ interface MarkerData {
   data: any;
 }
 
-interface LayerVisibility {
-  locations: boolean;
-  characters: boolean;
-  burns: boolean;
-  deaths: boolean;
-  fights: boolean;
-}
+type LayerVisibility = Record<LayerVisibilityKey, boolean>;
 
 export class MapScene extends Phaser.Scene {
   private mapImage!: Phaser.GameObjects.Image;
@@ -426,8 +425,8 @@ export class MapScene extends Phaser.Scene {
   private createOrUpdateMarker(data: MarkerData): void {
     let marker = this.markers.get(data.id);
 
-    const iconKey = this.getIconKey(data.type);
-    const scale = this.getMarkerScale(data.type);
+    const iconKey = getMarkerIcon(data.type);
+    const scale = getMarkerScale(data.type);
 
     if (!marker) {
       // Create new marker
@@ -437,12 +436,12 @@ export class MapScene extends Phaser.Scene {
       // Set interactive with drag support for location markers in edit mode
       const isDraggable = data.type === 'location' && this.editorMode === 'edit';
       marker.setInteractive({ useHandCursor: true, draggable: isDraggable });
-      marker.setDepth(this.getMarkerDepth(data.type));
+      marker.setDepth(getMarkerDepth(data.type));
 
       // Set up marker events
       marker.on('pointerover', () => this.onMarkerHover(data));
       marker.on('pointerout', () => this.onMarkerOut(data));
-      marker.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      marker.on('pointerdown', (_pointer: Phaser.Input.Pointer) => {
         // Start drag if in edit mode and it's a location marker
         if (this.editorMode === 'edit' && data.type === 'location') {
           this.draggingMarker = marker!;
@@ -461,68 +460,17 @@ export class MapScene extends Phaser.Scene {
     this.markerData.set(data.id, data);
 
     // Apply visibility based on layer settings
-    marker.setVisible(this.isMarkerVisible(data.type));
+    marker.setVisible(isMarkerVisible(data.type, this.layerVisibility));
   }
 
-  private getIconKey(type: MarkerType): string {
-    switch (type) {
-      case 'location':
-        return 'icon_location';
-      case 'character':
-        return 'icon_youarehere';
-      case 'burn':
-        return 'icon_burn';
-      case 'death':
-        return 'icon_death';
-      case 'fight':
-        return 'icon_fight';
-      default:
-        return 'icon_location';
-    }
-  }
-
-  private getMarkerScale(type: MarkerType): number {
-    switch (type) {
-      case 'character':
-        return 0.8;
-      default:
-        return 0.6;
-    }
-  }
-
-  private getMarkerDepth(type: MarkerType): number {
-    switch (type) {
-      case 'character':
-        return 100;
-      case 'location':
-        return 50;
-      default:
-        return 75;
-    }
-  }
-
-  private isMarkerVisible(type: MarkerType): boolean {
-    switch (type) {
-      case 'location':
-        return this.layerVisibility.locations;
-      case 'character':
-        return this.layerVisibility.characters;
-      case 'burn':
-        return this.layerVisibility.burns;
-      case 'death':
-        return this.layerVisibility.deaths;
-      case 'fight':
-        return this.layerVisibility.fights;
-      default:
-        return true;
-    }
-  }
+  // Removed: getIconKey, getMarkerScale, getMarkerDepth, isMarkerVisible
+  // Now using imported helpers from '../config/markerConfig'
 
   private updateMarkerVisibility(): void {
     this.markers.forEach((marker, id) => {
       const data = this.markerData.get(id);
       if (data) {
-        marker.setVisible(this.isMarkerVisible(data.type));
+        marker.setVisible(isMarkerVisible(data.type, this.layerVisibility));
       }
     });
   }

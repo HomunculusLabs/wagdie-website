@@ -1,25 +1,29 @@
 'use client'
 
-// useSpread Hook
-// React hook for infection spreading operations
+/**
+ * useSpread Hook
+ * React hook for infection spreading operations.
+ * Refactored to use useBlockchainTransaction for common transaction logic.
+ */
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
-import { ContractError, TransactionHash, TransactionStatus } from '@/types/blockchain'
+import { ContractError, TransactionStatus } from '@/types/blockchain'
 import { SpreadService } from '@/lib/services/blockchain/spread'
 import { logError } from '@/lib/utils/errors'
-import { useTransactionStore, generateTransactionId } from '@/lib/store/transactions'
+import { useTransactionStore } from '@/lib/store/transactions'
 import {
   showTransactionPendingToast,
   showTransactionSuccessToast,
   showTransactionErrorToast,
 } from '@/lib/utils/toast'
 import { formatEther } from 'viem'
+import { useBlockchainTransaction } from './useBlockchainTransaction'
 
 interface UseSpreadResult {
   isSpreading: boolean
   error: ContractError | null
-  txHash: TransactionHash | null
+  txHash: `0x${string}` | null
   txStatus: TransactionStatus
   infectionPrice: bigint | null
   ethBalance: bigint | null
@@ -34,262 +38,164 @@ export function useSpread(): UseSpreadResult {
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
 
-  const [isSpreading, setIsSpreading] = useState(false)
-  const [error, setError] = useState<ContractError | null>(null)
-  const [txHash, setTxHash] = useState<TransactionHash | null>(null)
-  const [txStatus, setTxStatus] = useState<TransactionStatus>(TransactionStatus.IDLE)
   const [infectionPrice, setInfectionPrice] = useState<bigint | null>(null)
   const [ethBalance, setEthBalance] = useState<bigint | null>(null)
 
   const { addTransaction, updateTransaction } = useTransactionStore()
 
-  const fetchInfectionPrice = async (): Promise<void> => {
-    if (!publicClient) return
+  // Infect transaction using shared utility
+  const infectTx = useBlockchainTransaction({
+    transactionType: 'infect-wagdie',
+    onPending: (txId) => {
+      addTransaction(txId, 'infect-wagdie', { status: TransactionStatus.PENDING })
+    },
+    onSuccess: (hash) => {
+      showTransactionSuccessToast(hash, 'Character infected successfully!')
+    },
+    onError: (error) => {
+      showTransactionErrorToast(error)
+      logError(error, 'infectWagdie')
+    },
+    addTransaction,
+    updateTransaction,
+  })
 
+  // Spread transaction using shared utility
+  const spreadTx = useBlockchainTransaction({
+    transactionType: 'spread-infections',
+    onPending: (txId) => {
+      addTransaction(txId, 'spread-infections', { status: TransactionStatus.PENDING })
+    },
+    onSuccess: (hash, result) => {
+      showTransactionSuccessToast(hash, `Infections spread successfully!`)
+    },
+    onError: (error) => {
+      showTransactionErrorToast(error)
+      logError(error, 'spreadInfections')
+    },
+    addTransaction,
+    updateTransaction,
+  })
+
+  const fetchInfectionPrice = useCallback(async (): Promise<void> => {
+    if (!publicClient) return
     try {
       const service = new SpreadService({ publicClient, walletClient })
       await service.initialize()
-
       const result = await service.getInfectionPrice()
-      if (result.data) {
-        setInfectionPrice(result.data)
-      }
+      if (result.data) setInfectionPrice(result.data)
     } catch (err) {
       logError(err, 'fetchInfectionPrice')
     }
-  }
+  }, [publicClient, walletClient])
 
-  const fetchEthBalance = async (): Promise<void> => {
+  const fetchEthBalance = useCallback(async (): Promise<void> => {
     if (!address || !publicClient) return
-
     try {
       const service = new SpreadService({ publicClient, walletClient })
       await service.initialize()
-
       const result = await service.getEthBalance(address)
-      if (result.data) {
-        setEthBalance(result.data)
-      }
+      if (result.data) setEthBalance(result.data)
     } catch (err) {
       logError(err, 'fetchEthBalance')
     }
-  }
+  }, [address, publicClient, walletClient])
 
-  const infectWagdie = async (tokenId: bigint): Promise<void> => {
-    if (!address || !publicClient || !walletClient) {
-      const err: ContractError = {
-        type: 'unknown' as any,
-        message: 'Wallet not connected',
-      }
-      setError(err)
-      return
-    }
-
-    setIsSpreading(true)
-    setError(null)
-    setTxStatus(TransactionStatus.PENDING)
-
-    const txId = generateTransactionId('infect-wagdie', tokenId.toString())
-
-    try {
-      const service = new SpreadService({ publicClient, walletClient })
-      await service.initialize()
-
-      // Check ETH balance
-      const priceResult = await service.getInfectionPrice()
-      if (priceResult.error) {
-        setError(priceResult.error)
-        setTxStatus(TransactionStatus.ERROR)
-        showTransactionErrorToast(priceResult.error)
+  const infectWagdie = useCallback(
+    async (tokenId: bigint): Promise<void> => {
+      if (!address || !publicClient || !walletClient) {
+        showTransactionErrorToast({ type: 'unknown' as any, message: 'Wallet not connected' })
         return
       }
 
-      const price = priceResult.data!
-      const balanceResult = await service.getEthBalance(address)
+      await infectTx.execute({ tokenId }, async ({ tokenId }) => {
+        const service = new SpreadService({ publicClient, walletClient })
+        await service.initialize()
 
-      if (balanceResult.error || (balanceResult.data && balanceResult.data < price)) {
-        const err: ContractError = {
-          type: 'insufficient_funds' as any,
-          message: `Insufficient ETH. Required: ${formatEther(price)} ETH`,
+        // Check price and balance
+        const priceResult = await service.getInfectionPrice()
+        if (priceResult.error) return { error: priceResult.error }
+
+        const price = priceResult.data!
+        const balanceResult = await service.getEthBalance(address)
+
+        if (balanceResult.error || (balanceResult.data && balanceResult.data < price)) {
+          return {
+            error: {
+              type: 'insufficient_funds' as any,
+              message: `Insufficient ETH. Required: ${formatEther(price)} ETH`,
+            },
+          }
         }
-        setError(err)
-        setTxStatus(TransactionStatus.ERROR)
-        showTransactionErrorToast(err)
-        return
-      }
 
-      addTransaction(txId, 'infect-wagdie', {
-        status: TransactionStatus.PENDING,
-        metadata: { tokenId: tokenId.toString(), price: price.toString() },
-      })
+        // Execute infection
+        const result = await service.infectWagdie(tokenId, address)
+        if (result.error) return { error: result.error }
 
-      const result = await service.infectWagdie(tokenId, address)
-
-      if (result.error) {
-        setError(result.error)
-        setTxStatus(TransactionStatus.ERROR)
-        updateTransaction(txId, {
-          status: TransactionStatus.ERROR,
-          error: result.error.message,
-        })
-        showTransactionErrorToast(result.error)
-        return
-      }
-
-      if (result.hash) {
-        setTxHash(result.hash)
-        setTxStatus(TransactionStatus.CONFIRMING)
-        updateTransaction(txId, {
-          hash: result.hash,
-          status: TransactionStatus.CONFIRMING,
-        })
-
-        showTransactionPendingToast(result.hash)
-
-        const receipt = await service['waitForTransaction'](result.hash)
-
-        if (receipt.error) {
-          setError(receipt.error)
-          setTxStatus(TransactionStatus.ERROR)
-          updateTransaction(txId, {
-            status: TransactionStatus.ERROR,
-            error: receipt.error.message,
-          })
-          showTransactionErrorToast(receipt.error)
-        } else {
-          setTxStatus(TransactionStatus.SUCCESS)
-          updateTransaction(txId, {
-            status: TransactionStatus.SUCCESS,
-          })
-          showTransactionSuccessToast(result.hash, 'Character infected successfully!')
+        if (result.hash) {
+          showTransactionPendingToast(result.hash)
+          // Wait for confirmation
+          const receipt = await service['waitForTransaction'](result.hash)
+          if (receipt.error) return { error: receipt.error }
+          return { hash: result.hash }
         }
-      }
-    } catch (err) {
-      const error: ContractError = {
-        type: 'unknown' as any,
-        message: 'Failed to infect WAGDIE',
-        originalError: err instanceof Error ? err : undefined,
-      }
-      setError(error)
-      setTxStatus(TransactionStatus.ERROR)
-      updateTransaction(txId, {
-        status: TransactionStatus.ERROR,
-        error: error.message,
+
+        return {}
       })
-      showTransactionErrorToast(error)
-      logError(err, 'infectWagdie')
-    } finally {
-      setIsSpreading(false)
-    }
-  }
+    },
+    [address, publicClient, walletClient, infectTx]
+  )
 
-  const spreadInfections = async (quantity: bigint): Promise<void> => {
-    if (!address || !publicClient || !walletClient) {
-      const err: ContractError = {
-        type: 'unknown' as any,
-        message: 'Wallet not connected',
-      }
-      setError(err)
-      return
-    }
-
-    setIsSpreading(true)
-    setError(null)
-    setTxStatus(TransactionStatus.PENDING)
-
-    const txId = generateTransactionId('spread-infections', quantity.toString())
-
-    try {
-      const service = new SpreadService({ publicClient, walletClient })
-      await service.initialize()
-
-      // Calculate total cost and check balance
-      const costResult = await service.calculateTotalCost(quantity)
-      if (costResult.error) {
-        setError(costResult.error)
-        setTxStatus(TransactionStatus.ERROR)
-        showTransactionErrorToast(costResult.error)
+  const spreadInfections = useCallback(
+    async (quantity: bigint): Promise<void> => {
+      if (!address || !publicClient || !walletClient) {
+        showTransactionErrorToast({ type: 'unknown' as any, message: 'Wallet not connected' })
         return
       }
 
-      const totalCost = costResult.data!
-      const balanceResult = await service.getEthBalance(address)
+      await spreadTx.execute({ quantity }, async ({ quantity }) => {
+        const service = new SpreadService({ publicClient, walletClient })
+        await service.initialize()
 
-      if (balanceResult.error || (balanceResult.data && balanceResult.data < totalCost)) {
-        const err: ContractError = {
-          type: 'insufficient_funds' as any,
-          message: `Insufficient ETH. Required: ${formatEther(totalCost)} ETH`,
+        // Calculate cost and check balance
+        const costResult = await service.calculateTotalCost(quantity)
+        if (costResult.error) return { error: costResult.error }
+
+        const totalCost = costResult.data!
+        const balanceResult = await service.getEthBalance(address)
+
+        if (balanceResult.error || (balanceResult.data && balanceResult.data < totalCost)) {
+          return {
+            error: {
+              type: 'insufficient_funds' as any,
+              message: `Insufficient ETH. Required: ${formatEther(totalCost)} ETH`,
+            },
+          }
         }
-        setError(err)
-        setTxStatus(TransactionStatus.ERROR)
-        showTransactionErrorToast(err)
-        return
-      }
 
-      addTransaction(txId, 'spread-infections', {
-        status: TransactionStatus.PENDING,
-        metadata: { quantity: quantity.toString(), totalCost: totalCost.toString() },
-      })
+        // Execute spread
+        const result = await service.spreadInfections(quantity, address)
+        if (result.error) return { error: result.error }
 
-      const result = await service.spreadInfections(quantity, address)
-
-      if (result.error) {
-        setError(result.error)
-        setTxStatus(TransactionStatus.ERROR)
-        updateTransaction(txId, {
-          status: TransactionStatus.ERROR,
-          error: result.error.message,
-        })
-        showTransactionErrorToast(result.error)
-        return
-      }
-
-      if (result.hash) {
-        setTxHash(result.hash)
-        setTxStatus(TransactionStatus.CONFIRMING)
-        updateTransaction(txId, {
-          hash: result.hash,
-          status: TransactionStatus.CONFIRMING,
-        })
-
-        showTransactionPendingToast(result.hash)
-
-        const receipt = await service['waitForTransaction'](result.hash)
-
-        if (receipt.error) {
-          setError(receipt.error)
-          setTxStatus(TransactionStatus.ERROR)
-          updateTransaction(txId, {
-            status: TransactionStatus.ERROR,
-            error: receipt.error.message,
-          })
-          showTransactionErrorToast(receipt.error)
-        } else {
-          setTxStatus(TransactionStatus.SUCCESS)
-          updateTransaction(txId, {
-            status: TransactionStatus.SUCCESS,
-          })
-          showTransactionSuccessToast(result.hash, `${quantity} infections spread successfully!`)
+        if (result.hash) {
+          showTransactionPendingToast(result.hash)
+          // Wait for confirmation
+          const receipt = await service['waitForTransaction'](result.hash)
+          if (receipt.error) return { error: receipt.error }
+          return { hash: result.hash }
         }
-      }
-    } catch (err) {
-      const error: ContractError = {
-        type: 'unknown' as any,
-        message: 'Failed to spread infections',
-        originalError: err instanceof Error ? err : undefined,
-      }
-      setError(error)
-      setTxStatus(TransactionStatus.ERROR)
-      updateTransaction(txId, {
-        status: TransactionStatus.ERROR,
-        error: error.message,
+
+        return {}
       })
-      showTransactionErrorToast(error)
-      logError(err, 'spreadInfections')
-    } finally {
-      setIsSpreading(false)
-    }
-  }
+    },
+    [address, publicClient, walletClient, spreadTx]
+  )
+
+  // Combine states - use infect transaction state unless spread is active
+  const isSpreading = infectTx.isExecuting || spreadTx.isExecuting
+  const error = infectTx.error || spreadTx.error
+  const txHash = infectTx.txHash || spreadTx.txHash
+  const txStatus = spreadTx.isExecuting ? spreadTx.status : infectTx.status
 
   return {
     isSpreading,

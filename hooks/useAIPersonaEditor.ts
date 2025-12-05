@@ -2,11 +2,13 @@
  * useAIPersonaEditor Hook
  * Manages local state for the full Eliza persona editor
  * Handles draft persistence, validation, and change tracking
+ *
+ * Refactored to use useReducer pattern (US4 - Code Complexity Refactor)
  */
 
 'use client'
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useReducer, useCallback, useEffect, useRef } from 'react'
 import type {
   AICharacter,
   DraftAIPersona,
@@ -22,6 +24,10 @@ const DRAFT_KEY_PREFIX = 'wagdie-ai-draft-'
 /** Get storage key for a token */
 const getDraftKey = (tokenId: string) => `${DRAFT_KEY_PREFIX}${tokenId}`
 
+// ============================================================================
+// State & Action Types
+// ============================================================================
+
 export interface AIPersonaEditorState {
   // Identity
   bio: string[]
@@ -36,11 +42,109 @@ export interface AIPersonaEditorState {
   // Advanced
   systemPrompt: string
   knowledgeIds: string[]
+  // Meta state
+  hasUnsavedChanges: boolean
+  initialized: boolean
 }
+
+export type AIPersonaEditorAction =
+  | { type: 'SET_BIO'; payload: string[] }
+  | { type: 'SET_LORE'; payload: string[] }
+  | { type: 'SET_TOPICS'; payload: string[] }
+  | { type: 'SET_ADJECTIVES'; payload: string[] }
+  | { type: 'SET_STYLE'; payload: StyleConfig }
+  | { type: 'SET_EXAMPLE_MESSAGES'; payload: ExampleMessage[] }
+  | { type: 'SET_POST_EXAMPLES'; payload: string[] }
+  | { type: 'SET_SYSTEM_PROMPT'; payload: string }
+  | { type: 'SET_KNOWLEDGE_IDS'; payload: string[] }
+  | { type: 'RESET'; payload?: AICharacter | null }
+  | { type: 'LOAD_DRAFT'; payload: Partial<AIPersonaEditorState> }
+  | { type: 'INIT_FROM_CHARACTER'; payload: AICharacter }
+  | { type: 'MARK_SAVED' }
+
+// ============================================================================
+// Default State & Initializer
+// ============================================================================
+
+const DEFAULT_STATE: AIPersonaEditorState = {
+  bio: [''],
+  lore: [],
+  topics: [],
+  adjectives: [],
+  style: {},
+  exampleMessages: [],
+  postExamples: [],
+  systemPrompt: '',
+  knowledgeIds: [],
+  hasUnsavedChanges: false,
+  initialized: false,
+}
+
+function initializeState(character?: AICharacter | null): AIPersonaEditorState {
+  if (!character) return DEFAULT_STATE
+
+  return {
+    bio: character.bio?.length ? character.bio : [''],
+    lore: character.lore || [],
+    topics: character.topics || [],
+    adjectives: character.adjectives || [],
+    style: character.style || {},
+    exampleMessages: character.exampleMessages || [],
+    postExamples: character.postExamples || [],
+    systemPrompt: character.systemPrompt || '',
+    knowledgeIds: character.knowledge?.map((k) => k.id) || [],
+    hasUnsavedChanges: false,
+    initialized: true,
+  }
+}
+
+// ============================================================================
+// Reducer
+// ============================================================================
+
+function aiPersonaEditorReducer(
+  state: AIPersonaEditorState,
+  action: AIPersonaEditorAction
+): AIPersonaEditorState {
+  switch (action.type) {
+    case 'SET_BIO':
+      return { ...state, bio: action.payload, hasUnsavedChanges: true }
+    case 'SET_LORE':
+      return { ...state, lore: action.payload, hasUnsavedChanges: true }
+    case 'SET_TOPICS':
+      return { ...state, topics: action.payload, hasUnsavedChanges: true }
+    case 'SET_ADJECTIVES':
+      return { ...state, adjectives: action.payload, hasUnsavedChanges: true }
+    case 'SET_STYLE':
+      return { ...state, style: action.payload, hasUnsavedChanges: true }
+    case 'SET_EXAMPLE_MESSAGES':
+      return { ...state, exampleMessages: action.payload, hasUnsavedChanges: true }
+    case 'SET_POST_EXAMPLES':
+      return { ...state, postExamples: action.payload, hasUnsavedChanges: true }
+    case 'SET_SYSTEM_PROMPT':
+      return { ...state, systemPrompt: action.payload, hasUnsavedChanges: true }
+    case 'SET_KNOWLEDGE_IDS':
+      return { ...state, knowledgeIds: action.payload, hasUnsavedChanges: true }
+    case 'RESET':
+      return initializeState(action.payload)
+    case 'LOAD_DRAFT':
+      return { ...state, ...action.payload, hasUnsavedChanges: true, initialized: true }
+    case 'INIT_FROM_CHARACTER':
+      return initializeState(action.payload)
+    case 'MARK_SAVED':
+      return { ...state, hasUnsavedChanges: false }
+    default:
+      return state
+  }
+}
+
+// ============================================================================
+// Hook Return Type
+// ============================================================================
 
 export interface UseAIPersonaEditorReturn {
   /** Current editor state */
-  state: AIPersonaEditorState
+  state: Omit<AIPersonaEditorState, 'hasUnsavedChanges' | 'initialized'>
   /** Whether there are unsaved changes */
   hasUnsavedChanges: boolean
   /** Update bio array */
@@ -71,30 +175,22 @@ export interface UseAIPersonaEditorReturn {
   clearDraft: () => void
 }
 
-const DEFAULT_STATE: AIPersonaEditorState = {
-  bio: [''],
-  lore: [],
-  topics: [],
-  adjectives: [],
-  style: {},
-  exampleMessages: [],
-  postExamples: [],
-  systemPrompt: '',
-  knowledgeIds: [],
-}
+// ============================================================================
+// Hook Implementation
+// ============================================================================
 
 export function useAIPersonaEditor(
   tokenId: string,
   aiCharacter: AICharacter | null | undefined,
   isLoading: boolean
 ): UseAIPersonaEditorReturn {
-  const [state, setState] = useState<AIPersonaEditorState>(DEFAULT_STATE)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [initialized, setInitialized] = useState(false)
+  const [state, dispatch] = useReducer(aiPersonaEditorReducer, DEFAULT_STATE)
+  const aiCharacterRef = useRef(aiCharacter)
+  aiCharacterRef.current = aiCharacter
 
   // Initialize state from draft or character
   useEffect(() => {
-    if (isLoading || initialized) return
+    if (isLoading || state.initialized) return
 
     const draftKey = getDraftKey(tokenId)
     const savedDraft = localStorage.getItem(draftKey)
@@ -104,48 +200,35 @@ export function useAIPersonaEditor(
         const parsed = JSON.parse(savedDraft)
         const { data: draft } = migrateDraft(parsed)
 
-        setState({
-          bio: draft.bio || [''],
-          lore: draft.lore || [],
-          topics: draft.topics || [],
-          adjectives: draft.adjectives || [],
-          style: draft.style || {},
-          exampleMessages: draft.exampleMessages || [],
-          postExamples: draft.postExamples || [],
-          systemPrompt: draft.systemPrompt || '',
-          knowledgeIds: draft.knowledgeIds || [],
+        dispatch({
+          type: 'LOAD_DRAFT',
+          payload: {
+            bio: draft.bio || [''],
+            lore: draft.lore || [],
+            topics: draft.topics || [],
+            adjectives: draft.adjectives || [],
+            style: draft.style || {},
+            exampleMessages: draft.exampleMessages || [],
+            postExamples: draft.postExamples || [],
+            systemPrompt: draft.systemPrompt || '',
+            knowledgeIds: draft.knowledgeIds || [],
+          },
         })
-        setHasUnsavedChanges(true)
-        setInitialized(true)
         return
       } catch {
-        // Invalid draft, remove it
         localStorage.removeItem(draftKey)
       }
     }
 
     // Load from AI character or use defaults
     if (aiCharacter) {
-      setState({
-        bio: aiCharacter.bio?.length ? aiCharacter.bio : [''],
-        lore: aiCharacter.lore || [],
-        topics: aiCharacter.topics || [],
-        adjectives: aiCharacter.adjectives || [],
-        style: aiCharacter.style || {},
-        exampleMessages: aiCharacter.exampleMessages || [],
-        postExamples: aiCharacter.postExamples || [],
-        systemPrompt: aiCharacter.systemPrompt || '',
-        knowledgeIds: aiCharacter.knowledge?.map((k) => k.id) || [],
-      })
+      dispatch({ type: 'INIT_FROM_CHARACTER', payload: aiCharacter })
     }
-
-    setHasUnsavedChanges(false)
-    setInitialized(true)
-  }, [tokenId, aiCharacter, isLoading, initialized])
+  }, [tokenId, aiCharacter, isLoading, state.initialized])
 
   // Auto-save draft to localStorage
   useEffect(() => {
-    if (!hasUnsavedChanges || !initialized) return
+    if (!state.hasUnsavedChanges || !state.initialized) return
 
     const draft: DraftAIPersona = {
       tokenId,
@@ -162,77 +245,23 @@ export function useAIPersonaEditor(
     }
 
     localStorage.setItem(getDraftKey(tokenId), JSON.stringify(draft))
-  }, [state, hasUnsavedChanges, tokenId, initialized])
+  }, [state, tokenId])
 
-  // State setters with change tracking
-  const setBio = useCallback((value: string[]) => {
-    setState((prev) => ({ ...prev, bio: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setLore = useCallback((value: string[]) => {
-    setState((prev) => ({ ...prev, lore: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setTopics = useCallback((value: string[]) => {
-    setState((prev) => ({ ...prev, topics: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setAdjectives = useCallback((value: string[]) => {
-    setState((prev) => ({ ...prev, adjectives: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setStyle = useCallback((value: StyleConfig) => {
-    setState((prev) => ({ ...prev, style: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setExampleMessages = useCallback((value: ExampleMessage[]) => {
-    setState((prev) => ({ ...prev, exampleMessages: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setPostExamples = useCallback((value: string[]) => {
-    setState((prev) => ({ ...prev, postExamples: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setSystemPrompt = useCallback((value: string) => {
-    setState((prev) => ({ ...prev, systemPrompt: value }))
-    setHasUnsavedChanges(true)
-  }, [])
-
-  const setKnowledgeIds = useCallback((value: string[]) => {
-    setState((prev) => ({ ...prev, knowledgeIds: value }))
-    setHasUnsavedChanges(true)
-  }, [])
+  // Dispatch-wrapped setters (stable references via useCallback)
+  const setBio = useCallback((value: string[]) => dispatch({ type: 'SET_BIO', payload: value }), [])
+  const setLore = useCallback((value: string[]) => dispatch({ type: 'SET_LORE', payload: value }), [])
+  const setTopics = useCallback((value: string[]) => dispatch({ type: 'SET_TOPICS', payload: value }), [])
+  const setAdjectives = useCallback((value: string[]) => dispatch({ type: 'SET_ADJECTIVES', payload: value }), [])
+  const setStyle = useCallback((value: StyleConfig) => dispatch({ type: 'SET_STYLE', payload: value }), [])
+  const setExampleMessages = useCallback((value: ExampleMessage[]) => dispatch({ type: 'SET_EXAMPLE_MESSAGES', payload: value }), [])
+  const setPostExamples = useCallback((value: string[]) => dispatch({ type: 'SET_POST_EXAMPLES', payload: value }), [])
+  const setSystemPrompt = useCallback((value: string) => dispatch({ type: 'SET_SYSTEM_PROMPT', payload: value }), [])
+  const setKnowledgeIds = useCallback((value: string[]) => dispatch({ type: 'SET_KNOWLEDGE_IDS', payload: value }), [])
 
   // Reset state to character or empty
-  const resetState = useCallback(
-    (character?: AICharacter | null) => {
-      const char = character ?? aiCharacter
-      if (char) {
-        setState({
-          bio: char.bio?.length ? char.bio : [''],
-          lore: char.lore || [],
-          topics: char.topics || [],
-          adjectives: char.adjectives || [],
-          style: char.style || {},
-          exampleMessages: char.exampleMessages || [],
-          postExamples: char.postExamples || [],
-          systemPrompt: char.systemPrompt || '',
-          knowledgeIds: char.knowledge?.map((k) => k.id) || [],
-        })
-      } else {
-        setState(DEFAULT_STATE)
-      }
-      setHasUnsavedChanges(false)
-    },
-    [aiCharacter]
-  )
+  const resetState = useCallback((character?: AICharacter | null) => {
+    dispatch({ type: 'RESET', payload: character ?? aiCharacterRef.current })
+  }, [])
 
   // Discard draft and reset
   const discardDraft = useCallback(() => {
@@ -243,7 +272,7 @@ export function useAIPersonaEditor(
   // Clear draft from storage
   const clearDraft = useCallback(() => {
     localStorage.removeItem(getDraftKey(tokenId))
-    setHasUnsavedChanges(false)
+    dispatch({ type: 'MARK_SAVED' })
   }, [tokenId])
 
   // Get data formatted for API update
@@ -263,9 +292,22 @@ export function useAIPersonaEditor(
     }
   }, [state])
 
+  // Extract editor state (without meta fields)
+  const editorState = {
+    bio: state.bio,
+    lore: state.lore,
+    topics: state.topics,
+    adjectives: state.adjectives,
+    style: state.style,
+    exampleMessages: state.exampleMessages,
+    postExamples: state.postExamples,
+    systemPrompt: state.systemPrompt,
+    knowledgeIds: state.knowledgeIds,
+  }
+
   return {
-    state,
-    hasUnsavedChanges,
+    state: editorState,
+    hasUnsavedChanges: state.hasUnsavedChanges,
     setBio,
     setLore,
     setTopics,

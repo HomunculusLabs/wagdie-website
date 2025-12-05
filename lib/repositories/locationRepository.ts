@@ -212,6 +212,7 @@ export class LocationRepository implements ILocationRepository {
           ...locationData,
           is_active: true,
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
           character_locations: [],
         } as Location;
       }
