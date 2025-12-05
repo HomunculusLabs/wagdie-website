@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components-new/Card'
-import { Empty } from '@/components-new/Empty'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { Empty } from '@/components/ui/Empty'
 import type { Equipment } from '@/types/character'
 
 // NFT format equipment type

@@ -5,8 +5,8 @@
 
 'use client'
 
-import { Tabs, Switch } from '@/components-new'
-import type { TabItem } from '@/components-new'
+import { Tabs, Switch } from '@/components/ui'
+import type { TabItem } from '@/components/ui'
 import type { TweetFilterTab, SortOrder } from '@/types/tweet'
 
 interface TweetFilterBarProps {

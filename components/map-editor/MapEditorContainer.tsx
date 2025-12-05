@@ -14,7 +14,7 @@ import { EditorControls } from './EditorControls'
 import { LocationForm } from './LocationForm'
 import { DeleteConfirmation } from './DeleteConfirmation'
 import { useLocationApi } from '@/hooks/map/useLocationApi'
-import { Spinner } from '@/components-new'
+import { Spinner } from '@/components/ui'
 import type { IRefPhaserGame } from '@/game/PhaserGame'
 import type { CreateLocationInput, UpdateLocationInput } from '@/lib/types/map'
 

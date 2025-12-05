@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components-new/Card'
-import { TextArea } from '@/components-new/TextArea'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { TextArea } from '@/components/ui/TextArea'
 
 interface SheetBackgroundStoryProps {
   story: string | null

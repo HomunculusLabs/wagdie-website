@@ -19,8 +19,8 @@ import {
   CharacterHeader, CharacterModals, CharacterActions,
 } from './components'
 import { useCharacterEditor } from '@/hooks/useCharacterEditor'
-import { Card, CardTitle, CardContent, CardDescription, Button, Spinner, Separator, Badge, Tabs } from '@/components-new'
-import type { TabItem } from '@/components-new'
+import { Card, CardTitle, CardContent, CardDescription, Button, Spinner, Separator, Badge, Tabs } from '@/components/ui'
+import type { TabItem } from '@/components/ui'
 import type { Character } from '@/types/character'
 import { isAdmin } from '@/lib/auth/admin'
 

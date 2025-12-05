@@ -5,7 +5,7 @@
  * Sticky header with navigation and edit controls.
  */
 
-import { Button } from '@/components-new'
+import { Button } from '@/components/ui'
 
 const BackIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

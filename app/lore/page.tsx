@@ -12,7 +12,7 @@ import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TweetFilterBar } from '@/components/lore/TweetFilterBar'
 import { CustomTweet } from '@/components/lore/CustomTweet'
 import { InfiniteScroll } from '@/components/shared/InfiniteScroll'
-import { Empty, Spinner, Button, Card, CardContent } from '@/components-new'
+import { Empty, Spinner, Button, Card, CardContent } from '@/components/ui'
 import type { Tweet, TweetFilterTab, SortOrder } from '@/types/tweet'
 
 function LorePageContent() {

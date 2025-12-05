@@ -6,7 +6,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Card, CardContent, Avatar } from '@/components-new'
+import { Card, CardContent, Avatar } from '@/components/ui'
 import type { Tweet } from '@/types/tweet'
 
 interface CustomTweetProps {

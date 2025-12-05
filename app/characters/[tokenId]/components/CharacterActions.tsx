@@ -5,7 +5,7 @@
  * Blockchain action buttons for character owners.
  */
 
-import { Card, CardContent, Button } from '@/components-new'
+import { Card, CardContent, Button } from '@/components/ui'
 
 const FireIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -5,7 +5,7 @@ export const Blockquote: React.FC<{ children: React.ReactNode, cite?: string }> 
   return (
     <figure className="my-6">
       <blockquote className="border-l-2 border-soul-accent/40 pl-6 italic text-neutral-400 text-lg font-eskapade leading-relaxed relative">
-        <span className="absolute -top-4 -left-3 text-4xl text-soul-accent/20 font-display">"</span>
+        <span className="absolute -top-4 -left-3 text-4xl text-soul-accent/20 font-display">&ldquo;</span>
         {children}
       </blockquote>
       {cite && (

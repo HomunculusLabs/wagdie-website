@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image'
-import { Card, CardContent } from '@/components-new/Card'
-import { Badge } from '@/components-new/Badge'
-import { ProgressBar } from '@/components-new/ProgressBar'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { Character } from '@/types/character'
 import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
 

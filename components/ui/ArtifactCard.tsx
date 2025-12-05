@@ -31,7 +31,7 @@ export const ArtifactCard: React.FC<Props> = ({ data }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="col-span-2 space-y-4">
                 <p className="italic text-neutral-400 leading-relaxed text-lg border-l-2 border-soul-accent/30 pl-4">
-                    "{data.description}"
+                    &ldquo;{data.description}&rdquo;
                 </p>
                 <div className="mt-4 p-4 bg-black/40 border border-neutral-800">
                     <h4 className="text-soul-accent text-sm font-display  mb-1">Effect</h4>

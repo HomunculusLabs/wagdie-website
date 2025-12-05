@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Badge } from '@/components-new'
+import { Badge } from '@/components/ui'
 import { extractNFTTraits, type NFTTrait } from '@/lib/utils/nft-traits'
 import type { CharacterMetadata } from '@/types/character'
 

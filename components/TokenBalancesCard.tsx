@@ -4,11 +4,11 @@ import React from 'react';
 import { useTokenBalances } from '@/hooks/useTokenBalances'
 import { formatBalanceWithSymbol, getTokenInfo, hasAnyBalance } from '@/lib/utils/balances'
 import { useAccount } from 'wagmi'
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components-new/Card'
-import { Button } from '@/components-new/Button'
-import { Spinner } from '@/components-new/Spinner'
-import { Alert } from '@/components-new/Alert'
-import { Empty } from '@/components-new/Empty'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
+import { Alert } from '@/components/ui/Alert'
+import { Empty } from '@/components/ui/Empty'
 
 interface TokenBalancesCardProps {
   className?: string

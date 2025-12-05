@@ -1,63 +1,56 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
-export interface ButtonProps {
-  /** Visual style variant of the button */
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
-
-  /** Size of the button */
-  size?: 'sm' | 'md' | 'lg';
-
-  /** Whether the button is disabled */
-  disabled?: boolean;
-
-  /** Click event handler */
-  onClick?: () => void;
-
-  /** Button content */
-  children: React.ReactNode;
+  isLoading?: boolean;
 }
 
-/**
- * A versatile button component with multiple variants and sizes.
- *
- * Used to trigger actions or navigation. Supports multiple visual variants
- * and states for different use cases.
- */
-export const Button: React.FC<ButtonProps> = ({
-  variant = 'primary',
-  size = 'md',
-  disabled = false,
-  onClick,
+const variants = {
+  primary: "bg-soul-900 border-soul-accent/40 text-soul-accent hover:bg-soul-accent/10 hover:border-soul-accent hover:shadow-[0_0_15px_rgba(200,170,110,0.15)]",
+  secondary: "bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200",
+  danger: "bg-soul-900 border-red-900/50 text-red-700 hover:bg-red-950/30 hover:border-red-800 hover:text-red-500",
+} as const;
+
+const baseStyles = "relative px-6 py-2 font-display text-lg transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden";
+
+export const Button = React.memo<ButtonProps>(({
   children,
+  variant = 'primary',
+  isLoading,
+  className = '',
+  disabled,
+  ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-sm font-bold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-abyss font-display border-2 ';
-
-  const variantStyles = {
-    primary: 'bg-midnight text-bone border-gold hover:bg-gold hover:text-abyss hover:shadow-[0_0_20px_rgba(212,175,55,0.5)] focus:ring-gold shadow-[0_4px_0_0_#d4af37]',
-    secondary: 'bg-shadow text-bone border-mist hover:border-ash hover:text-ash focus:ring-mist shadow-[0_4px_0_0_#707070]',
-    danger: 'bg-blood text-bone border-blood hover:bg-ember hover:shadow-[0_0_20px_rgba(201,74,58,0.5)] focus:ring-blood shadow-[0_4px_0_0_#8b2635]',
-  };
-
-  const sizeStyles = {
-    sm: 'px-4 py-2 text-sm',
-    md: 'px-6 py-3 text-base',
-    lg: 'px-8 py-4 text-lg',
-  };
-
-  const disabledStyles = disabled
-    ? 'opacity-40 cursor-not-allowed grayscale'
-    : 'cursor-pointer';
-
-  const combinedStyles = `${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${disabledStyles}`;
+  const combinedClassName = useMemo(
+    () => `${baseStyles} ${variants[variant]} ${className}`,
+    [variant, className]
+  );
 
   return (
     <button
-      type="button"
-      className={combinedStyles}
-      disabled={disabled}
-      onClick={onClick}
+      className={combinedClassName}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      {...props}
     >
-      {children}
+      <span className={`relative z-10 flex items-center justify-center gap-2 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+        {children}
+      </span>
+
+      {/* Loading State Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center z-20" aria-hidden="true">
+          <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      )}
+
+      {/* Shine effect on hover */}
+      <div className="absolute inset-0 h-full w-full scale-0 rounded-md transition-all duration-300 group-hover:scale-100 group-hover:bg-white/5" aria-hidden="true" />
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';

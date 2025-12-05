@@ -85,7 +85,7 @@ export const BossCard: React.FC<Props> = ({ data }) => {
                 <div className="space-y-4">
                     {data.phases.map((phase, i) => (
                         <div key={i} className="flex gap-4">
-                            <span className="text-soul-accent font-display text-xl opacity-50">IV I II III IV V VI'.split(' ')[i+1]</span>
+                            <span className="text-soul-accent font-display text-xl opacity-50">{['I', 'II', 'III', 'IV', 'V', 'VI'][i]}</span>
                             <p className="text-neutral-400 font-eskapade leading-relaxed">{phase}</p>
                         </div>
                     ))}

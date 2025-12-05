@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 import { StatEditor } from './StatEditor'
 import { STAT_CONSTRAINTS } from '@/lib/utils/stat-validation'
-import { ProgressBar } from '@/components-new'
+import { ProgressBar } from '@/components/ui'
 
 interface CoreStats {
   str: number | null

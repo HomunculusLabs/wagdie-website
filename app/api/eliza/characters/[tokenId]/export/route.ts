@@ -68,21 +68,18 @@ export async function GET(
     }
 
     // Convert to standard Eliza export format
+    // Note: The SDK Character type only has basic fields, so we provide defaults for missing fields
     const exportData: ElizaCharacterExport = {
       name: character.name,
-      bio: character.bio || [],
-      lore: character.lore || [],
-      topics: character.topics,
-      adjectives: character.adjectives,
-      style: character.style,
+      bio: [character.personality, character.backstory].filter(Boolean),
+      lore: [],
+      topics: [],
+      adjectives: [],
+      style: { all: [], chat: [], post: [] },
       messageExamples: convertedMessageExamples,
-      postExamples: character.postExamples,
+      postExamples: [],
       systemPrompt: character.systemPrompt || undefined,
-      knowledge: character.knowledge?.map((doc) => ({
-        id: doc.id,
-        path: doc.path,
-        content: doc.content || '',
-      })),
+      knowledge: undefined,
     }
 
     // Generate filename

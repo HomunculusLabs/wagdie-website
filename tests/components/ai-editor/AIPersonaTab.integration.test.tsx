@@ -159,7 +159,7 @@ jest.mock('@/components/characters/ai-editor/tabs/AdvancedTab', () => ({
 }))
 
 // Mock UI components
-jest.mock('@/components-new', () => ({
+jest.mock('@/components/ui', () => ({
   Card: ({ children }: { children: React.ReactNode }) => <div data-testid="card">{children}</div>,
   CardContent: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div className={className}>{children}</div>

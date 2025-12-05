@@ -7,7 +7,7 @@ import {
   StakeWagdiesParams,
   UnstakeWagdiesParams,
   ChangeWagdieLocationParams,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  
   AddLocationParams,
 } from '@/types/contracts'
 import { wagdieWorldABI } from '@/lib/contracts/abis/wagdie-world'

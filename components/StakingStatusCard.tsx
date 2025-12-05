@@ -3,11 +3,11 @@
 import React from 'react';
 import { useStakingStatus } from '@/hooks/useStaking'
 import { shortenAddress } from '@/lib/utils/blockchain'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components-new/Card'
-import { Button } from '@/components-new/Button'
-import { Spinner } from '@/components-new/Spinner'
-import { Alert } from '@/components-new/Alert'
-import { Badge } from '@/components-new/Badge'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
+import { Alert } from '@/components/ui/Alert'
+import { Badge } from '@/components/ui/Badge'
 
 interface StakingStatusCardProps {
   tokenId: number

@@ -13,7 +13,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useMapData } from '@/hooks/map/useMapData';
 import { useMapLayers } from '@/hooks/map/useMapLayers';
 import { EventBus, MapEvents } from '@/game/EventBus';
-import { Spinner } from '@/components-new';
+import { Spinner } from '@/components/ui';
 import type { IRefPhaserGame } from '@/game/PhaserGame';
 
 // Dynamically import PhaserGame to avoid SSR issues

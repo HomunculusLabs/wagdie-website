@@ -4,9 +4,9 @@ import React from 'react';
 import { useCharacterOwnership } from '@/hooks/useCharacterOwnership'
 import { shortenAddress } from '@/lib/utils/blockchain'
 import { useAccount } from 'wagmi'
-import { Alert } from '@/components-new/Alert'
-import { Spinner } from '@/components-new/Spinner'
-import { Badge } from '@/components-new/Badge'
+import { Alert } from '@/components/ui/Alert'
+import { Spinner } from '@/components/ui/Spinner'
+import { Badge } from '@/components/ui/Badge'
 
 interface OwnershipVerificationBannerProps {
   tokenId: bigint

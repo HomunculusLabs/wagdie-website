@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Layout } from '../components-new/Layout';
-import { Button } from '../components-new/Button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components-new/Card';
-import { Separator } from '../components-new/Separator';
-import { AspectRatio } from '../components-new/AspectRatio';
-import { Blockquote } from '../components-new/Typography';
-import { Badge } from '../components-new/Badge';
+import { Layout } from '@/components/ui/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
+import { Separator } from '@/components/ui/Separator';
+import { AspectRatio } from '@/components/ui/AspectRatio';
+import { Blockquote } from '@/components/ui/Typography';
+import { Badge } from '@/components/ui/Badge';
 
 // --- Video Player Component ---
 const VideoPlayer = ({ videoSrc, posterSrc, className }: { videoSrc: string, posterSrc: string, className?: string }) => (

@@ -21,7 +21,7 @@ export const VisionCard: React.FC<Props> = ({ data }) => {
             />
             <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-4 md:p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                 <p className="text-neutral-400 text-sm font-display tracking-widest  text-center">
-                    "{data.prompt}"
+                    &ldquo;{data.prompt}&rdquo;
                 </p>
             </div>
         </div>

@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image'
-import { Card, CardContent, Badge } from '@/components-new'
+import { Card, CardContent, Badge } from '@/components/ui'
 import type { Character } from '@/types/character'
 import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
 import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
