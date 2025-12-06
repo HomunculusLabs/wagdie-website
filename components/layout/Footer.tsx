@@ -57,7 +57,7 @@ export function Footer() {
         </div>
 
         {/* Copyright and Description */}
-        <p className="text-center text-neutral-700 text-xs font-eskapade">
+        <p className="text-center text-neutral-700 text-xs font-body">
           © 2025 WAGDIE. Community-driven dark fantasy NFT project.
         </p>
       </div>

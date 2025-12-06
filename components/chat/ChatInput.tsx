@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, memo, KeyboardEvent } from 'react'
-import { Button } from '@/components-new'
+import { Button } from '@/components/ui'
 
 interface ChatInputProps {
   onSend: (message: string) => void

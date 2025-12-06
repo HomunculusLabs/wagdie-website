@@ -52,7 +52,7 @@ function StyleEditorComponent({
     <div className="space-y-6">
       {/* Section header */}
       <div className="pb-2 border-b border-neutral-800">
-        <h4 className="text-xs font-display tracking-widest text-neutral-400 uppercase">
+        <h4 className="text-xs font-display tracking-normal text-neutral-400 uppercase">
           Communication Style
         </h4>
         <p className="text-xs text-neutral-500 mt-1">

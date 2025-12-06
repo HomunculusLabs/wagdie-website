@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback } from 'react'
-import { Button } from '@/components-new'
+import { Button } from '@/components/ui'
 import { FIELD_LIMITS, type ExampleMessage } from '@/types/eliza'
 
 interface ExampleMessagesEditorProps {

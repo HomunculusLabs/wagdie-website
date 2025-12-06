@@ -4,7 +4,7 @@
  */
 
 import { memo } from 'react'
-import { Button } from '@/components-new'
+import { Button } from '@/components/ui'
 
 interface ChatHeaderProps {
   characterName: string

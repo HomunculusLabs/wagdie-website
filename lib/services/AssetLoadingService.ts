@@ -14,9 +14,9 @@ import type {
   AssetPerformanceMetrics,
   AssetLoadingService as IAssetLoadingService
 } from '@/types/assets';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { getAssetCache, type CacheEntry } from '@/lib/services/asset-cache';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 import { getAssetOptimizer, type AssetOptimizationOptions } from '@/lib/utils/asset-optimization';
 
 // Debug configuration - set to false to reduce console spam

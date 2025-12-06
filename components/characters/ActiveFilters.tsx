@@ -77,7 +77,7 @@ export function ActiveFilters({
       {activeCount > 1 && (
         <button
           onClick={onClearAll}
-          className="ml-auto text-[12px] font-display  tracking-widest text-neutral-500 hover:text-soul-accent transition-colors"
+          className="ml-auto text-[12px] font-display  tracking-normal text-neutral-500 hover:text-soul-accent transition-colors"
         >
           Clear All
         </button>
@@ -94,7 +94,7 @@ interface FilterBadgeProps {
 function FilterBadge({ label, onRemove }: FilterBadgeProps) {
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-soul-accent/10 border border-soul-accent/30 rounded-sm">
-      <span className="text-md font-eskapade text-soul-accent truncate max-w-[150px]">
+      <span className="text-md font-body text-soul-accent truncate max-w-[150px]">
         {label}
       </span>
       <button

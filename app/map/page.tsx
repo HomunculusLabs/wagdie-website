@@ -13,7 +13,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useMapData } from '@/hooks/map/useMapData';
 import { useMapLayers } from '@/hooks/map/useMapLayers';
 import { EventBus, MapEvents } from '@/game/EventBus';
-import { Spinner } from '@/components-new';
+import { Spinner } from '@/components/ui';
 import type { IRefPhaserGame } from '@/game/PhaserGame';
 
 // Dynamically import PhaserGame to avoid SSR issues
@@ -23,7 +23,7 @@ const PhaserGame = dynamic(() => import('@/game/PhaserGame'), {
     <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
-        <p className="text-neutral-500 font-display  tracking-widest text-sm">
+        <p className="text-neutral-500 font-display  tracking-normal text-sm">
           Loading Map
         </p>
       </div>
@@ -88,10 +88,10 @@ export default function MapPage() {
       <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center p-8">
           <div className="text-red-500 text-4xl mb-4">⚠</div>
-          <h2 className="text-xl font-display  tracking-widest text-neutral-200 mb-2">
+          <h2 className="text-xl font-display  tracking-normal text-neutral-200 mb-2">
             Error Loading Map
           </h2>
-          <p className="text-neutral-500 font-eskapade mb-6">{error.message}</p>
+          <p className="text-neutral-500 font-body mb-6">{error.message}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-soul-accent text-black font-display  text-sm hover:bg-soul-accent/80 transition-colors"
@@ -109,7 +109,7 @@ export default function MapPage() {
       <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-[#0a0a0a]">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-neutral-500 font-display  tracking-widest text-sm">
+          <p className="text-neutral-500 font-display  tracking-normal text-sm">
             Loading WAGDIE World
           </p>
         </div>
@@ -138,7 +138,7 @@ export default function MapPage() {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
-        <span className="font-display text-xs  tracking-widest hidden sm:inline">Layers</span>
+        <span className="font-display text-xs  tracking-normal hidden sm:inline">Layers</span>
       </button>
 
       {/* Layer Panel */}
@@ -148,7 +148,7 @@ export default function MapPage() {
         }`}
         style={{ minWidth: '180px' }}
       >
-        <h3 className="font-display text-soul-accent text-xs  tracking-widest mb-3 pb-2 border-b border-neutral-800">
+        <h3 className="font-display text-soul-accent text-xs  tracking-normal mb-3 pb-2 border-b border-neutral-800">
           Map Layers
         </h3>
 
@@ -174,7 +174,7 @@ export default function MapPage() {
                 }}
               />
               <span
-                className={`font-eskapade text-sm ${
+                className={`font-body text-sm ${
                   layers[config.key] ? 'text-neutral-200' : 'text-neutral-500'
                 }`}
               >
@@ -195,7 +195,7 @@ export default function MapPage() {
         <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-40">
           <div className="bg-black/95 border border-soul-accent/60 rounded-lg overflow-hidden backdrop-blur-sm">
             <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800">
-              <span className="text-[10px] px-2 py-0.5 bg-soul-accent/20 text-soul-accent font-display  tracking-widest rounded">
+              <span className="text-[10px] px-2 py-0.5 bg-soul-accent/20 text-soul-accent font-display  tracking-normal rounded">
                 {selectedMarker.type}
               </span>
               <button
@@ -208,11 +208,11 @@ export default function MapPage() {
               </button>
             </div>
             <div className="p-4">
-              <h3 className="font-display text-neutral-100  tracking-wider">
+              <h3 className="font-display text-neutral-100  tracking-normal">
                 {selectedMarker.name}
               </h3>
               {selectedMarker.data?.description && (
-                <p className="text-sm text-neutral-400 font-eskapade mt-2 line-clamp-3">
+                <p className="text-sm text-neutral-400 font-body mt-2 line-clamp-3">
                   {selectedMarker.data.description}
                 </p>
               )}
@@ -224,7 +224,7 @@ export default function MapPage() {
       {/* Instructions */}
       {mapReady && !selectedMarker && (
         <div className="absolute bottom-4 left-4 z-30 hidden sm:block">
-          <p className="text-xs text-neutral-600 font-eskapade">
+          <p className="text-xs text-neutral-600 font-body">
             Scroll to zoom · Drag to pan
           </p>
         </div>

@@ -5,7 +5,7 @@
  * Blockchain action buttons for character owners.
  */
 
-import { Card, CardContent, Button } from '@/components-new'
+import { Card, CardContent, Button } from '@/components/ui'
 
 const FireIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,7 +41,7 @@ export function CharacterActions({
   return (
     <Card className="mt-auto">
       <CardContent className="p-4">
-        <p className="text-[16px] font-display tracking-widest text-neutral-500 mb-3">
+        <p className="text-[16px] font-display tracking-normal text-neutral-500 mb-3">
           Blockchain Actions
         </p>
         <div className="flex flex-wrap gap-2">

@@ -28,7 +28,7 @@ export function NoCharactersState({ onConnectWallet }: NoCharactersStateProps) {
         </div>
 
         {/* Title */}
-        <h2 className="font-display text-gold text-3xl font-bold mb-3 tracking-wide">
+        <h2 className="font-display text-gold text-3xl font-bold mb-3 tracking-normal">
           No Characters Found
         </h2>
 
@@ -44,14 +44,14 @@ export function NoCharactersState({ onConnectWallet }: NoCharactersStateProps) {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => window.open('https://opensea.io/collection/wagdie', '_blank')}
-            className="px-6 py-3 bg-gold text-abyss font-bold rounded hover:bg-ember transition-colors font-display tracking-wide"
+            className="px-6 py-3 bg-gold text-abyss font-bold rounded hover:bg-ember transition-colors font-display tracking-normal"
           >
             Browse Characters on OpenSea
           </button>
           {onConnectWallet && (
             <button
               onClick={onConnectWallet}
-              className="px-6 py-3 bg-midnight text-bone border border-gold rounded hover:bg-shadow transition-colors font-display tracking-wide"
+              className="px-6 py-3 bg-midnight text-bone border border-gold rounded hover:bg-shadow transition-colors font-display tracking-normal"
             >
               Connect Wallet First
             </button>

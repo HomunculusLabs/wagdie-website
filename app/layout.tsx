@@ -1,8 +1,18 @@
 import type { Metadata } from 'next'
+import { Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+
+// Google Font: Cormorant Garamond for body text
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-cormorant',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -39,8 +49,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="flex flex-col min-h-screen bg-soul-950 text-neutral-300 font-eskapade selection:bg-soul-blood selection:text-white">
+    <html lang="en" className={`dark ${cormorantGaramond.variable}`}>
+      <body className="flex flex-col min-h-screen bg-soul-950 text-neutral-300 font-body selection:bg-soul-blood selection:text-white">
         <Providers>
           <Header />
           <main className="flex-1">{children}</main>

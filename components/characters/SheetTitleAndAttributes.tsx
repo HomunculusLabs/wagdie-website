@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image'
-import { Card, CardContent } from '@/components-new/Card'
-import { Badge } from '@/components-new/Badge'
-import { ProgressBar } from '@/components-new/ProgressBar'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { Character } from '@/types/character'
 import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
 
@@ -99,10 +99,10 @@ export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesPr
           <div className="flex flex-col p-6">
             {/* Name and Class */}
             <div className="mb-6">
-              <h1 className="text-3xl font-display  tracking-wider text-neutral-100 mb-2">
+              <h1 className="text-3xl font-display  tracking-normal text-neutral-100 mb-2">
                 {name}
               </h1>
-              <p className="text-sm font-display  tracking-widest text-soul-accent">
+              <p className="text-sm font-display  tracking-normal text-soul-accent">
                 {character.class ? `${character.class} • Level ${level}` : `Level ${level}`}
               </p>
             </div>
@@ -111,20 +111,20 @@ export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesPr
             {hasCharacterSheet && hp !== undefined && (
               <div className="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-neutral-800">
                 <div className="text-center">
-                  <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">HP</p>
+                  <p className="text-[10px] font-display  tracking-normal text-neutral-500 mb-1">HP</p>
                   <p className="text-2xl font-display text-soul-accent">
                     {hp}<span className="text-neutral-500 text-sm">{maxHp ? `/${maxHp}` : ''}</span>
                   </p>
                 </div>
                 {character.ac !== undefined && (
                   <div className="text-center">
-                    <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">AC</p>
+                    <p className="text-[10px] font-display  tracking-normal text-neutral-500 mb-1">AC</p>
                     <p className="text-2xl font-display text-neutral-200">{character.ac}</p>
                   </div>
                 )}
                 {character.speed !== undefined && (
                   <div className="text-center">
-                    <p className="text-[10px] font-display  tracking-widest text-neutral-500 mb-1">Speed</p>
+                    <p className="text-[10px] font-display  tracking-normal text-neutral-500 mb-1">Speed</p>
                     <p className="text-2xl font-display text-neutral-200">{character.speed}<span className="text-neutral-500 text-sm"> ft</span></p>
                   </div>
                 )}
@@ -134,14 +134,14 @@ export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesPr
             {/* Attributes */}
             {hasCharacterSheet && (
               <div className="flex-1">
-                <h3 className="text-xs font-display  tracking-widest text-neutral-500 mb-4">Attributes</h3>
+                <h3 className="text-xs font-display  tracking-normal text-neutral-500 mb-4">Attributes</h3>
                 <div className="grid grid-cols-3 gap-3">
                   {attributes.map((attr) => (
                     <div
                       key={attr.label}
                       className="bg-black/40 border border-neutral-800 p-3 text-center"
                     >
-                      <p className="text-[10px] font-display  tracking-widest text-neutral-600 mb-1">{attr.label}</p>
+                      <p className="text-[10px] font-display  tracking-normal text-neutral-600 mb-1">{attr.label}</p>
                       <p className="text-xl font-display text-neutral-200">{attr.value}</p>
                       <div className="mt-2">
                         <ProgressBar value={attr.value} max={20} showValue={false} variant="souls" />

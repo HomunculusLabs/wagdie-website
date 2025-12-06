@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image'
-import { Card, CardContent, Badge } from '@/components-new'
+import { Card, CardContent, Badge } from '@/components/ui'
 import type { Character } from '@/types/character'
 import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
 import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
@@ -69,17 +69,17 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
         <div className="absolute top-2 right-2 flex flex-col gap-1">
           <OwnershipBadge tokenId={BigInt(character.token_id)} />
           {character.infection_status === 'infected' && (
-            <span className="px-2 py-0.5 bg-red-950/80 border border-red-900/50 text-red-400 text-caption font-display tracking-widest">
+            <span className="px-2 py-0.5 bg-red-950/80 border border-red-900/50 text-red-400 text-caption font-display tracking-normal">
               Infected
             </span>
           )}
           {character.infection_status === 'cured' && (
-            <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-caption font-display tracking-widest">
+            <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-caption font-display tracking-normal">
               Cured
             </span>
           )}
           {character.staking_status === 'staked' && (
-            <span className="px-2 py-0.5 bg-blue-950/80 border border-blue-900/50 text-blue-400 text-caption font-display tracking-widest">
+            <span className="px-2 py-0.5 bg-blue-950/80 border border-blue-900/50 text-blue-400 text-caption font-display tracking-normal">
               Staked
             </span>
           )}
@@ -97,7 +97,7 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
           {name}
         </h3>
         {(characterClass || level) && (
-          <p className="text-body-sm text-neutral-500 font-eskapade mt-1">
+          <p className="text-body-sm text-neutral-500 font-body mt-1">
             {characterClass && `${characterClass}`}
             {characterClass && level && ' · '}
             {level && `Level ${level}`}

@@ -12,7 +12,7 @@ import { BannerHeader } from '@/components/shared/BannerHeader'
 import { TokenFilterBar } from '@/components/characters/TokenFilterBar'
 import { CharacterCard } from '@/components/characters/CharacterCard'
 import { ActiveFilters } from '@/components/characters/ActiveFilters'
-import { Alert, Spinner, Pagination, Empty } from '@/components-new'
+import { Alert, Spinner, Pagination, Empty } from '@/components/ui'
 import { useCharacters } from '@/hooks/useCharacters'
 import { useOrigins } from '@/hooks/useOrigins'
 import { useAlignments } from '@/hooks/useAlignments'
@@ -201,7 +201,7 @@ function CharactersPageContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by name or token ID..."
-              className="w-full bg-black/40 border border-neutral-800 rounded-sm py-2.5 pl-10 pr-10 text-md font-eskapade text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-soul-accent/50 focus:ring-1 focus:ring-soul-accent/30 transition-all"
+              className="w-full bg-black/40 border border-neutral-800 rounded-sm py-2.5 pl-10 pr-10 text-md font-body text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-soul-accent/50 focus:ring-1 focus:ring-soul-accent/30 transition-all"
             />
             {searchInput && (
               <button
@@ -216,7 +216,7 @@ function CharactersPageContent() {
             )}
           </div>
           {searchQuery && (
-            <p className="mt-2 text-xs text-neutral-500 font-eskapade">
+            <p className="mt-2 text-xs text-neutral-500 font-body">
               Searching for &ldquo;{searchQuery}&rdquo;
             </p>
           )}

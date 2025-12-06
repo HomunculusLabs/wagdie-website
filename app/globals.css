@@ -3,12 +3,7 @@
 @tailwind utilities;
 
 /* Custom font faces */
-@font-face {
-  font-family: 'Wagdie Fraktur';
-  src: url('/fonts/Wagdie_Fraktur_21.ttf') format('truetype');
-  font-display: swap;
-}
-
+/* Display font: Eskapade Fraktur for titles/headings */
 @font-face {
   font-family: 'Eskapade Fraktur';
   src: url('/fonts/EskapadeFraktur-Black.ttf') format('truetype');
@@ -16,16 +11,16 @@
 }
 
 @layer base {
-  /* Base body text uses Eskapade */
+  /* Base body text uses Cormorant Garamond (loaded via next/font) */
   body {
-    font-family: 'Eskapade Fraktur', serif;
+    font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
   }
 }
 
 @layer components {
   /* Typography utility classes for consistent styling */
 
-  /* Headings - use font-display (Wagdie Fraktur) */
+  /* Headings - use font-display (Eskapade Fraktur) */
   .heading-1 {
     @apply text-h1 font-display text-neutral-200;
   }
@@ -42,13 +37,13 @@
     @apply text-h4 font-display text-neutral-200;
   }
 
-  /* Body text - uses Eskapade */
+  /* Body text - uses Cormorant Garamond */
   .body-text {
-    @apply text-body font-eskapade text-neutral-400;
+    @apply text-body font-body text-neutral-400;
   }
 
   .body-text-sm {
-    @apply text-body-sm font-eskapade text-neutral-400;
+    @apply text-body-sm font-body text-neutral-400;
   }
 
   /* Labels and captions */
@@ -57,12 +52,12 @@
   }
 
   .caption-text {
-    @apply text-caption font-eskapade text-neutral-500;
+    @apply text-caption font-body text-neutral-500;
   }
 
   /* Form inputs - consistent sizing */
   .form-input {
-    @apply text-body font-eskapade bg-transparent border-b border-neutral-800
+    @apply text-body font-body bg-transparent border-b border-neutral-800
            focus:border-soul-accent focus:outline-none transition-colors;
   }
 

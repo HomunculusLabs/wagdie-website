@@ -7,7 +7,7 @@
 
 import { memo, useCallback } from 'react'
 import { ConversationItem } from './ConversationItem'
-import { Spinner } from '@/components-new'
+import { Spinner } from '@/components/ui'
 import type { Conversation } from '@/types/eliza'
 
 interface ConversationListProps {

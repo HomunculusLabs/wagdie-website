@@ -108,7 +108,7 @@ export const GothicAllVariants: Story = {
   render: () => (
     <div className="space-y-8 max-w-4xl">
       <div>
-        <h3 className="text-bone font-display text-lg mb-4 tracking-wide ">Explore the Realm</h3>
+        <h3 className="text-bone font-display text-lg mb-4 tracking-normal ">Explore the Realm</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <HomeCard
             title="dark tales"
