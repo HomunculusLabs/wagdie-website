@@ -31,7 +31,7 @@ export function Header() {
     setIsDrawerOpen(false)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
     document.documentElement.classList.toggle('dark')

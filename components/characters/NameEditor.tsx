@@ -56,7 +56,7 @@ export function NameEditor({
   // Display mode (not editing or not owner)
   if (!isEditMode || !isOwner) {
     return (
-      <h2 className={`text-4xl md:text-5xl font-display  tracking-wider text-neutral-100 ${className}`}>
+      <h2 className={`text-4xl md:text-5xl font-display  tracking-normal text-neutral-100 ${className}`}>
         {name || 'Unnamed'}
       </h2>
     )
@@ -74,7 +74,7 @@ export function NameEditor({
         placeholder="Enter character name..."
         className={`
           w-full bg-black/40 border px-4 py-2
-          text-3xl md:text-4xl font-display  tracking-wider text-neutral-100
+          text-3xl md:text-4xl font-display  tracking-normal text-neutral-100
           placeholder:text-neutral-600 placeholder:normal-case placeholder:tracking-normal
           focus:outline-none focus:ring-2 focus:ring-soul-accent/50
           ${error ? 'border-red-500' : 'border-neutral-700 focus:border-soul-accent'}

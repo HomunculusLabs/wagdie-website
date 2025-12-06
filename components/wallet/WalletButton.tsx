@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components-new/Button'
+import { Button } from '@/components/ui/Button'
 
 /**
  * WalletButton Component

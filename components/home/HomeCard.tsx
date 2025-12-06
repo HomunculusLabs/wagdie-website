@@ -83,7 +83,7 @@ export function HomeCard({
 
         {/* Text Content */}
         <div className="p-6 bg-shadow/50 flex-grow backdrop-blur-sm">
-          <h3 className="text-xl font-bold text-bone mb-2 group-hover:text-gold transition-colors duration-300 font-display tracking-wide ">
+          <h3 className="text-xl font-bold text-bone mb-2 group-hover:text-gold transition-colors duration-300 font-display tracking-normal ">
             {title}
             {isExternal && <span className="ml-2 text-sm group-hover:text-gold">↗</span>}
           </h3>

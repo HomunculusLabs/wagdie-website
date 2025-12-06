@@ -14,7 +14,7 @@ import { EditorControls } from './EditorControls'
 import { LocationForm } from './LocationForm'
 import { DeleteConfirmation } from './DeleteConfirmation'
 import { useLocationApi } from '@/hooks/map/useLocationApi'
-import { Spinner } from '@/components-new'
+import { Spinner } from '@/components/ui'
 import type { IRefPhaserGame } from '@/game/PhaserGame'
 import type { CreateLocationInput, UpdateLocationInput } from '@/lib/types/map'
 
@@ -25,7 +25,7 @@ const PhaserGame = dynamic(() => import('@/game/PhaserGame'), {
     <div className="absolute inset-0 flex items-center justify-center bg-abyss">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
-        <p className="text-soul-mist font-display tracking-widest text-sm">
+        <p className="text-soul-mist font-display tracking-normal text-sm">
           Loading Map Editor
         </p>
       </div>

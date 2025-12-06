@@ -106,7 +106,7 @@ const CharacterListPanelComponent = function CharacterListPanelComponent({
     >
       {/* Header */}
       <div className="flex justify-between items-center mb-3 sm:mb-4">
-        <h3 className="font-display text-gold text-base sm:text-lg font-bold tracking-wide">
+        <h3 className="font-display text-gold text-base sm:text-lg font-bold tracking-normal">
           Your Characters
         </h3>
         <div className="text-xs font-display text-mist bg-midnight px-2 py-1 rounded" aria-label={`${userCharacters.length} characters`}>

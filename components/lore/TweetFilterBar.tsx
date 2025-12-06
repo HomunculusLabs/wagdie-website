@@ -5,8 +5,8 @@
 
 'use client'
 
-import { Tabs, Switch } from '@/components-new'
-import type { TabItem } from '@/components-new'
+import { Tabs, Switch } from '@/components/ui'
+import type { TabItem } from '@/components/ui'
 import type { TweetFilterTab, SortOrder } from '@/types/tweet'
 
 interface TweetFilterBarProps {
@@ -47,7 +47,7 @@ export function TweetFilterBar({
       <div className="flex flex-wrap gap-4 justify-center items-center">
         {/* Translation Toggle */}
         <div className="flex items-center gap-3">
-          <span className="text-xs font-display  tracking-widest text-neutral-500">
+          <span className="text-xs font-display  tracking-normal text-neutral-500">
             Translate
           </span>
           <Switch
@@ -59,7 +59,7 @@ export function TweetFilterBar({
         {/* Sort Toggle */}
         <button
           onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
-          className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display  tracking-wider text-sm"
+          className="flex items-center gap-2 px-4 py-2 border border-neutral-800 text-neutral-500 hover:text-soul-accent hover:border-soul-accent transition-colors font-display  tracking-normal text-sm"
           title={`Sort ${currentSort === 'asc' ? 'newest first' : 'oldest first'}`}
         >
           <span>{currentSort === 'asc' ? 'Oldest' : 'Newest'}</span>

@@ -72,33 +72,32 @@ export async function POST(
     }
 
     // Build update input from imported data (using SDK type directly)
+    // Note: The SDK's UpdateCharacterInput only supports: name, personality, backstory, systemPrompt, exampleMessages
     const updateData: UpdateCharacterInput = {}
 
-    // Import bio (required)
+    // Import bio as personality (SDK uses 'personality' instead of 'bio')
     if (importData.bio && importData.bio.length > 0) {
-      updateData.bio = importData.bio
-      result.imported.push('bio')
+      updateData.personality = importData.bio.join('\n\n')
+      result.imported.push('bio (as personality)')
     }
 
-    // Import lore
+    // Import lore as backstory (SDK uses 'backstory' instead of 'lore')
     if (importData.lore && importData.lore.length > 0) {
-      updateData.lore = importData.lore
-      result.imported.push('lore')
+      updateData.backstory = importData.lore.join('\n\n')
+      result.imported.push('lore (as backstory)')
     }
 
-    // Import topics
+    // Fields not supported by SDK - skip with warnings
     if (importData.topics && importData.topics.length > 0) {
-      updateData.topics = importData.topics
-      result.imported.push('topics')
+      result.skipped.push('topics')
+      result.warnings.push('Topics are not supported by the current SDK and were skipped')
     }
 
-    // Import adjectives
     if (importData.adjectives && importData.adjectives.length > 0) {
-      updateData.adjectives = importData.adjectives
-      result.imported.push('adjectives')
+      result.skipped.push('adjectives')
+      result.warnings.push('Adjectives are not supported by the current SDK and were skipped')
     }
 
-    // Import style
     if (importData.style) {
       const hasContent =
         (importData.style.all && importData.style.all.length > 0) ||
@@ -106,8 +105,8 @@ export async function POST(
         (importData.style.post && importData.style.post.length > 0)
 
       if (hasContent) {
-        updateData.style = importData.style
-        result.imported.push('style')
+        result.skipped.push('style')
+        result.warnings.push('Style settings are not supported by the current SDK and were skipped')
       }
     }
 
@@ -132,10 +131,10 @@ export async function POST(
       }
     }
 
-    // Import post examples
+    // Post examples not supported by SDK
     if (importData.postExamples && importData.postExamples.length > 0) {
-      updateData.postExamples = importData.postExamples
-      result.imported.push('postExamples')
+      result.skipped.push('postExamples')
+      result.warnings.push('Post examples are not supported by the current SDK and were skipped')
     }
 
     // Import system prompt

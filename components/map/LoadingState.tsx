@@ -29,11 +29,11 @@ export function LoadingState({
         </div>
 
         {/* Loading Message */}
-        <div className="font-display text-gold text-2xl mb-2 tracking-wide">{message}</div>
+        <div className="font-display text-gold text-2xl mb-2 tracking-normal">{message}</div>
 
         {/* Current Stage */}
         {stage && (
-          <div className="font-display text-bone text-lg mb-4 tracking-wide">{stage}</div>
+          <div className="font-display text-bone text-lg mb-4 tracking-normal">{stage}</div>
         )}
 
         {/* Stage List */}

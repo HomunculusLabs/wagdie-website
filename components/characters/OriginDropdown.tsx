@@ -61,7 +61,7 @@ export function OriginDropdown({
         className={`
           flex items-center gap-2 px-3 py-2 min-w-[160px]
           bg-black/40 border rounded-sm
-          font-display text-md  tracking-wider
+          font-display text-md  tracking-normal
           transition-all duration-200
           ${isOpen ? 'border-soul-accent text-soul-accent' : 'border-neutral-700 text-neutral-400'}
           ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-600'}
@@ -112,7 +112,7 @@ export function OriginDropdown({
               setIsOpen(false)
             }}
             className={`
-              w-full px-3 py-2 text-left text-md font-display  tracking-wider
+              w-full px-3 py-2 text-left text-md font-display  tracking-normal
               transition-colors hover:bg-neutral-800/50
               ${!value ? 'text-soul-accent bg-soul-accent/10' : 'text-neutral-400'}
             `}
@@ -134,7 +134,7 @@ export function OriginDropdown({
                 setIsOpen(false)
               }}
               className={`
-                w-full px-3 py-2 text-left text-md font-eskapade
+                w-full px-3 py-2 text-left text-md font-body
                 transition-colors hover:bg-neutral-800/50
                 flex items-center justify-between
                 ${value === option.origin ? 'text-soul-accent bg-soul-accent/10' : 'text-neutral-300'}

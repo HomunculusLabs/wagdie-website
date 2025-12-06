@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Layout } from '../components-new/Layout';
-import { Button } from '../components-new/Button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components-new/Card';
-import { Separator } from '../components-new/Separator';
-import { AspectRatio } from '../components-new/AspectRatio';
-import { Blockquote } from '../components-new/Typography';
-import { Badge } from '../components-new/Badge';
+import { Layout } from '@/components/ui/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/Card';
+import { Separator } from '@/components/ui/Separator';
+import { AspectRatio } from '@/components/ui/AspectRatio';
+import { Blockquote } from '@/components/ui/Typography';
+import { Badge } from '@/components/ui/Badge';
 
 // --- Video Player Component ---
 const VideoPlayer = ({ videoSrc, posterSrc, className }: { videoSrc: string, posterSrc: string, className?: string }) => (
@@ -90,7 +90,7 @@ function Section({ title, subtitle, children }: SectionProps) {
                 {title}
             </h2>
             {subtitle && (
-                <p className="text-soul-accent/60 italic text-body max-w-2xl font-eskapade">
+                <p className="text-soul-accent/60 italic text-body max-w-2xl font-body">
                     &ldquo;{subtitle}&rdquo;
                 </p>
             )}
@@ -122,7 +122,7 @@ export default function HomePage() {
             We Are All <br/> <span className="text-soul-accent text-[4rem] md:text-[5rem]">Going to Die</span>
             </h1>
 
-            <p className="text-body md:text-h4 text-neutral-500 text-center max-w-2xl tracking-wide leading-relaxed mb-12 font-eskapade">
+            <p className="text-body md:text-h4 text-neutral-500 text-center max-w-2xl tracking-normal leading-relaxed mb-12 font-body">
             A community-driven dark fantasy project where your choices shape the narrative of a dying world.
             </p>
 
@@ -134,7 +134,7 @@ export default function HomePage() {
         
         {/* Scroll Indicator */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 animate-bounce">
-            <span className="text-tiny font-display tracking-widest uppercase text-neutral-500">Descend</span>
+            <span className="text-tiny font-display tracking-normal uppercase text-neutral-500">Descend</span>
             <div className="w-px h-12 bg-gradient-to-b from-soul-accent to-transparent"></div>
         </div>
       </section>
@@ -243,7 +243,7 @@ export default function HomePage() {
             <h2 className="text-h2 md:text-h1 font-display text-neutral-200">
                 Ready to Enter the Abyss?
             </h2>
-            <p className="text-neutral-500 max-w-xl mx-auto text-body font-eskapade">
+            <p className="text-neutral-500 max-w-xl mx-auto text-body font-body">
                 Join thousands of travelers exploring the dark world. The flame awaits your kindling.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">

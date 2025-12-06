@@ -19,8 +19,8 @@ import {
   CharacterHeader, CharacterModals, CharacterActions,
 } from './components'
 import { useCharacterEditor } from '@/hooks/useCharacterEditor'
-import { Card, CardTitle, CardContent, CardDescription, Button, Spinner, Separator, Badge, Tabs } from '@/components-new'
-import type { TabItem } from '@/components-new'
+import { Card, CardTitle, CardContent, CardDescription, Button, Spinner, Separator, Badge, Tabs } from '@/components/ui'
+import type { TabItem } from '@/components/ui'
 import type { Character } from '@/types/character'
 import { isAdmin } from '@/lib/auth/admin'
 
@@ -141,7 +141,7 @@ export default function CharacterDetailPage() {
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-soul-950">
-      <div className="flex flex-col items-center gap-4"><Spinner size="lg" /><p className="text-neutral-500 font-display tracking-widest text-sm">Loading Character</p></div>
+      <div className="flex flex-col items-center gap-4"><Spinner size="lg" /><p className="text-neutral-500 font-display tracking-normal text-sm">Loading Character</p></div>
     </div>
   )
 
@@ -192,7 +192,7 @@ export default function CharacterDetailPage() {
 
               <div className="mb-6">
                 <DerivedStatsEditor stats={isEditMode ? editor.state.derivedStats : { hp: character.hp ?? null, max_hp: character.max_hp ?? null, ac: character.ac ?? null, speed: character.speed ?? null }} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setDerivedStats} />
-                {!isEditMode && <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-black/30"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-widest text-neutral-500 mb-1">Token</p><p className="text-2xl font-display text-neutral-200">#{tokenId}</p></CardContent></Card></div>}
+                {!isEditMode && <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-black/30"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-normal text-neutral-500 mb-1">Token</p><p className="text-2xl font-display text-neutral-200">#{tokenId}</p></CardContent></Card></div>}
               </div>
 
               {(hasCharacterSheet || (isOwner && isEditMode)) && <CoreStatsEditor stats={isEditMode ? editor.state.coreStats : attrs} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setCoreStats} className="h-full" />}

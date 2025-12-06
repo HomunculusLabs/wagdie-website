@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components-new/Button'
+import { Button } from '@/components/ui/Button'
 
 interface SheetMenuBarProps {
   tokenId: number
@@ -39,7 +39,7 @@ export function SheetMenuBar({
           Back
         </Button>
 
-        <h2 className="text-lg font-display  tracking-widest text-neutral-200">
+        <h2 className="text-lg font-display  tracking-normal text-neutral-200">
           Character #{tokenId}
         </h2>
 

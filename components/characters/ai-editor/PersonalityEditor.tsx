@@ -27,7 +27,7 @@ function PersonalityEditorComponent({
       <div className="flex items-center justify-between">
         <label
           htmlFor="personality-editor"
-          className="text-xs font-display tracking-widest text-neutral-400"
+          className="text-xs font-display tracking-normal text-neutral-400"
         >
           Personality
         </label>
