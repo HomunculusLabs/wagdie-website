@@ -73,14 +73,27 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO supabase_auth_admin;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO supabase_storage_admin;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticator;
 
+-- Allow API roles to access tables via PostgREST (authenticator SET ROLE ...)
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+
 -- Grant sequence permissions
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO supabase_admin;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO supabase_auth_admin;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO supabase_storage_admin;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticator;
 
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+
 -- Set default privileges for future objects
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO supabase_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO supabase_auth_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO supabase_admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO supabase_auth_admin;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
