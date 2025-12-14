@@ -13,3 +13,5 @@ export { ConversationList } from './ConversationList'
 export { ConversationItem } from './ConversationItem'
 
 export { ChatDock } from './ChatDock'
+
+export { ChatToggleButton } from './ChatToggleButton'

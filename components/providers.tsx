@@ -8,8 +8,21 @@ import { config } from '@/lib/wagmi'
 import { TransactionProvider } from '@/contexts/TransactionContext'
 import '@rainbow-me/rainbowkit/styles.css'
 
-import { ChatDockProvider } from '@/contexts/ChatDockContext'
-import { ChatDock } from '@/components/chat'
+import { ChatDockProvider, useChatDock } from '@/contexts/ChatDockContext'
+import { ChatDock, ChatToggleButton } from '@/components/chat'
+
+function ChatDockContentWrapper({ children }: { children: React.ReactNode }) {
+  const { isOpen, target } = useChatDock()
+  const shouldPushContent = isOpen && !!target
+
+  return (
+    <div
+      className={`transition-[margin] duration-300 ${shouldPushContent ? 'md:mr-[500px]' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Initialize QueryClient inside component to avoid issues with React Fast Refresh
@@ -27,8 +40,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         >
           <TransactionProvider>
             <ChatDockProvider>
-              {children}
+              <ChatDockContentWrapper>
+                {children}
+              </ChatDockContentWrapper>
               <ChatDock />
+              <ChatToggleButton />
             </ChatDockProvider>
           </TransactionProvider>
         </RainbowKitProvider>

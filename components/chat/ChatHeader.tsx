@@ -44,8 +44,8 @@ function ChatHeaderComponent({
         {onNewConversation && (
           <Button
             variant="secondary"
+            size="icon"
             onClick={onNewConversation}
-            className="p-2"
             aria-label="Start new conversation"
             title="New conversation"
           >
@@ -57,8 +57,8 @@ function ChatHeaderComponent({
         {showHistoryToggle && onToggleHistory && (
           <Button
             variant={isHistoryOpen ? 'primary' : 'secondary'}
+            size="icon"
             onClick={onToggleHistory}
-            className="p-2"
             aria-label={isHistoryOpen ? 'Hide conversation history' : 'Show conversation history'}
             aria-expanded={isHistoryOpen}
             title="Conversation history"
@@ -70,8 +70,8 @@ function ChatHeaderComponent({
         {/* Close button */}
         <Button
           variant="secondary"
+          size="icon"
           onClick={onClose}
-          className="p-2"
           aria-label="Close chat"
         >
           <CloseIcon />

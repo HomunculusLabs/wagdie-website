@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Navigation } from './Navigation'
 import { WalletButton } from '@/components/wallet/WalletButton'
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/utils/bodyScrollLock'
 
 /**
  * Header Component
@@ -44,12 +45,13 @@ export function Header() {
   // Disable body scroll when drawer is open
   useEffect(() => {
     if (isDrawerOpen) {
-      document.body.style.overflow = 'hidden'
+      lockBodyScroll('header-drawer')
     } else {
-      document.body.style.overflow = 'unset'
+      unlockBodyScroll('header-drawer')
     }
+
     return () => {
-      document.body.style.overflow = 'unset'
+      unlockBodyScroll('header-drawer')
     }
   }, [isDrawerOpen])
 

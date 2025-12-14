@@ -53,7 +53,7 @@ function ChatInputComponent({
   )
 
   return (
-    <div className="flex gap-2 p-4 border-t border-neutral-800 bg-black/30">
+    <div className="flex gap-2 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-neutral-800 bg-black/30">
       <textarea
         ref={textareaRef}
         value={message}
@@ -74,10 +74,11 @@ function ChatInputComponent({
       />
       <Button
         variant="primary"
+        size="icon"
         onClick={handleSend}
         disabled={disabled || !message.trim()}
         aria-label="Send message"
-        className="self-end h-10 px-4"
+        className="self-end"
       >
         <SendIcon />
       </Button>

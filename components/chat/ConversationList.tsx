@@ -66,7 +66,7 @@ function ConversationListComponent({
 
   return (
     <div
-      className="space-y-1 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent"
+      className="space-y-1 max-h-64 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent"
       onScroll={handleScroll}
       role="list"
       aria-label="Conversation history"

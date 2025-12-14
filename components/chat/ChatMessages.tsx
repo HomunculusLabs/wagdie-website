@@ -32,7 +32,7 @@ function ChatMessagesComponent({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto p-4"
+      className="flex-1 overflow-y-auto p-4 overscroll-contain scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent"
       role="log"
       aria-label="Chat messages"
       aria-live="polite"
