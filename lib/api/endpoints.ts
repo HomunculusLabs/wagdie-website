@@ -70,19 +70,19 @@ export const characterApi = {
    * Get single character by token ID
    */
   getCharacter: (tokenId: number) =>
-    apiClient.get<Character>(`/characters/${tokenId}`),
+    apiClient.get<Character>(`/api/characters/${tokenId}`),
 
   /**
    * Update character
    */
   updateCharacter: (tokenId: number, updates: Partial<Pick<Character, 'background_story' | 'equipment'>>) =>
-    apiClient.patch<Character>(`/characters/${tokenId}`, updates),
+    apiClient.patch<Character>(`/api/characters/${tokenId}`, updates),
 
   /**
    * Get character concords
    */
   getCharacterConcords: (tokenId: number) =>
-    apiClient.get<Array<CharacterConcord & { concord: Concord }>>(`/characters/${tokenId}/concords`),
+    apiClient.get<Array<CharacterConcord & { concord: Concord }>>(`/api/characters/${tokenId}/concords`),
 }
 
 /**

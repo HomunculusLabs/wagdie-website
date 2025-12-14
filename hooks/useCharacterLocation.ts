@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import type { Location } from '@/types/chat'
 
 interface UseCharacterLocationReturn {
@@ -34,7 +35,7 @@ export function useCharacterLocation(tokenId: number | null): UseCharacterLocati
 
         // Get character's location_id
         const { data: character, error: charError } = await supabase
-          .from('characters')
+          .from(CHARACTERS_TABLE)
           .select('location_id')
           .eq('token_id', tokenId)
           .single<{ location_id: string | null }>()

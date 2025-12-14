@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getElizaClient } from '@/lib/eliza/client'
+import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import { createClient } from '@supabase/supabase-js'
 // ErrorResponse type used indirectly through NextResponse.json
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Verify character exists in WAGDIE database
     const { data: wagdieCharacter, error: dbError } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('token_id, name, background_story')
       .eq('token_id', parsedTokenId)
       .single()

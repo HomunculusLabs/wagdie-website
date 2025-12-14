@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getElizaClient } from '@/lib/eliza/client'
 import { isAdmin } from '@/lib/auth/admin'
+import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import { createClient } from '@supabase/supabase-js'
 import type { AICharacter, UpdateAICharacterInput, ErrorResponse } from '@/types/eliza'
 
@@ -117,7 +118,7 @@ export async function PUT(
     // Check character ownership in WAGDIE database
     console.log('[Eliza PUT] Fetching character from Supabase, tokenId:', parsedTokenId)
     const { data: wagdieCharacter, error: dbError } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('token_id, name, background_story, owner_address')
       .eq('token_id', parsedTokenId)
       .single()

@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../supabase'
+import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, EditableCharacterFields, OriginCount, OriginsResponse, AlignmentCount, AlignmentsResponse } from '@/types/character'
 
 export interface ICharacterRepository {
@@ -25,18 +26,21 @@ export class CharacterRepository implements ICharacterRepository {
    */
   async findMany(filters: CharacterFilters): Promise<CharactersResponse> {
     let query = supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('*', { count: 'exact' })
 
     // Apply filters based on tab
     if (filters.tab === 'owned' && filters.wallet) {
       query = query.eq('owner_address', filters.wallet.toLowerCase())
     } else if (filters.tab === 'infected') {
-      query = query.eq('infection_status', 'infected')
+      // `wagdie_characters` uses a boolean column `infected`
+      query = query.eq('infected', true)
     } else if (filters.tab === 'cured') {
-      query = query.eq('infection_status', 'cured')
+      // No explicit "cured" state in `wagdie_characters`; treat as "not infected"
+      query = query.eq('infected', false)
     } else if (filters.tab === 'staked') {
-      query = query.eq('staking_status', 'staked')
+      // Staked characters are those with a non-null location_id
+      query = query.not('location_id', 'is', null)
     }
 
     // Apply search filter
@@ -102,7 +106,7 @@ export class CharacterRepository implements ICharacterRepository {
    */
   async findById(tokenId: number): Promise<Character | null> {
     const { data, error } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('*')
       .eq('token_id', tokenId)
       .single()
@@ -125,7 +129,7 @@ export class CharacterRepository implements ICharacterRepository {
     console.log(`[Repository] Updating character ${tokenId} with:`, JSON.stringify(updates, null, 2))
 
     const { data, error } = await (supabase
-      .from('characters') as any)
+      .from(CHARACTERS_TABLE) as any)
       .update(updates)
       .eq('token_id', tokenId)
       .select()
@@ -170,7 +174,7 @@ export class CharacterRepository implements ICharacterRepository {
   async getOrigins(): Promise<OriginsResponse> {
     // Fetch all metadata to extract Body trait
     const { data, error, count } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('metadata', { count: 'exact' })
 
     if (error) {
@@ -215,7 +219,7 @@ export class CharacterRepository implements ICharacterRepository {
   async getAlignments(): Promise<AlignmentsResponse> {
     // Fetch all metadata to extract Alignment trait
     const { data, error, count } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('metadata', { count: 'exact' })
 
     if (error) {
@@ -270,7 +274,7 @@ export class CharacterRepository implements ICharacterRepository {
    */
   async getAllTokenIds(): Promise<number[]> {
     const { data, error } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('token_id')
       .order('token_id', { ascending: true })
 
@@ -288,7 +292,7 @@ export class CharacterRepository implements ICharacterRepository {
    */
   async getCurrentOwnership(): Promise<Map<number, string | null>> {
     const { data, error } = await supabase
-      .from('characters')
+      .from(CHARACTERS_TABLE)
       .select('token_id, owner_address')
 
     if (error) {
@@ -324,7 +328,7 @@ export class CharacterRepository implements ICharacterRepository {
       // Run updates in parallel within each batch
       const results = await Promise.allSettled(
         batch.map(async (u) => {
-          const { error } = await (client.from('characters') as any)
+          const { error } = await (client.from(CHARACTERS_TABLE) as any)
             .update({
               owner_address: u.ownerAddress?.toLowerCase() || null,
               updated_at: new Date().toISOString(),
@@ -360,7 +364,7 @@ export class CharacterRepository implements ICharacterRepository {
     ownerAddress: string | null,
     client = supabase
   ): Promise<boolean> {
-    const { error } = await (client.from('characters') as any)
+    const { error } = await (client.from(CHARACTERS_TABLE) as any)
       .update({
         owner_address: ownerAddress?.toLowerCase() || null,
         updated_at: new Date().toISOString(),
