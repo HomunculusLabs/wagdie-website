@@ -6,10 +6,8 @@
  */
 
 import dynamic from 'next/dynamic'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useMapEditor } from '@/hooks/map/useMapEditor'
-import { EditorEvents } from '@/hooks/map/usePhaserEvents'
-import { EventBus, MapEvents } from '@/game/EventBus'
 import { EditorControls } from './EditorControls'
 import { LocationForm } from './LocationForm'
 import { DeleteConfirmation } from './DeleteConfirmation'
@@ -46,43 +44,6 @@ export function MapEditorContainer() {
   const handleSceneReady = useCallback(() => {
     setMapReady(true)
   }, [])
-
-  // Handle marker click from Phaser
-  const handleMarkerClick = useCallback((marker: { id: string; type: string; name: string; data: unknown }) => {
-    if (editor.mode === 'view' || editor.mode === 'edit') {
-      editor.selectLocation(marker.id)
-    }
-  }, [editor])
-
-  // Set up Phaser event listeners for map clicks
-  useEffect(() => {
-    if (!mapReady) return
-
-    // Listen for map click events from Phaser
-    EventBus.on(EditorEvents.MAP_CLICKED, (coords: { x: number; y: number }) => {
-      if (editor.mode === 'create') {
-        editor.setPendingCoordinates(coords)
-      }
-    })
-
-    return () => {
-      EventBus.off(EditorEvents.MAP_CLICKED)
-    }
-  }, [mapReady, editor.mode, editor])
-
-  // Emit mode changes to Phaser
-  useEffect(() => {
-    if (mapReady) {
-      EventBus.emit(EditorEvents.EDITOR_MODE_CHANGED, { mode: editor.mode })
-    }
-  }, [editor.mode, mapReady])
-
-  // Update locations in Phaser when they change
-  useEffect(() => {
-    if (mapReady && editor.locations.length > 0) {
-      EventBus.emit(MapEvents.UPDATE_LOCATIONS, editor.locations)
-    }
-  }, [editor.locations, mapReady])
 
   // Handle save for create/edit
   const handleSave = async (data: CreateLocationInput | UpdateLocationInput) => {
@@ -190,7 +151,6 @@ export function MapEditorContainer() {
           <PhaserGame
             ref={phaserRef}
             onSceneReady={handleSceneReady}
-            onMarkerClick={handleMarkerClick}
           />
 
           {/* Instructions */}

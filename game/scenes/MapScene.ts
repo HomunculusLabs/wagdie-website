@@ -39,6 +39,21 @@ interface MarkerData {
 
 type LayerVisibility = Record<LayerVisibilityKey, boolean>;
 
+type InteractionState =
+  | { kind: 'idle' }
+  | {
+      kind: 'panning';
+      dragStartX: number;
+      dragStartY: number;
+      cameraStartX: number;
+      cameraStartY: number;
+    }
+  | {
+      kind: 'dragging-marker';
+      marker: Phaser.GameObjects.Sprite;
+      markerId: string;
+    };
+
 export class MapScene extends Phaser.Scene {
   private mapImage!: Phaser.GameObjects.Image;
   private markers: Map<string, Phaser.GameObjects.Sprite> = new Map();
@@ -51,17 +66,11 @@ export class MapScene extends Phaser.Scene {
     fights: true,
   };
 
-  // Drag state (for camera panning)
-  private isDragging = false;
-  private dragStartX = 0;
-  private dragStartY = 0;
-  private cameraStartX = 0;
-  private cameraStartY = 0;
-
   // Editor mode state
   private editorMode: 'view' | 'create' | 'edit' = 'view';
-  private draggingMarker: Phaser.GameObjects.Sprite | null = null;
-  private draggingMarkerId: string | null = null;
+
+  // Unified interaction state (camera pan OR marker drag, never both)
+  private interaction: InteractionState = { kind: 'idle' };
 
   // Tooltip
   private tooltip!: Phaser.GameObjects.Container;
@@ -140,118 +149,163 @@ export class MapScene extends Phaser.Scene {
   private setupInputHandlers(): void {
     const camera = this.cameras.main;
 
+    this.setupWheelZoomHandlers(camera);
+    this.setupPointerInteractionHandlers(camera);
+    this.setupPointerUpHandlers(camera);
+    this.setupPinchZoomHandlers(camera);
+  }
+
+  private setupWheelZoomHandlers(camera: Phaser.Cameras.Scene2D.Camera): void {
     // Mouse wheel zoom
-    this.input.on('wheel', (pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const oldZoom = camera.zoom;
-      const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
-      const newZoom = Phaser.Math.Clamp(oldZoom + zoomDelta, MIN_ZOOM, MAX_ZOOM);
+    this.input.on(
+      'wheel',
+      (
+        pointer: Phaser.Input.Pointer,
+        _gameObjects: any,
+        _deltaX: number,
+        deltaY: number
+      ) => {
+        const oldZoom = camera.zoom;
+        const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
+        const newZoom = Phaser.Math.Clamp(oldZoom + zoomDelta, MIN_ZOOM, MAX_ZOOM);
 
-      if (newZoom !== oldZoom) {
-        // Zoom towards mouse position
-        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-        camera.zoom = newZoom;
-
-        // Adjust camera to zoom towards pointer
-        const newWorldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-        camera.scrollX += worldPoint.x - newWorldPoint.x;
-        camera.scrollY += worldPoint.y - newWorldPoint.y;
-
-        this.emitCameraChanged();
-      }
-    });
-
-    // Drag to pan (or drag marker in edit mode)
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.leftButtonDown()) {
-        // Check if we're in create mode and clicked on the map (not a marker)
-        if (this.editorMode === 'create') {
-          // Get world coordinates
+        if (newZoom !== oldZoom) {
+          // Zoom towards mouse position
           const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-          // Convert back to 0-1000 coordinate system
-          const x = worldPoint.x / COORD_SCALE;
-          const y = worldPoint.y / COORD_SCALE;
+          camera.zoom = newZoom;
 
-          // Emit map clicked event to React
-          EventBus.emit(MapEvents.MAP_CLICKED, { x, y });
-          return;
+          // Adjust camera to zoom towards pointer
+          const newWorldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+          camera.scrollX += worldPoint.x - newWorldPoint.x;
+          camera.scrollY += worldPoint.y - newWorldPoint.y;
+
+          this.emitCameraChanged();
         }
-
-        // Normal camera drag
-        this.isDragging = true;
-        this.dragStartX = pointer.x;
-        this.dragStartY = pointer.y;
-        this.cameraStartX = camera.scrollX;
-        this.cameraStartY = camera.scrollY;
       }
-    });
+    );
+  }
 
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      // Handle marker dragging
-      if (this.draggingMarker && this.draggingMarkerId) {
-        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-        this.draggingMarker.setPosition(worldPoint.x, worldPoint.y);
+  private setupPointerInteractionHandlers(camera: Phaser.Cameras.Scene2D.Camera): void {
+    // Pointer down: create-mode click OR begin panning (marker drag is initiated from marker pointerdown)
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.leftButtonDown()) return;
+
+      // Create mode: always emit MAP_CLICKED (behavior preserved)
+      if (this.editorMode === 'create') {
+        const coords = this.getMapCoordsFromPointer(pointer, camera);
+        EventBus.emit(MapEvents.MAP_CLICKED, coords);
         return;
       }
 
-      // Handle camera dragging
-      if (this.isDragging) {
-        const dx = (this.dragStartX - pointer.x) / camera.zoom;
-        const dy = (this.dragStartY - pointer.y) / camera.zoom;
-        camera.scrollX = this.cameraStartX + dx;
-        camera.scrollY = this.cameraStartY + dy;
+      // If a marker drag was initiated by a marker's pointerdown, do not start panning.
+      if (this.interaction.kind === 'dragging-marker') {
+        return;
       }
+
+      // Begin camera panning (only if idle)
+      this.interaction = {
+        kind: 'panning',
+        dragStartX: pointer.x,
+        dragStartY: pointer.y,
+        cameraStartX: camera.scrollX,
+        cameraStartY: camera.scrollY,
+      };
     });
 
+    // Pointer move: drag marker OR pan camera
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (this.interaction.kind === 'dragging-marker') {
+        const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+        this.interaction.marker.setPosition(worldPoint.x, worldPoint.y);
+        return;
+      }
+
+      if (this.interaction.kind === 'panning') {
+        const dx = (this.interaction.dragStartX - pointer.x) / camera.zoom;
+        const dy = (this.interaction.dragStartY - pointer.y) / camera.zoom;
+        camera.scrollX = this.interaction.cameraStartX + dx;
+        camera.scrollY = this.interaction.cameraStartY + dy;
+      }
+    });
+  }
+
+  private setupPointerUpHandlers(camera: Phaser.Cameras.Scene2D.Camera): void {
+    // Pointer up: finish marker drag OR finish panning
     this.input.on('pointerup', () => {
-      // Handle marker drag end
-      if (this.draggingMarker && this.draggingMarkerId) {
-        const worldPoint = camera.getWorldPoint(this.input.activePointer.x, this.input.activePointer.y);
+      if (this.interaction.kind === 'dragging-marker') {
+        const worldPoint = camera.getWorldPoint(
+          this.input.activePointer.x,
+          this.input.activePointer.y
+        );
+
         // Convert back to 0-1000 coordinate system
         const x = worldPoint.x / COORD_SCALE;
         const y = worldPoint.y / COORD_SCALE;
 
-        // Emit marker dragged event to React
+        // Emit marker dragged event to React (domain id, behavior preserved)
         EventBus.emit(MapEvents.MARKER_DRAGGED, {
-          id: this.draggingMarkerId.replace('location-', ''),
+          id: this.interaction.markerId.replace('location-', ''),
           x,
           y,
         });
 
-        this.draggingMarker = null;
-        this.draggingMarkerId = null;
+        // Always clear interaction so camera pan cannot remain \"stuck\"
+        this.interaction = { kind: 'idle' };
         return;
       }
 
-      if (this.isDragging) {
-        this.isDragging = false;
+      if (this.interaction.kind === 'panning') {
+        this.interaction = { kind: 'idle' };
         this.emitCameraChanged();
       }
     });
 
+    // Pointer up outside: cancel marker drag (restore position) OR finish panning
     this.input.on('pointerupoutside', () => {
-      // Cancel marker drag
-      if (this.draggingMarker && this.draggingMarkerId) {
-        // Restore original position
-        const data = this.markerData.get(this.draggingMarkerId);
+      if (this.interaction.kind === 'dragging-marker') {
+        // Restore original position from stored marker data (behavior preserved)
+        const data = this.markerData.get(this.interaction.markerId);
         if (data) {
-          this.draggingMarker.setPosition(data.x, data.y);
+          this.interaction.marker.setPosition(data.x, data.y);
         }
-        this.draggingMarker = null;
-        this.draggingMarkerId = null;
+
+        this.interaction = { kind: 'idle' };
+        return;
       }
 
-      if (this.isDragging) {
-        this.isDragging = false;
+      if (this.interaction.kind === 'panning') {
+        this.interaction = { kind: 'idle' };
         this.emitCameraChanged();
       }
     });
+  }
 
-    // Pinch zoom for touch devices
-    this.input.on('pinch', (pointer: Phaser.Input.Pointer, _gameObject: any, _startDistance: number, _distance: number, scaleFactor: number) => {
-      const newZoom = Phaser.Math.Clamp(camera.zoom * scaleFactor, MIN_ZOOM, MAX_ZOOM);
-      camera.zoom = newZoom;
-      this.emitCameraChanged();
-    });
+  private setupPinchZoomHandlers(camera: Phaser.Cameras.Scene2D.Camera): void {
+    // Pinch zoom for touch devices (behavior unchanged)
+    this.input.on(
+      'pinch',
+      (
+        _pointer: Phaser.Input.Pointer,
+        _gameObject: any,
+        _startDistance: number,
+        _distance: number,
+        scaleFactor: number
+      ) => {
+        const newZoom = Phaser.Math.Clamp(camera.zoom * scaleFactor, MIN_ZOOM, MAX_ZOOM);
+        camera.zoom = newZoom;
+        this.emitCameraChanged();
+      }
+    );
+  }
+
+  private getMapCoordsFromPointer(
+    pointer: Phaser.Input.Pointer,
+    camera: Phaser.Cameras.Scene2D.Camera
+  ): { x: number; y: number } {
+    const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
+    const x = worldPoint.x / COORD_SCALE;
+    const y = worldPoint.y / COORD_SCALE;
+    return { x, y };
   }
 
   private setupEventListeners(): void {
@@ -442,10 +496,13 @@ export class MapScene extends Phaser.Scene {
       marker.on('pointerover', () => this.onMarkerHover(data));
       marker.on('pointerout', () => this.onMarkerOut(data));
       marker.on('pointerdown', (_pointer: Phaser.Input.Pointer) => {
-        // Start drag if in edit mode and it's a location marker
+        // Start drag if in edit mode and it's a location marker (manual drag behavior preserved)
         if (this.editorMode === 'edit' && data.type === 'location') {
-          this.draggingMarker = marker!;
-          this.draggingMarkerId = data.id;
+          this.interaction = {
+            kind: 'dragging-marker',
+            marker: marker!,
+            markerId: data.id,
+          };
         }
         this.onMarkerClick(data);
       });
