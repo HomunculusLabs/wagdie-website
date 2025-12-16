@@ -6,7 +6,17 @@
  */
 
 import * as Phaser from 'phaser';
-import { EventBus, MapEvents } from '../EventBus';
+import {
+  EventBus,
+  MapEvents,
+  type LayerVisibility,
+  type MapLocationData,
+  type MapCharacterData,
+  type MapEventsData,
+  type MarkerPayload,
+  type FlyToPayload,
+  type EditorMode,
+} from '../EventBus';
 import {
   type MarkerType,
   type LayerVisibilityKey,
@@ -28,16 +38,15 @@ const MIN_ZOOM = 1.0;
 const MAX_ZOOM = 3;
 const DEFAULT_ZOOM = 1.0;
 
+/** Internal marker data structure */
 interface MarkerData {
   id: string;
   type: MarkerType;
   name: string;
   x: number;
   y: number;
-  data: any;
+  data: MapLocationData | MapCharacterData | Record<string, unknown>;
 }
-
-type LayerVisibility = Record<LayerVisibilityKey, boolean>;
 
 type InteractionState =
   | { kind: 'idle' }
@@ -79,11 +88,11 @@ export class MapScene extends Phaser.Scene {
 
   private eventHandlers: {
     setLayerVisibility?: (layers: Partial<LayerVisibility>) => void;
-    flyToLocation?: (data: { x: number; y: number; zoom?: number }) => void;
-    updateLocations?: (locations: any[]) => void;
-    updateCharacters?: (characters: any[]) => void;
-    updateEvents?: (events: { burns: any[]; deaths: any[]; fights: any[] }) => void;
-    editorModeChanged?: (data: { mode: 'view' | 'create' | 'edit' }) => void;
+    flyToLocation?: (data: FlyToPayload) => void;
+    updateLocations?: (locations: MapLocationData[]) => void;
+    updateCharacters?: (characters: MapCharacterData[]) => void;
+    updateEvents?: (events: MapEventsData) => void;
+    editorModeChanged?: (data: { mode: EditorMode }) => void;
     locationDeleted?: (data: { id: string }) => void;
   } = {};
 
@@ -175,7 +184,7 @@ export class MapScene extends Phaser.Scene {
       'wheel',
       (
         pointer: Phaser.Input.Pointer,
-        _gameObjects: any,
+        _gameObjects: Phaser.GameObjects.GameObject[],
         _deltaX: number,
         deltaY: number
       ) => {
@@ -300,7 +309,7 @@ export class MapScene extends Phaser.Scene {
       'pinch',
       (
         _pointer: Phaser.Input.Pointer,
-        _gameObject: any,
+        _gameObject: Phaser.GameObjects.GameObject | null,
         _startDistance: number,
         _distance: number,
         scaleFactor: number
@@ -339,19 +348,19 @@ export class MapScene extends Phaser.Scene {
     EventBus.on(MapEvents.FLY_TO_LOCATION, this.eventHandlers.flyToLocation);
 
     // Update locations from React
-    this.eventHandlers.updateLocations = (locations: any[]) => {
+    this.eventHandlers.updateLocations = (locations: MapLocationData[]) => {
       this.updateLocations(locations);
     };
     EventBus.on(MapEvents.UPDATE_LOCATIONS, this.eventHandlers.updateLocations);
 
     // Update characters from React
-    this.eventHandlers.updateCharacters = (characters: any[]) => {
+    this.eventHandlers.updateCharacters = (characters: MapCharacterData[]) => {
       this.updateCharacters(characters);
     };
     EventBus.on(MapEvents.UPDATE_CHARACTERS, this.eventHandlers.updateCharacters);
 
     // Update events (burns, deaths, fights) from React
-    this.eventHandlers.updateEvents = (events: { burns: any[]; deaths: any[]; fights: any[] }) => {
+    this.eventHandlers.updateEvents = (events: MapEventsData) => {
       this.updateEvents(events);
     };
     EventBus.on(MapEvents.UPDATE_EVENTS, this.eventHandlers.updateEvents);
@@ -402,7 +411,7 @@ export class MapScene extends Phaser.Scene {
   /**
    * Add or update location markers
    */
-  public updateLocations(locations: any[]): void {
+  public updateLocations(locations: MapLocationData[]): void {
     locations.forEach((location) => {
       const coords = location.metadata?.center || location.htmlcoordinates;
       if (!coords) return;
@@ -425,7 +434,7 @@ export class MapScene extends Phaser.Scene {
   /**
    * Add or update character markers
    */
-  public updateCharacters(characters: any[]): void {
+  public updateCharacters(characters: MapCharacterData[]): void {
     characters.forEach((charLocation) => {
       const coords = charLocation.location?.metadata?.center;
       if (!coords) return;
@@ -448,7 +457,7 @@ export class MapScene extends Phaser.Scene {
   /**
    * Add or update event markers (burns, deaths, fights)
    */
-  public updateEvents(events: { burns: any[]; deaths: any[]; fights: any[] }): void {
+  public updateEvents(events: MapEventsData): void {
     // Burns
     events.burns?.forEach((burn, index) => {
       if (!burn.htmlcoordinates) return;

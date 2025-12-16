@@ -1,39 +1,151 @@
 /**
  * EventBus - Communication bridge between React and Phaser
  *
- * Simple event emitter for bidirectional messaging between React and Phaser.
+ * Type-safe event emitter for bidirectional messaging between React and Phaser.
  */
 
-type EventCallback = (...args: any[]) => void;
+import type { MapScene } from './scenes/MapScene';
+
+// ============================================================================
+// Event Payload Types
+// ============================================================================
+
+/** Layer visibility settings */
+export interface LayerVisibility {
+  locations: boolean;
+  characters: boolean;
+  burns: boolean;
+  deaths: boolean;
+  fights: boolean;
+}
+
+/** Map location data from database */
+export interface MapLocationData {
+  id: string;
+  name: string;
+  description?: string;
+  metadata?: {
+    center?: [number, number];
+    bounds?: [[number, number], [number, number]];
+    [key: string]: unknown;
+  };
+  htmlcoordinates?: [number, number];
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Character location data with position */
+export interface MapCharacterData {
+  character_token_id: number;
+  character_name?: string;
+  wallet_address?: string;
+  location?: {
+    id: string;
+    name: string;
+    metadata?: {
+      center?: [number, number];
+    };
+  };
+  [key: string]: unknown;
+}
+
+/** Map event data (burns, deaths, fights) */
+export interface MapEventData {
+  wikiPageID?: number;
+  name?: string;
+  title?: string;
+  htmlcoordinates?: [number, number];
+  [key: string]: unknown;
+}
+
+/** Events collection */
+export interface MapEventsData {
+  burns: MapEventData[];
+  deaths: MapEventData[];
+  fights: MapEventData[];
+}
+
+/** Marker data emitted on interactions */
+export interface MarkerPayload {
+  id: string;
+  type: 'location' | 'character' | 'burn' | 'death' | 'fight';
+  name: string;
+  x: number;
+  y: number;
+  data: MapLocationData | MapCharacterData | MapEventData;
+}
+
+/** Camera state */
+export interface CameraInfo {
+  scrollX: number;
+  scrollY: number;
+  zoom: number;
+}
+
+/** Map dimensions */
+export interface MapInfo {
+  width: number;
+  height: number;
+  zoom: number;
+}
+
+/** Fly to location coordinates */
+export interface FlyToPayload {
+  x: number;
+  y: number;
+  zoom?: number;
+}
+
+/** Editor mode */
+export type EditorMode = 'view' | 'create' | 'edit';
+
+/** Map click coordinates */
+export interface MapClickPayload {
+  x: number;
+  y: number;
+}
+
+/** Marker drag result */
+export interface MarkerDragPayload {
+  id: string;
+  x: number;
+  y: number;
+}
+
+// ============================================================================
+// Type-safe Event Emitter
+// ============================================================================
+
+type EventCallback<T = unknown> = (payload: T) => void;
 
 class SimpleEventEmitter {
-  private events: Map<string, Set<EventCallback>> = new Map();
+  private events: Map<string, Set<EventCallback<unknown>>> = new Map();
 
-  on(event: string, callback: EventCallback): this {
+  on<T>(event: string, callback: EventCallback<T>): this {
     if (!this.events.has(event)) {
       this.events.set(event, new Set());
     }
-    this.events.get(event)!.add(callback);
+    this.events.get(event)!.add(callback as EventCallback<unknown>);
     return this;
   }
 
-  off(event: string, callback?: EventCallback): this {
+  off<T>(event: string, callback?: EventCallback<T>): this {
     if (callback) {
-      this.events.get(event)?.delete(callback);
+      this.events.get(event)?.delete(callback as EventCallback<unknown>);
     } else {
       this.events.delete(event);
     }
     return this;
   }
 
-  emit(event: string, ...args: any[]): this {
-    this.events.get(event)?.forEach((callback) => callback(...args));
+  emit<T>(event: string, payload?: T): this {
+    this.events.get(event)?.forEach((callback) => callback(payload));
     return this;
   }
 
-  once(event: string, callback: EventCallback): this {
-    const onceCallback = (...args: any[]) => {
-      callback(...args);
+  once<T>(event: string, callback: EventCallback<T>): this {
+    const onceCallback = (payload: T) => {
+      callback(payload);
       this.off(event, onceCallback);
     };
     return this.on(event, onceCallback);

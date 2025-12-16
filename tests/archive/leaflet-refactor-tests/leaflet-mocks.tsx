@@ -235,7 +235,7 @@ export const expectRendersWithinTime = async (
  */
 export const createMockLeafletIcon = (type: string, isMobile: boolean = false) => ({
   options: {
-    iconUrl: `/images/map-icons/icon_${type}.png`,
+    iconUrl: `/images/mapicons/icon_${type}.png`,
     iconSize: isMobile ? [44, 44] : [32, 32],
     iconAnchor: isMobile ? [22, 44] : [16, 32],
   },

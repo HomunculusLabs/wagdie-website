@@ -68,8 +68,7 @@ export const useTransactionStore = create<TransactionStore>()(
 
       removeTransaction: (id) => {
         set((state) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [id]: removed, ...rest } = state.transactions
+          const { [id]: _removed, ...rest } = state.transactions
           return { transactions: rest }
         })
       },

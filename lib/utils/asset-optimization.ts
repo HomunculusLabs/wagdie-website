@@ -87,9 +87,6 @@ export class AssetOptimizer {
     url: string,
     options: AssetOptimizationOptions
   ): Promise<OptimizationResult> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const startTime = Date.now();
-
     // Determine optimal format
     const format = this.selectOptimalFormat(options.format);
 

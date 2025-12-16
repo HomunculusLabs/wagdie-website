@@ -10,7 +10,13 @@
 import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import * as Phaser from 'phaser';
 import { createGame } from './main';
-import { EventBus, MapEvents } from './EventBus';
+import {
+  EventBus,
+  MapEvents,
+  type MarkerPayload,
+  type CameraInfo,
+  type MapInfo,
+} from './EventBus';
 import type { MapScene } from './scenes/MapScene';
 
 export interface IRefPhaserGame {
@@ -21,11 +27,11 @@ export interface IRefPhaserGame {
 interface PhaserGameProps {
   className?: string;
   onSceneReady?: (scene: MapScene) => void;
-  onMapReady?: (info: { width: number; height: number; zoom: number }) => void;
-  onMarkerClick?: (marker: any) => void;
-  onMarkerHover?: (marker: any) => void;
+  onMapReady?: (info: MapInfo) => void;
+  onMarkerClick?: (marker: MarkerPayload) => void;
+  onMarkerHover?: (marker: MarkerPayload) => void;
   onMarkerUnhover?: () => void;
-  onCameraChange?: (info: { scrollX: number; scrollY: number; zoom: number }) => void;
+  onCameraChange?: (info: CameraInfo) => void;
 }
 
 export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
@@ -72,15 +78,15 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
         onSceneReady?.(scene);
       };
 
-      const handleMapReady = (info: { width: number; height: number; zoom: number }) => {
+      const handleMapReady = (info: MapInfo) => {
         onMapReady?.(info);
       };
 
-      const handleMarkerClick = (marker: any) => {
+      const handleMarkerClick = (marker: MarkerPayload) => {
         onMarkerClick?.(marker);
       };
 
-      const handleMarkerHover = (marker: any) => {
+      const handleMarkerHover = (marker: MarkerPayload) => {
         onMarkerHover?.(marker);
       };
 
@@ -88,7 +94,7 @@ export const PhaserGame = forwardRef<IRefPhaserGame, PhaserGameProps>(
         onMarkerUnhover?.();
       };
 
-      const handleCameraChange = (info: { scrollX: number; scrollY: number; zoom: number }) => {
+      const handleCameraChange = (info: CameraInfo) => {
         onCameraChange?.(info);
       };
 

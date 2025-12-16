@@ -266,6 +266,8 @@ export class AssetErrorHandler implements IAssetErrorHandler {
         return 'warn'; // Network issues are common
       case 'timeout':
         return 'warn'; // Timeouts can happen
+      case 'corruption':
+        return 'error'; // Corruption is serious and should be surfaced
       case 'unknown':
       default:
         return 'error'; // Unknown errors are more serious
