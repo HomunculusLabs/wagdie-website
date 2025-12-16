@@ -67,8 +67,7 @@ export const WithCustomFallback: Story = {
 };
 
 // Standalone ErrorFallback story with its own meta
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorFallbackMeta: Meta<typeof ErrorFallback> = {
+const _errorFallbackMeta: Meta<typeof ErrorFallback> = {
   component: ErrorFallback,
   title: 'Components/ErrorFallback',
   tags: ['autodocs'],

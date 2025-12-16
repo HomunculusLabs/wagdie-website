@@ -14,9 +14,7 @@ import type {
   AssetPerformanceMetrics,
   AssetLoadingService as IAssetLoadingService
 } from '@/types/assets';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getAssetCache, type CacheEntry } from '@/lib/services/asset-cache';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getAssetOptimizer, type AssetOptimizationOptions } from '@/lib/utils/asset-optimization';
 
 // Debug configuration - set to false to reduce console spam
@@ -44,11 +42,11 @@ export class AssetLoadingService implements IAssetLoadingService {
 
   // Default fallback assets
   private readonly fallbackAssets: Map<string, string> = new Map([
-    ['location', '/images/map-icons/icon_location.png'],
-    ['burn', '/images/map-icons/icon_burn.png'],
-    ['death', '/images/map-icons/icon_death.png'],
-    ['fight', '/images/map-icons/icon_fight.png'],
-    ['character', '/images/map-icons/icon_youarehere.png']
+    ['location', '/images/mapicons/icon_location.png'],
+    ['burn', '/images/mapicons/icon_burn.png'],
+    ['death', '/images/mapicons/icon_death.png'],
+    ['fight', '/images/mapicons/icon_fight.png'],
+    ['character', '/images/mapicons/icon_youarehere.png']
   ]);
 
   /**
@@ -73,7 +71,7 @@ export class AssetLoadingService implements IAssetLoadingService {
 
     // Stage 2: Check cache first for instant retrieval
     // Cache hits provide immediate response with 0ms load time
-    const cachedAsset = this.assetCache.get<{ url: string }>(assetId);
+    const cachedAsset = this.assetCache.get<{ url: string; size?: number }>(assetId);
     if (cachedAsset) {
       const cachedState: AssetLoadingState = {
         assetId,
@@ -110,14 +108,21 @@ export class AssetLoadingService implements IAssetLoadingService {
       // Cache the successfully loaded asset with priority-based TTL
       // Critical assets get longer cache time (2 hours vs 30 minutes)
       const priority = this.config.criticalAssets.includes(assetId) ? 'critical' : 'normal';
-      this.assetCache.set(assetId, result, {
-        priority,
-        url: result.url,
-        ttl: priority === 'critical' ? 2 * 60 * 60 * 1000 : 30 * 60 * 1000,
-        size: result.size || this.estimateAssetSize(result)
-      });
+      this.assetCache.set(
+        assetId,
+        { url: result.url, size: result.size },
+        {
+          priority,
+          ttl: priority === 'critical' ? 2 * 60 * 60 * 1000 : 30 * 60 * 1000,
+          size: result.size ?? this.estimateAssetSize({ src: result.url, size: result.size })
+        }
+      );
 
-      return this.loadingStates.get(assetId)!;
+      // Ensure consumers always have a URL on success (even if they never consult the cache)
+      const loadedState = this.loadingStates.get(assetId)!;
+      loadedState.url = result.url;
+
+      return loadedState;
     } catch (error) {
       // Error handling with progressive fallbacks
       return this.handleLoadError(assetId, error as Error);
@@ -294,6 +299,7 @@ export class AssetLoadingService implements IAssetLoadingService {
    */
   private async attemptAssetLoad(assetId: string): Promise<{ url: string; size?: number }> {
     const startTime = Date.now();
+    const iconUrl = this.getAssetUrl(assetId);
 
     const loadPromise = new Promise<{ url: string; size?: number }>((resolve, reject) => {
       const img = new Image();
@@ -303,7 +309,6 @@ export class AssetLoadingService implements IAssetLoadingService {
 
       img.onload = () => {
         clearTimeout(timeout);
-        const iconUrl = this.getAssetUrl(assetId);
         resolve({ url: iconUrl, size: 0 });
       };
 
@@ -312,7 +317,6 @@ export class AssetLoadingService implements IAssetLoadingService {
         reject(new Error('Asset load failed'));
       };
 
-      const iconUrl = this.getAssetUrl(assetId);
       img.src = iconUrl;
     });
 
@@ -323,6 +327,8 @@ export class AssetLoadingService implements IAssetLoadingService {
     const loadingState = this.loadingStates.get(assetId)!;
     loadingState.status = 'loaded';
     loadingState.loadEndTime = Date.now();
+    loadingState.loadTime = loadTime;
+    loadingState.url = result.url;
 
     // Update performance metrics
     this.updatePerformanceMetrics(assetId, loadTime, true);
