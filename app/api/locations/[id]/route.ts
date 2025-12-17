@@ -5,28 +5,22 @@
  * DELETE: Delete a location (admin only)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
-import { isAdmin } from '@/lib/auth/admin'
-import {
-  LocationService,
-  ValidationError,
-  NotFoundError,
-  ConflictError,
-} from '@/lib/services/location-service'
+import { NextRequest } from 'next/server'
+import { LocationService } from '@/lib/services/location-service'
 import type { UpdateLocationInput } from '@/lib/types/map'
+import {
+  jsonOk,
+  jsonNotFound,
+  jsonBadRequest,
+  jsonDeleted,
+  jsonServerError,
+  parseJsonBody,
+  requireAdmin,
+  isAuthError,
+  handleServiceError,
+} from '@/lib/api'
 
 const locationService = new LocationService()
-
-function getDevErrorDetails(error: unknown): string | undefined {
-  if (process.env.NODE_ENV === 'production') return undefined
-  if (error instanceof Error) return error.message
-  try {
-    return JSON.stringify(error)
-  } catch {
-    return String(error)
-  }
-}
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -38,22 +32,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const location = await locationService.getById(params.id)
 
     if (!location) {
-      return NextResponse.json(
-        { success: false, error: 'Location not found' },
-        { status: 404 }
-      )
+      return jsonNotFound('Location not found')
     }
 
-    return NextResponse.json({
-      success: true,
-      data: location,
-    })
+    return jsonOk(location)
   } catch (error) {
-    console.error('Error fetching location:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch location' },
-      { status: 500 }
-    )
+    return jsonServerError('Failed to fetch location', error)
   }
 }
 
@@ -61,66 +45,21 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params
 
-    // Authenticate user
-    const session = await getSession()
-
-    if (!session.address) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Verify admin status
-    if (!isAdmin(session.address)) {
-      return NextResponse.json(
-        { success: false, error: 'Not authorized - admin access required' },
-        { status: 403 }
-      )
-    }
+    // Require admin authentication
+    const auth = await requireAdmin()
+    if (isAuthError(auth)) return auth
 
     // Parse request body
-    let input: UpdateLocationInput
-    try {
-      input = await request.json()
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Invalid JSON body' },
-        { status: 400 }
-      )
+    const input = await parseJsonBody<UpdateLocationInput>(request)
+    if (!input) {
+      return jsonBadRequest('Invalid JSON body')
     }
 
     // Update location
-    const location = await locationService.update(params.id, input, session.address)
-
-    return NextResponse.json({
-      success: true,
-      data: location,
-    })
+    const location = await locationService.update(params.id, input, auth.address)
+    return jsonOk(location)
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 404 }
-      )
-    }
-
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { success: false, error: error.message, details: error.details },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error updating location:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to update location',
-        details: getDevErrorDetails(error),
-      },
-      { status: 500 }
-    )
+    return handleServiceError(error, 'Failed to update location')
   }
 }
 
@@ -128,54 +67,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params
 
-    // Authenticate user
-    const session = await getSession()
-
-    if (!session.address) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Verify admin status
-    if (!isAdmin(session.address)) {
-      return NextResponse.json(
-        { success: false, error: 'Not authorized - admin access required' },
-        { status: 403 }
-      )
-    }
+    // Require admin authentication
+    const auth = await requireAdmin()
+    if (isAuthError(auth)) return auth
 
     // Delete location
-    await locationService.delete(params.id, session.address)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Location deleted successfully',
-    })
+    await locationService.delete(params.id, auth.address)
+    return jsonDeleted('Location deleted successfully')
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 404 }
-      )
-    }
-
-    if (error instanceof ConflictError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 409 }
-      )
-    }
-
-    console.error('Error deleting location:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to delete location',
-        details: getDevErrorDetails(error),
-      },
-      { status: 500 }
-    )
+    return handleServiceError(error, 'Failed to delete location')
   }
 }

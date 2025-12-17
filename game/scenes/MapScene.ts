@@ -26,17 +26,15 @@ import {
   isMarkerVisible,
 } from '../config/markerConfig';
 
-// Map dimensions (matches original Leaflet implementation)
-const MAP_WIDTH = 2222;
-const MAP_HEIGHT = 2222;
-
-// Coordinate system (0-1000 like original)
-const COORD_SCALE = MAP_WIDTH / 1000;
-
-// Zoom constraints
-const MIN_ZOOM = 1.0;
-const MAX_ZOOM = 3;
-const DEFAULT_ZOOM = 1.0;
+import {
+  MAP_WIDTH,
+  MAP_HEIGHT,
+  COORD_SCALE,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  DEFAULT_ZOOM,
+} from './map/coords';
+import { bindMapSceneEvents, type MapSceneEventHandlers } from './map/event-bindings';
 
 /** Internal marker data structure */
 interface MarkerData {
@@ -86,15 +84,7 @@ export class MapScene extends Phaser.Scene {
   private tooltipText!: Phaser.GameObjects.Text;
   private tooltipBg!: Phaser.GameObjects.Rectangle;
 
-  private eventHandlers: {
-    setLayerVisibility?: (layers: Partial<LayerVisibility>) => void;
-    flyToLocation?: (data: FlyToPayload) => void;
-    updateLocations?: (locations: MapLocationData[]) => void;
-    updateCharacters?: (characters: MapCharacterData[]) => void;
-    updateEvents?: (events: MapEventsData) => void;
-    editorModeChanged?: (data: { mode: EditorMode }) => void;
-    locationDeleted?: (data: { id: string }) => void;
-  } = {};
+  private unbindEventBusListeners: (() => void) | null = null;
 
   constructor() {
     super('MapScene');
@@ -129,12 +119,45 @@ export class MapScene extends Phaser.Scene {
     // Set up input handlers
     this.setupInputHandlers();
 
-    // Set up event listeners from React
-    this.setupEventListeners();
+    const handlers: MapSceneEventHandlers = {
+      setLayerVisibility: (layers: Partial<LayerVisibility>) => {
+        Object.entries(layers).forEach(([key, visible]) => {
+          this.layerVisibility[key as keyof LayerVisibility] = visible as boolean;
+        });
+        this.updateMarkerVisibility();
+      },
+      flyToLocation: (data: FlyToPayload) => {
+        this.flyTo(data.x * COORD_SCALE, data.y * COORD_SCALE, data.zoom);
+      },
+      updateLocations: (locations: MapLocationData[]) => {
+        this.updateLocations(locations);
+      },
+      updateCharacters: (characters: MapCharacterData[]) => {
+        this.updateCharacters(characters);
+      },
+      updateEvents: (events: MapEventsData) => {
+        this.updateEvents(events);
+      },
+      editorModeChanged: (data: { mode: EditorMode }) => {
+        this.editorMode = data.mode;
+        this.updateMarkerDraggability();
+      },
+      locationDeleted: (data: { id: string }) => {
+        const markerId = `location-${data.id}`;
+        const marker = this.markers.get(markerId);
+        if (marker) {
+          marker.destroy();
+          this.markers.delete(markerId);
+          this.markerData.delete(markerId);
+        }
+      },
+    };
+
+    this.unbindEventBusListeners = bindMapSceneEvents(this, handlers);
 
     // Ensure we always remove EventBus listeners when the scene is torn down
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.teardown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.teardown, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupEventBusListeners, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.cleanupEventBusListeners, this);
 
     // Notify React that scene is ready
     EventBus.emit(MapEvents.SCENE_READY, this);
@@ -329,60 +352,6 @@ export class MapScene extends Phaser.Scene {
     const x = worldPoint.x / COORD_SCALE;
     const y = worldPoint.y / COORD_SCALE;
     return { x, y };
-  }
-
-  private setupEventListeners(): void {
-    // Layer visibility changes from React
-    this.eventHandlers.setLayerVisibility = (layers: Partial<LayerVisibility>) => {
-      Object.entries(layers).forEach(([key, visible]) => {
-        this.layerVisibility[key as keyof LayerVisibility] = visible as boolean;
-      });
-      this.updateMarkerVisibility();
-    };
-    EventBus.on(MapEvents.SET_LAYER_VISIBILITY, this.eventHandlers.setLayerVisibility);
-
-    // Fly to location
-    this.eventHandlers.flyToLocation = (data: { x: number; y: number; zoom?: number }) => {
-      this.flyTo(data.x * COORD_SCALE, data.y * COORD_SCALE, data.zoom);
-    };
-    EventBus.on(MapEvents.FLY_TO_LOCATION, this.eventHandlers.flyToLocation);
-
-    // Update locations from React
-    this.eventHandlers.updateLocations = (locations: MapLocationData[]) => {
-      this.updateLocations(locations);
-    };
-    EventBus.on(MapEvents.UPDATE_LOCATIONS, this.eventHandlers.updateLocations);
-
-    // Update characters from React
-    this.eventHandlers.updateCharacters = (characters: MapCharacterData[]) => {
-      this.updateCharacters(characters);
-    };
-    EventBus.on(MapEvents.UPDATE_CHARACTERS, this.eventHandlers.updateCharacters);
-
-    // Update events (burns, deaths, fights) from React
-    this.eventHandlers.updateEvents = (events: MapEventsData) => {
-      this.updateEvents(events);
-    };
-    EventBus.on(MapEvents.UPDATE_EVENTS, this.eventHandlers.updateEvents);
-
-    // Editor mode changes from React (018-map-editor)
-    this.eventHandlers.editorModeChanged = (data: { mode: 'view' | 'create' | 'edit' }) => {
-      this.editorMode = data.mode;
-      this.updateMarkerDraggability();
-    };
-    EventBus.on(MapEvents.EDITOR_MODE_CHANGED, this.eventHandlers.editorModeChanged);
-
-    // Location deleted - remove marker
-    this.eventHandlers.locationDeleted = (data: { id: string }) => {
-      const markerId = `location-${data.id}`;
-      const marker = this.markers.get(markerId);
-      if (marker) {
-        marker.destroy();
-        this.markers.delete(markerId);
-        this.markerData.delete(markerId);
-      }
-    };
-    EventBus.on(MapEvents.LOCATION_DELETED, this.eventHandlers.locationDeleted);
   }
 
   private emitCameraChanged(): void {
@@ -616,32 +585,10 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Clean up when scene is destroyed
-   */
-  private teardown(): void {
-    if (this.eventHandlers.setLayerVisibility) {
-      EventBus.off(MapEvents.SET_LAYER_VISIBILITY, this.eventHandlers.setLayerVisibility);
+  private cleanupEventBusListeners(): void {
+    if (this.unbindEventBusListeners) {
+      this.unbindEventBusListeners();
+      this.unbindEventBusListeners = null;
     }
-    if (this.eventHandlers.flyToLocation) {
-      EventBus.off(MapEvents.FLY_TO_LOCATION, this.eventHandlers.flyToLocation);
-    }
-    if (this.eventHandlers.updateLocations) {
-      EventBus.off(MapEvents.UPDATE_LOCATIONS, this.eventHandlers.updateLocations);
-    }
-    if (this.eventHandlers.updateCharacters) {
-      EventBus.off(MapEvents.UPDATE_CHARACTERS, this.eventHandlers.updateCharacters);
-    }
-    if (this.eventHandlers.updateEvents) {
-      EventBus.off(MapEvents.UPDATE_EVENTS, this.eventHandlers.updateEvents);
-    }
-    if (this.eventHandlers.editorModeChanged) {
-      EventBus.off(MapEvents.EDITOR_MODE_CHANGED, this.eventHandlers.editorModeChanged);
-    }
-    if (this.eventHandlers.locationDeleted) {
-      EventBus.off(MapEvents.LOCATION_DELETED, this.eventHandlers.locationDeleted);
-    }
-
-    this.eventHandlers = {};
   }
 }

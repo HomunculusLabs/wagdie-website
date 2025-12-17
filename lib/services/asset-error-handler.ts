@@ -10,6 +10,8 @@ import type {
   ErrorRecoveryStrategy,
   AssetErrorHandler as IAssetErrorHandler
 } from '@/types/assets';
+import { getFallbackUrl, getRecoveryStrategy } from '@/lib/services/assets/asset-policy';
+import { isAllowedAssetId } from '@/lib/services/assets/asset-ids';
 
 export interface AssetErrorHandlerOptions {
   onError?: (error: AssetError) => void;
@@ -103,43 +105,30 @@ export class AssetErrorHandler implements IAssetErrorHandler {
       return customFallback;
     }
 
-    // Default fallbacks by category/pattern
+    // Known icon IDs use shared policy mapping (single source of truth)
+    if (isAllowedAssetId(assetId)) {
+      return getFallbackUrl(assetId);
+    }
+
+    // Generic fallbacks for unknown IDs (pattern-based)
     const defaultFallbacks: Record<string, string> = {
-      // Map markers
-      'location': '/images/mapicons/icon_location.png',
-      'character': '/images/mapicons/icon_youarehere.png',
-      'burn': '/images/mapicons/icon_burn.png',
-      'death': '/images/mapicons/icon_death.png',
-      'fight': '/images/mapicons/icon_fight.png',
-
-      // Legend icons
-      'legend_location_on': '/images/legendicons/legend_icon_location_on.png',
-      'legend_location_off': '/images/legendicons/legend_icon_location_off.png',
-      'legend_burn_on': '/images/legendicons/legend_icon_burn_on.png',
-      'legend_burn_off': '/images/legendicons/legend_icon_burn_off.png',
-      'legend_death_on': '/images/legendicons/legend_icon_death_on.png',
-      'legend_death_off': '/images/legendicons/legend_icon_death_off.png',
-      'legend_fight_on': '/images/legendicons/legend_icon_fight_on.png',
-      'legend_fight_off': '/images/legendicons/legend_icon_fight_off.png',
-
-      // Generic fallbacks
-      'default_marker': '/images/mapicons/icon_location.png',
-      'default_legend': '/images/legendicons/legend_icon_location_on.png',
-      'default_background': '/images/wagdie.png'
+      default_marker: getFallbackUrl('location'),
+      default_legend: getFallbackUrl('legend_location_on'),
+      default_background: '/images/wagdie.png'
     };
 
-    // Try exact match first
+    // Try exact match first (generic keys)
     const exactMatch = defaultFallbacks[assetId];
     if (exactMatch) {
       return exactMatch;
     }
 
-    // Try pattern matching
+    // Try pattern matching (unknown ids only)
     if (assetId.startsWith('legend_')) {
       return defaultFallbacks.default_legend;
     }
 
-    if (assetId.includes('marker') || ['location', 'character', 'burn', 'death', 'fight'].includes(assetId)) {
+    if (assetId.includes('marker')) {
       return defaultFallbacks.default_marker;
     }
 
@@ -214,45 +203,7 @@ export class AssetErrorHandler implements IAssetErrorHandler {
    * Get retry strategy for error type
    */
   private getRetryStrategy(errorType: AssetError['errorType']): ErrorRecoveryStrategy {
-    const strategies: Record<AssetError['errorType'], ErrorRecoveryStrategy> = {
-      network: {
-        errorType: 'network',
-        maxRetries: 3,
-        retryDelay: 1000,
-        useFallback: true,
-        logError: true
-      },
-      file_not_found: {
-        errorType: 'file_not_found',
-        maxRetries: 1,
-        retryDelay: 0,
-        useFallback: true,
-        logError: true
-      },
-      timeout: {
-        errorType: 'timeout',
-        maxRetries: 2,
-        retryDelay: 2000,
-        useFallback: true,
-        logError: true
-      },
-      unknown: {
-        errorType: 'unknown',
-        maxRetries: 2,
-        retryDelay: 1500,
-        useFallback: true,
-        logError: true
-      },
-      corruption: {
-        errorType: 'corruption',
-        maxRetries: 0,
-        retryDelay: 0,
-        useFallback: true,
-        logError: true
-      }
-    };
-
-    return strategies[errorType];
+    return getRecoveryStrategy(errorType);
   }
 
   /**

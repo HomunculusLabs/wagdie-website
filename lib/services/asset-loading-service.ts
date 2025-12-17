@@ -16,6 +16,13 @@ import type {
 } from '@/types/assets';
 import { getAssetCache, type CacheEntry } from '@/lib/services/asset-cache';
 import { getAssetOptimizer, type AssetOptimizationOptions } from '@/lib/utils/asset-optimization';
+import { isAllowedAssetId } from '@/lib/services/assets/asset-ids';
+import {
+  getAssetUrl as getAssetUrlFromPolicy,
+  getFallbackUrl,
+  getRecoveryStrategy,
+} from '@/lib/services/assets/asset-policy';
+import { classifyAssetError, buildAssetError } from '@/lib/services/assets/asset-errors';
 
 // Debug configuration - set to false to reduce console spam
 const DEBUG_ASSET_LOADING = false;
@@ -40,14 +47,6 @@ export class AssetLoadingService implements IAssetLoadingService {
     criticalAssets: ['location', 'character', 'burn', 'death', 'fight']
   };
 
-  // Default fallback assets
-  private readonly fallbackAssets: Map<string, string> = new Map([
-    ['location', '/images/mapicons/icon_location.png'],
-    ['burn', '/images/mapicons/icon_burn.png'],
-    ['death', '/images/mapicons/icon_death.png'],
-    ['fight', '/images/mapicons/icon_fight.png'],
-    ['character', '/images/mapicons/icon_youarehere.png']
-  ]);
 
   /**
    * Load a single asset with progressive fallbacks, caching, and optimization
@@ -356,14 +355,12 @@ export class AssetLoadingService implements IAssetLoadingService {
     loadingState.loadEndTime = Date.now();
 
     // Create structured error object for intelligent handling
-    const assetError: AssetError = {
+    const assetError: AssetError = buildAssetError({
       assetId,
-      errorType: this.classifyError(error), // Categorize error for appropriate response
-      errorMessage: error.message,
-      timestamp: Date.now(),
+      error,
       retryCount: loadingState.retryCount,
-      canRetry: loadingState.retryCount < this.config.retryAttempts
-    };
+      retryAttempts: this.config.retryAttempts,
+    });
 
     // Determine recovery strategy based on error type
     // Different errors require different handling approaches
@@ -404,26 +401,24 @@ export class AssetLoadingService implements IAssetLoadingService {
    */
   private useFallbackAsset(assetId: string): AssetLoadingState {
     const loadingState = this.loadingStates.get(assetId)!;
-    const fallbackUrl = this.fallbackAssets.get(assetId);
 
-    if (fallbackUrl) {
-      // Try to load fallback asset
-      const img = new Image();
-      img.onload = () => {
-        loadingState.status = 'fallback';
-        loadingState.usedFallback = true;
-        loadingState.loadEndTime = Date.now();
-      };
-      img.onerror = () => {
-        loadingState.status = 'failed';
-        loadingState.usedFallback = true;
-        this.errorCount++;
-      };
-      img.src = fallbackUrl;
-    } else {
+    const fallbackUrl = isAllowedAssetId(assetId)
+      ? getFallbackUrl(assetId)
+      : getFallbackUrl('location');
+
+    // Try to load fallback asset
+    const img = new Image();
+    img.onload = () => {
+      loadingState.status = 'fallback';
+      loadingState.usedFallback = true;
+      loadingState.loadEndTime = Date.now();
+    };
+    img.onerror = () => {
       loadingState.status = 'failed';
+      loadingState.usedFallback = true;
       this.errorCount++;
-    }
+    };
+    img.src = fallbackUrl;
 
     return loadingState;
   }
@@ -438,27 +433,10 @@ export class AssetLoadingService implements IAssetLoadingService {
     // Validate assetId to prevent path traversal attacks
     if (!this.isValidAssetId(assetId)) {
       if (DEBUG_ASSET_LOADING) console.warn(`[AssetLoadingService] Invalid asset ID detected: ${assetId}. Using fallback.`);
-      return this.fallbackAssets.get('location') || '/images/mapicons/icon_location.png';
+      return getFallbackUrl('location');
     }
 
-    // Map asset IDs to flat structure paths - only allow known assets
-    const assetPaths: Record<string, string> = {
-      'location': '/images/mapicons/icon_location.png',
-      'character': '/images/mapicons/icon_youarehere.png',
-      'burn': '/images/mapicons/icon_burn.png',
-      'death': '/images/mapicons/icon_death.png',
-      'fight': '/images/mapicons/icon_fight.png',
-      'legend_location_on': '/images/legendicons/legend_icon_location_on.png',
-      'legend_location_off': '/images/legendicons/legend_icon_location_off.png',
-      'legend_burn_on': '/images/legendicons/legend_icon_burn_on.png',
-      'legend_burn_off': '/images/legendicons/legend_icon_burn_off.png',
-      'legend_death_on': '/images/legendicons/legend_icon_death_on.png',
-      'legend_death_off': '/images/legendicons/legend_icon_death_off.png',
-      'legend_fight_on': '/images/legendicons/legend_icon_fight_on.png',
-      'legend_fight_off': '/images/legendicons/legend_icon_fight_off.png'
-    };
-
-    return assetPaths[assetId] || this.fallbackAssets.get('location') || '/images/mapicons/icon_location.png';
+    return getAssetUrlFromPolicy(assetId);
   }
 
   /**
@@ -473,103 +451,23 @@ export class AssetLoadingService implements IAssetLoadingService {
    * @param assetId - The asset ID to validate
    * @returns boolean - True if the asset ID is valid and safe
    */
-  private isValidAssetId(assetId: string): boolean {
+  private isValidAssetId(assetId: string): assetId is import('@/types/assets').IconType {
     // Asset ID must be a non-empty string
-    if (!assetId || typeof assetId !== 'string') {
-      return false;
-    }
-
-    // Define allowed pattern: alphanumeric, underscore, and hyphen only
-    const validPattern = /^[a-zA-Z0-9_-]+$/;
-
-    // Check if the assetId matches the allowed pattern
-    if (!validPattern.test(assetId)) {
-      return false;
-    }
-
-    // Check for path traversal attempts
-    if (assetId.includes('..') || assetId.includes('/') || assetId.includes('\\')) {
-      return false;
-    }
-
-    // Check for script injection attempts
-    if (assetId.toLowerCase().includes('<script') ||
-      assetId.toLowerCase().includes('javascript:') ||
-      assetId.toLowerCase().includes('data:')) {
-      return false;
-    }
-
-    // Define maximum length to prevent buffer overflow attempts
-    if (assetId.length > 50) {
-      return false;
-    }
-
-    // Ensure the asset ID is in our allowed list (whitelist approach)
-    const allowedAssetIds = new Set([
-      'location', 'character', 'burn', 'death', 'fight',
-      'legend_location_on', 'legend_location_off',
-      'legend_burn_on', 'legend_burn_off',
-      'legend_death_on', 'legend_death_off',
-      'legend_fight_on', 'legend_fight_off'
-    ]);
-
-    return allowedAssetIds.has(assetId);
+    return isAllowedAssetId(assetId);
   }
 
   /**
    * Classify error type
    */
   private classifyError(error: Error): AssetError['errorType'] {
-    if (error.message.includes('timeout')) return 'timeout';
-    if (error.message.includes('404') || error.message.includes('not found')) return 'file_not_found';
-    if (error.message.includes('network') || error.message.includes('fetch')) return 'network';
-    return 'unknown';
+    return classifyAssetError(error);
   }
 
   /**
    * Get error recovery strategy
    */
   private getErrorRecoveryStrategy(errorType: AssetError['errorType']): ErrorRecoveryStrategy {
-    const strategies: Record<AssetError['errorType'], ErrorRecoveryStrategy> = {
-      network: {
-        errorType: 'network',
-        maxRetries: 3,
-        retryDelay: 1000,
-        useFallback: true,
-        logError: true
-      },
-      file_not_found: {
-        errorType: 'file_not_found',
-        maxRetries: 1,
-        retryDelay: 0,
-        useFallback: true,
-        logError: true
-      },
-      timeout: {
-        errorType: 'timeout',
-        maxRetries: 2,
-        retryDelay: 2000,
-        useFallback: true,
-        logError: true
-      },
-      unknown: {
-        errorType: 'unknown',
-        maxRetries: 2,
-        retryDelay: 1500,
-        useFallback: true,
-        logError: true
-      },
-      corruption: {
-        errorType: 'corruption',
-        maxRetries: 0,
-        retryDelay: 0,
-        useFallback: true,
-        logError: true
-      },
-
-    };
-
-    return strategies[errorType];
+    return getRecoveryStrategy(errorType);
   }
 
   /**

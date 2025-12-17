@@ -4,88 +4,47 @@
  * POST: Create a new location (admin only)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
-import { isAdmin } from '@/lib/auth/admin'
-import { LocationService, ValidationError, ConflictError } from '@/lib/services/location-service'
+import { NextRequest } from 'next/server'
+import { LocationService } from '@/lib/services/location-service'
 import type { CreateLocationInput } from '@/lib/types/map'
+import {
+  jsonOk,
+  jsonCreated,
+  jsonBadRequest,
+  jsonServerError,
+  parseJsonBody,
+  requireAdmin,
+  isAuthError,
+  handleServiceError,
+} from '@/lib/api'
 
 const locationService = new LocationService()
 
 export async function GET() {
   try {
     const locations = await locationService.getAll()
-
-    return NextResponse.json({
-      success: true,
-      data: locations,
-    })
+    return jsonOk(locations)
   } catch (error) {
-    console.error('Error fetching locations:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch locations' },
-      { status: 500 }
-    )
+    return jsonServerError('Failed to fetch locations', error)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
-    const session = await getSession()
-
-    if (!session.address) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Verify admin status
-    if (!isAdmin(session.address)) {
-      return NextResponse.json(
-        { success: false, error: 'Not authorized - admin access required' },
-        { status: 403 }
-      )
-    }
+    // Require admin authentication
+    const auth = await requireAdmin()
+    if (isAuthError(auth)) return auth
 
     // Parse request body
-    let input: CreateLocationInput
-    try {
-      input = await request.json()
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Invalid JSON body' },
-        { status: 400 }
-      )
+    const input = await parseJsonBody<CreateLocationInput>(request)
+    if (!input) {
+      return jsonBadRequest('Invalid JSON body')
     }
 
     // Create location
-    const location = await locationService.create(input, session.address)
-
-    return NextResponse.json(
-      { success: true, data: location },
-      { status: 201 }
-    )
+    const location = await locationService.create(input, auth.address)
+    return jsonCreated(location)
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { success: false, error: error.message, details: error.details },
-        { status: 400 }
-      )
-    }
-
-    if (error instanceof ConflictError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 409 }
-      )
-    }
-
-    console.error('Error creating location:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create location' },
-      { status: 500 }
-    )
+    return handleServiceError(error, 'Failed to create location')
   }
 }

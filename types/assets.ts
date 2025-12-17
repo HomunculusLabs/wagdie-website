@@ -128,16 +128,6 @@ export interface ErrorRecoveryStrategy {
   logError: boolean;         // Whether to log the error
 }
 
-// Asset error handler interface
-export interface AssetErrorHandler {
-  handleError(error: AssetError): void;
-  isRetryableError(error: AssetError): boolean;
-  getRetryDelay(error: AssetError, attempt: number): number;
-  logError(error: AssetError): void;
-  getFallbackAsset(assetId: string): string | null;
-  getErrorLog(): AssetError[];
-}
-
 // Performance metrics for individual assets
 export interface AssetPerformanceMetrics {
   assetId: string;           // Asset identifier
@@ -187,6 +177,7 @@ export interface AssetErrorHandler {
   logError(error: AssetError): void;
   getFallbackAsset(assetId: string): string | null;
   useFallbackAsset(assetId: string): string | null;
+  getErrorLog(): AssetError[];
   getErrorStats(): {
     total: number;
     byType: Record<AssetError['errorType'], number>;

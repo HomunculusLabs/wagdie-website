@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { inspect } from 'util';
 import type { Location, LocationRepository as ILocationRepository, CreateLocationInput, UpdateLocationInput } from '../types/map';
+import { normalizeLocationMetadata } from '@/lib/domain/location/metadata';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -61,91 +62,15 @@ function formatSupabaseError(err: unknown): string {
   return 'Unknown error';
 }
 
-function normalizeLocationMetadata(rawMetadata: unknown): Location['metadata'] {
-  const meta = isPlainObject(rawMetadata) ? rawMetadata : {};
-
-  // Read coordinates if present and valid
-  const rawCoordinates = isPlainObject(meta.coordinates) ? meta.coordinates : null;
-  const coordinatesFromMeta =
-    rawCoordinates && isFiniteNumber(rawCoordinates.x) && isFiniteNumber(rawCoordinates.y)
-      ? { x: rawCoordinates.x, y: rawCoordinates.y }
-      : undefined;
-
-  // Read bounds if present and valid
-  const rawBounds = Array.isArray(meta.bounds) ? meta.bounds : null;
-  const boundsFromMeta =
-    rawBounds &&
-    rawBounds.length === 2 &&
-    Array.isArray(rawBounds[0]) &&
-    Array.isArray(rawBounds[1]) &&
-    rawBounds[0].length === 2 &&
-    rawBounds[1].length === 2 &&
-    isFiniteNumber(rawBounds[0][0]) &&
-    isFiniteNumber(rawBounds[0][1]) &&
-    isFiniteNumber(rawBounds[1][0]) &&
-    isFiniteNumber(rawBounds[1][1])
-      ? ([[rawBounds[0][0], rawBounds[0][1]], [rawBounds[1][0], rawBounds[1][1]]] as [[number, number], [number, number]])
-      : undefined;
-
-  // Read center if present and valid
-  const rawCenter = Array.isArray(meta.center) ? meta.center : null;
-  const centerFromMeta =
-    rawCenter &&
-    rawCenter.length === 2 &&
-    isFiniteNumber(rawCenter[0]) &&
-    isFiniteNumber(rawCenter[1])
-      ? ([rawCenter[0], rawCenter[1]] as [number, number])
-      : undefined;
-
-  const centerFromBounds =
-    boundsFromMeta
-      ? ([
-          (boundsFromMeta[0][0] + boundsFromMeta[1][0]) / 2,
-          (boundsFromMeta[0][1] + boundsFromMeta[1][1]) / 2,
-        ] as [number, number])
-      : undefined;
-
-  // Derive missing center/coordinates from whichever exists (coordinates > center > bounds-derived center)
-  const center =
-    centerFromMeta ??
-    centerFromBounds ??
-    (coordinatesFromMeta ? ([coordinatesFromMeta.x, coordinatesFromMeta.y] as [number, number]) : undefined);
-
-  const coordinates =
-    coordinatesFromMeta ??
-    (center ? { x: center[0], y: center[1] } : undefined);
-
-  // Ensure bounds always exists to avoid downstream crashes; only derive when we have a known point
-  const bounds: [[number, number], [number, number]] =
-    boundsFromMeta ??
-    (coordinates
-      ? ([
-          [coordinates.x - 25, coordinates.y - 25],
-          [coordinates.x + 25, coordinates.y + 25],
-        ] as [[number, number], [number, number]])
-      : center
-        ? ([
-            [center[0] - 25, center[1] - 25],
-            [center[0] + 25, center[1] + 25],
-          ] as [[number, number], [number, number]])
-        : ([[0, 0], [0, 0]] as [[number, number], [number, number]]));
-
-  return {
-    ...(meta as Record<string, any>),
-    bounds,
-    ...(center ? { center } : {}),
-    ...(coordinates ? { coordinates } : {}),
-  } as Location['metadata'];
-}
-
 function normalizeLocation(raw: unknown): Location {
   const loc = (raw ?? {}) as Record<string, any>;
+  const safeLoc: Record<string, any> = isPlainObject(loc) ? loc : {};
   const now = new Date().toISOString();
-  const createdAt = typeof loc.created_at === 'string' ? loc.created_at : now;
-  const updatedAt = typeof loc.updated_at === 'string' ? loc.updated_at : now;
+  const createdAt = typeof safeLoc.created_at === 'string' ? safeLoc.created_at : now;
+  const updatedAt = typeof safeLoc.updated_at === 'string' ? safeLoc.updated_at : now;
   return {
-    ...(loc as Location),
-    metadata: normalizeLocationMetadata(loc.metadata),
+    ...(safeLoc as Location),
+    metadata: normalizeLocationMetadata(safeLoc.metadata) as unknown as Location['metadata'],
     created_at: createdAt,
     updated_at: updatedAt,
   };
@@ -451,7 +376,7 @@ export class LocationRepository implements ILocationRepository {
         return 0;
       }
 
-      return count ?? 0;
+      return isFiniteNumber(count) ? count : 0;
     } catch (error) {
       console.error(`LocationRepository.getStakedCharacterCount(${id}) error:`, error);
       return 0;
@@ -474,7 +399,7 @@ export class LocationRepository implements ILocationRepository {
         return false;
       }
 
-      return (count ?? 0) > 0;
+      return isFiniteNumber(count) ? count > 0 : false;
     } catch {
       return false;
     }

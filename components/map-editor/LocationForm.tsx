@@ -7,25 +7,18 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Select } from '@/components/ui'
-import type { Location, CreateLocationInput, UpdateLocationInput } from '@/lib/types/map'
+import type { Location } from '@/lib/types/map'
+import {
+  validateLocationForm,
+  buildLocationFormSubmit,
+  isValidForm,
+  CREATE_NEW_VALUE,
+  type LocationFormSubmit,
+  type LocationFormErrors,
+} from './locationFormModel'
 
-const CREATE_NEW_VALUE = '__new__'
-
-export type LocationFormSubmit =
-  | {
-      kind: 'create_new'
-      input: CreateLocationInput
-    }
-  | {
-      kind: 'move_existing'
-      locationId: string
-      input: Pick<UpdateLocationInput, 'coordinates'>
-    }
-  | {
-      kind: 'edit_existing'
-      locationId: string
-      input: UpdateLocationInput
-    }
+// Re-export for external consumers
+export type { LocationFormSubmit } from './locationFormModel'
 
 interface LocationFormProps {
   mode: 'create' | 'edit'
@@ -51,7 +44,7 @@ export function LocationForm({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedLocationId, setSelectedLocationId] = useState<string>(CREATE_NEW_VALUE)
-  const [errors, setErrors] = useState<{ name?: string; description?: string; locationId?: string }>({})
+  const [errors, setErrors] = useState<LocationFormErrors>({})
 
   const isCreateNew = mode === 'create' && selectedLocationId === CREATE_NEW_VALUE
   const isMoveExisting = mode === 'create' && selectedLocationId !== CREATE_NEW_VALUE
@@ -75,45 +68,11 @@ export function LocationForm({
   }, [mode, location])
 
   const validate = useCallback(() => {
-    const newErrors: { name?: string; description?: string; locationId?: string } = {}
-
-    if (mode === 'create') {
-      if (selectedLocationId === CREATE_NEW_VALUE) {
-        if (!name.trim()) {
-          newErrors.name = 'Name is required'
-        } else if (name.trim().length > 200) {
-          newErrors.name = 'Name cannot exceed 200 characters'
-        }
-
-        if (description.length > 2000) {
-          newErrors.description = 'Description cannot exceed 2000 characters'
-        }
-      } else {
-        if (!selectedLocationId) {
-          newErrors.locationId = 'Please choose a location to move'
-        } else if (!locations.some((loc) => loc.id === selectedLocationId)) {
-          newErrors.locationId = 'Selected location not found'
-        }
-      }
-
-      setErrors(newErrors)
-      return Object.keys(newErrors).length === 0
-    }
-
-    // Edit mode (existing behavior)
-    if (!name.trim()) {
-      newErrors.name = 'Name is required'
-    } else if (name.trim().length > 200) {
-      newErrors.name = 'Name cannot exceed 200 characters'
-    }
-
-    if (description.length > 2000) {
-      newErrors.description = 'Description cannot exceed 2000 characters'
-    }
-
+    const formState = { name, description, selectedLocationId, coordinates }
+    const newErrors = validateLocationForm(mode, formState, locations)
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }, [mode, selectedLocationId, name, description, locations])
+    return isValidForm(newErrors)
+  }, [mode, selectedLocationId, name, description, coordinates, locations])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -121,64 +80,13 @@ export function LocationForm({
     if (!validate()) return
 
     try {
-      if (mode === 'create') {
-        if (selectedLocationId === CREATE_NEW_VALUE) {
-          await onSave({
-            kind: 'create_new',
-            input: {
-              name: name.trim(),
-              description: description.trim() || undefined,
-              coordinates,
-            },
-          })
-          return
-        }
+      const formState = { name, description, selectedLocationId, coordinates }
+      const payload = buildLocationFormSubmit(mode, formState, location)
 
-        await onSave({
-          kind: 'move_existing',
-          locationId: selectedLocationId,
-          input: {
-            coordinates,
-          },
-        })
-        return
-      }
-
-      // mode === 'edit'
-      if (!location) {
-        onCancel()
-        return
-      }
-
-      // Only include changed fields for update
-      const updates: UpdateLocationInput = {}
-
-      if (name.trim() !== location.name) {
-        updates.name = name.trim()
-      }
-
-      if ((description.trim() || undefined) !== (location.description || undefined)) {
-        updates.description = description.trim() || undefined
-      }
-
-      // Check if coordinates changed
-      const existingCoords =
-        location.metadata?.coordinates ??
-        (location.metadata?.center && location.metadata.center.length === 2
-          ? { x: location.metadata.center[0], y: location.metadata.center[1] }
-          : undefined)
-      if (existingCoords?.x !== coordinates.x || existingCoords?.y !== coordinates.y) {
-        updates.coordinates = coordinates
-      }
-
-      // Only submit if there are changes
-      if (Object.keys(updates).length > 0) {
-        await onSave({
-          kind: 'edit_existing',
-          locationId: location.id,
-          input: updates,
-        })
+      if (payload) {
+        await onSave(payload)
       } else {
+        // No changes in edit mode
         onCancel()
       }
     } catch {
