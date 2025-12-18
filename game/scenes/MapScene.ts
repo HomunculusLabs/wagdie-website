@@ -36,6 +36,28 @@ import {
 } from './map/coords';
 import { bindMapSceneEvents, type MapSceneEventHandlers } from './map/event-bindings';
 
+/**
+ * Deterministic ring layout offsets for stacked character markers.
+ */
+function getStackOffset(index: number): { dx: number; dy: number } {
+  if (index === 0) return { dx: 0, dy: 0 }; // First marker stays at center
+
+  const baseRadius = 14; // World units for first ring
+  const ringStep = 10; // Additional radius per ring
+  const ringSize = 8; // Markers per ring
+
+  const adjustedIndex = index - 1; // Skip center position
+  const ring = Math.floor(adjustedIndex / ringSize);
+  const positionInRing = adjustedIndex % ringSize;
+  const radius = baseRadius + ring * ringStep;
+  const angle = (2 * Math.PI * positionInRing) / ringSize;
+
+  return {
+    dx: Math.cos(angle) * radius,
+    dy: Math.sin(angle) * radius,
+  };
+}
+
 /** Internal marker data structure */
 interface MarkerData {
   id: string;
@@ -404,20 +426,69 @@ export class MapScene extends Phaser.Scene {
    * Add or update character markers
    */
   public updateCharacters(characters: MapCharacterData[]): void {
+    const charactersByLocationId = new Map<string, MapCharacterData[]>();
+
+    for (const charLocation of characters) {
+      const locationId = charLocation.location?.id;
+      if (!locationId) continue;
+
+      const list = charactersByLocationId.get(locationId);
+      if (list) list.push(charLocation);
+      else charactersByLocationId.set(locationId, [charLocation]);
+    }
+
+    // Sort each location group for stable positioning (same inputs => same offsets)
+    for (const [, list] of charactersByLocationId) {
+      list.sort((a, b) => a.character_token_id - b.character_token_id);
+    }
+
+    // Precompute world positions per token id (including offsets)
+    const positionsByTokenId = new Map<number, { x: number; y: number }>();
+
+    for (const [, list] of charactersByLocationId) {
+      const baseCenter = list.find((row) => {
+        const center = row.location?.metadata?.center;
+        return Array.isArray(center) && center.length === 2;
+      })?.location?.metadata?.center;
+
+      if (!Array.isArray(baseCenter) || baseCenter.length !== 2) {
+        continue;
+      }
+
+      const baseX = baseCenter[0] * COORD_SCALE;
+      const baseY = baseCenter[1] * COORD_SCALE;
+
+      for (let i = 0; i < list.length; i++) {
+        const row = list[i];
+        const { dx, dy } = getStackOffset(i);
+        positionsByTokenId.set(row.character_token_id, {
+          x: baseX + dx,
+          y: baseY + dy,
+        });
+      }
+    }
+
+    // Create/update markers using the computed positions (fallback to base center if not grouped)
     characters.forEach((charLocation) => {
       const coords = charLocation.location?.metadata?.center;
-      if (!coords) return;
+      if (!Array.isArray(coords) || coords.length !== 2) return;
 
-      const x = coords[0] * COORD_SCALE;
-      const y = coords[1] * COORD_SCALE;
+      const fallbackX = coords[0] * COORD_SCALE;
+      const fallbackY = coords[1] * COORD_SCALE;
+
+      const position = positionsByTokenId.get(charLocation.character_token_id) ?? {
+        x: fallbackX,
+        y: fallbackY,
+      };
+
       const id = `character-${charLocation.character_token_id}`;
 
       this.createOrUpdateMarker({
         id,
         type: 'character',
         name: charLocation.character_name || `Character #${charLocation.character_token_id}`,
-        x,
-        y,
+        x: position.x,
+        y: position.y,
         data: charLocation,
       });
     });

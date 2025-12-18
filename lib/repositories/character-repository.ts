@@ -7,6 +7,45 @@
 import { supabase } from '../supabase'
 import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, EditableCharacterFields, OriginCount, OriginsResponse, AlignmentCount, AlignmentsResponse } from '@/types/character'
+import type { NormalizedLocationMetadata } from '@/lib/domain/location/metadata-types'
+import { normalizeLocationMetadata } from '@/lib/domain/location/metadata'
+
+/**
+ * Location data joined from the locations table.
+ * The metadata field is normalized to ensure center can be derived from bounds.
+ */
+export interface JoinedLocation {
+  /** UUID of the location */
+  id: string;
+
+  /** Human-readable location name */
+  name: string;
+
+  /**
+   * Normalized metadata with guaranteed bounds field.
+   * Center and coordinates are derived if not present in raw data.
+   */
+  metadata: NormalizedLocationMetadata;
+}
+
+/**
+ * Character with optional joined location data.
+ *
+ * Returned by:
+ * - CharacterRepository.getStakedCharacters()
+ *
+ * Consumed by:
+ * - useMapData() hook
+ * - app/map/page.tsx mapCharacterMarkers memo
+ */
+export interface CharacterWithLocation extends Character {
+  /**
+   * Joined location data. Null if:
+   * - Character's location_id is null (not staked)
+   * - Character's location_id references a deleted location (orphaned FK)
+   */
+  location?: JoinedLocation | null;
+}
 
 export interface ICharacterRepository {
   findMany(filters: CharacterFilters): Promise<CharactersResponse>
@@ -269,6 +308,86 @@ export class CharacterRepository implements ICharacterRepository {
     }
   }
 
+  async getStakedCharacters(): Promise<CharacterWithLocation[]> {
+    // Step 1: Get characters with location_id set
+    // Note: Using separate queries because there's no FK constraint between wagdie_characters and locations
+    const { data, error: charError } = await supabase
+      .from(CHARACTERS_TABLE)
+      .select('*')
+      .not('location_id', 'is', null)
+      .order('token_id', { ascending: true })
+
+    if (charError) {
+      console.error('Error fetching staked characters:', charError)
+      throw new Error(`Failed to fetch staked characters: ${charError.message}`)
+    }
+
+    // Cast to Character[] since Supabase doesn't infer the full type
+    const characters = (data || []) as Character[]
+
+    if (characters.length === 0) {
+      return []
+    }
+
+    console.log('[getStakedCharacters] Characters with location_id:', characters.length)
+
+    // Step 2: Get unique location IDs
+    const locationIds = [...new Set(
+      characters
+        .map(c => c.location_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )]
+
+    console.log('[getStakedCharacters] Unique location IDs:', locationIds.length)
+
+    // Step 3: Fetch locations for those IDs
+    const { data: locationsData, error: locError } = await supabase
+      .from('locations')
+      .select('id, name, metadata')
+      .in('id', locationIds)
+
+    if (locError) {
+      console.error('Error fetching locations for staked characters:', locError)
+      // Return characters without location data rather than failing completely
+      return characters.map(c => ({ ...c, location: null })) as CharacterWithLocation[]
+    }
+
+    // Cast to proper type since Supabase doesn't infer it
+    const locations = (locationsData || []) as Array<{ id: string; name: string; metadata: unknown }>
+    console.log('[getStakedCharacters] Locations fetched:', locations.length)
+
+    // Step 4: Create location lookup map
+    const locationMap = new Map<string, { id: string; name: string; metadata: unknown }>()
+    for (const loc of locations) {
+      locationMap.set(loc.id, loc)
+    }
+
+    // Step 5: Join characters with locations and normalize metadata
+    const result: CharacterWithLocation[] = characters.map(char => {
+      const rawLoc = char.location_id ? locationMap.get(char.location_id) : undefined
+      if (!rawLoc) {
+        return { ...char, location: null } as CharacterWithLocation
+      }
+      return {
+        ...char,
+        location: {
+          id: rawLoc.id,
+          name: rawLoc.name,
+          metadata: normalizeLocationMetadata(rawLoc.metadata),
+        },
+      } as CharacterWithLocation
+    })
+
+    // Debug: Log first result's normalized metadata
+    const withLocation = result.filter(r => r.location)
+    console.log('[getStakedCharacters] Results with valid location:', withLocation.length)
+    if (withLocation.length > 0 && withLocation[0].location) {
+      console.log('[getStakedCharacters] First location metadata:', JSON.stringify(withLocation[0].location.metadata, null, 2))
+    }
+
+    return result
+  }
+
   /**
    * Get all token IDs from the database
    */
@@ -382,3 +501,5 @@ export class CharacterRepository implements ICharacterRepository {
 
 // Export singleton instance
 export const characterRepository = new CharacterRepository()
+
+export const getStakedCharacters = () => characterRepository.getStakedCharacters()

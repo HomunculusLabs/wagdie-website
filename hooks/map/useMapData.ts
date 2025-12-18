@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Location, CharacterLocation } from '@/lib/types/map';
+import type { Location } from '@/lib/types/map';
+import type { CharacterWithLocation } from '@/lib/repositories/character-repository';
 
 export function useMapData() {
   const [locations, setLocations] = useState<Location[]>([]);
-  const [characterLocations, setCharacterLocations] = useState<CharacterLocation[]>([]);
+  const [stakedCharacters, setStakedCharacters] = useState<CharacterWithLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -14,7 +15,7 @@ export function useMapData() {
     'Initializing WAGDIE World',
     'Connecting to database',
     'Fetching locations',
-    'Fetching characters',
+    'Fetching staked characters',
     'Loading map assets',
     'Finalizing setup',
   ]);
@@ -41,7 +42,7 @@ export function useMapData() {
 
         // Dynamically import repositories
         const { LocationRepository } = await import('@/lib/repositories/locationRepository');
-        const { CharacterLocationRepository } = await import('@/lib/repositories/characterLocationRepository');
+        const { getStakedCharacters } = await import('@/lib/repositories/character-repository');
 
         // Stage 3: Fetch locations
         setLoadingStage('Fetching locations');
@@ -64,24 +65,23 @@ export function useMapData() {
         setLocations(locationsData);
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Stage 4: Fetch characters
-        setLoadingStage('Fetching characters');
+        // Stage 4: Fetch staked characters (wagdie_characters.location_id IS NOT NULL)
+        setLoadingStage('Fetching staked characters');
         setLoadingProgress(60);
 
-        const charLocationRepo = new CharacterLocationRepository();
-        let characterLocationsData: CharacterLocation[] = [];
+        let stakedData: CharacterWithLocation[] = [];
         try {
-          characterLocationsData = await charLocationRepo.getConfirmed();
+          stakedData = await getStakedCharacters();
         } catch {
-          characterLocationsData = [];
+          stakedData = [];
         }
 
-        if (!characterLocationsData) {
-          characterLocationsData = [];
+        if (!stakedData) {
+          stakedData = [];
         }
 
-        console.log('[useMapData] Characters loaded:', characterLocationsData.length);
-        setCharacterLocations(characterLocationsData);
+        console.log('[useMapData] Staked characters loaded:', stakedData.length);
+        setStakedCharacters(stakedData);
         await new Promise(resolve => setTimeout(resolve, 200));
 
         // Stage 5: Load map assets
@@ -114,7 +114,7 @@ export function useMapData() {
 
   return {
     locations,
-    characterLocations,
+    stakedCharacters,
     isLoading,
     error,
     loadingProgress,
