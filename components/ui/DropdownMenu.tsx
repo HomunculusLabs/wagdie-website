@@ -214,8 +214,9 @@ export const DropdownItem = React.memo<DropdownItemProps>(({
 
   // Register this item
   useEffect(() => {
-    context.registerItem(itemId.current);
-    return () => context.unregisterItem(itemId.current);
+    const id = itemId.current;
+    context.registerItem(id);
+    return () => context.unregisterItem(id);
   }, [context]);
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {

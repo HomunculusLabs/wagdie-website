@@ -12,7 +12,7 @@
 // Debug flag - set to true for development logging
 const DEBUG_ASSET_CACHE = process.env.NODE_ENV === 'development' && process.env.DEBUG_ASSET_CACHE === 'true';
 
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   lastAccessed: number;
@@ -237,7 +237,7 @@ export class AssetCache {
    */
   async preloadCriticalAssets(
     assetUrls: string[],
-    loadFn: (url: string) => Promise<any>
+    loadFn: (url: string) => Promise<unknown>
   ): Promise<void> {
     const criticalPromises = assetUrls.map(async (url) => {
       try {
@@ -267,7 +267,7 @@ export class AssetCache {
     url: string;
     priority: 'critical' | 'high' | 'normal' | 'low';
     probability: number;
-  }>, loadFn: (url: string) => Promise<any>): Promise<void> {
+  }>, loadFn: (url: string) => Promise<unknown>): Promise<void> {
     // Sort by probability and priority
     const sorted = predictions
       .filter(p => p.probability > 0.5) // Only load likely assets
@@ -380,7 +380,7 @@ export class AssetCache {
   /**
    * Estimate size of data
    */
-  private estimateSize(data: any): number {
+  private estimateSize(data: unknown): number {
     if (typeof data === 'string') {
       return data.length * 2; // Unicode characters
     }
@@ -579,8 +579,17 @@ class MemoryMonitor {
 
   getCurrentUsage(): number {
     if (typeof window !== 'undefined' && 'memory' in performance) {
-      const memory = (performance as any).memory;
-      return memory.usedJSHeapSize / memory.jsHeapSizeLimit;
+      interface PerformanceWithMemory {
+        memory?: {
+          usedJSHeapSize: number;
+          jsHeapSizeLimit: number;
+        };
+      }
+      const performanceWithMemory = performance as unknown as PerformanceWithMemory;
+      const memory = performanceWithMemory.memory;
+      if (memory) {
+        return memory.usedJSHeapSize / memory.jsHeapSizeLimit;
+      }
     }
     return 0;
   }

@@ -265,7 +265,7 @@ export function getOptimalMarkerCount(deviceType: DeviceType): number {
 /**
  * Default export containing all responsive configurations
  */
-export default {
+export const responsiveConfig = {
   BREAKPOINTS: WAGDIE_BREAKPOINTS,
   SCALING: ASSET_SCALING,
   TOUCH_TARGETS,
@@ -281,3 +281,5 @@ export default {
   shouldEnablePerformanceOptimizations,
   getOptimalMarkerCount,
 };
+
+export default responsiveConfig;

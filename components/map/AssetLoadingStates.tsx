@@ -172,7 +172,7 @@ type AssetStatus = 'loading' | 'loaded' | 'failed' | 'retrying' | 'fallback';
 
 interface AssetLoadingStateInfo {
   status: AssetStatus;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface AssetLoadingIndicatorProps {

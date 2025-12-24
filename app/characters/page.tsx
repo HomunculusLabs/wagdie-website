@@ -332,7 +332,7 @@ function CharactersPageContent() {
               <>
                 {/* Results count */}
                 <div className="flex items-center justify-between mb-6">
-                  <p className="text-md font-display text-neutral-500">
+                  <p className="text-md font-eskapade text-neutral-500">
                     Showing {((page - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(page * ITEMS_PER_PAGE, totalCount)} of {totalCount} characters
                   </p>
                   {isFetching && !isLoading && (
@@ -374,7 +374,7 @@ function LoadingFallback() {
     <div className="min-h-screen flex items-center justify-center bg-soul-950">
       <div className="flex flex-col items-center gap-4">
         <Spinner size="lg" />
-        <p className="text-neutral-500 font-display text-md">
+        <p className="text-neutral-500 font-eskapade text-md">
           Loading Characters
         </p>
       </div>

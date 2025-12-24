@@ -189,9 +189,18 @@ export class CharacterRepository implements ICharacterRepository {
     tokenId: number,
     updates: Partial<Pick<Character, EditableCharacterFields>>
   ): Promise<Character | null> {
-    const { data, error } = await (supabase
-      .from(CHARACTERS_TABLE) as any)
-      .update(updates)
+    // Cast required: Supabase generated types may not allow partial updates on this table
+    const query = supabase.from(CHARACTERS_TABLE) as unknown as {
+      update: (values: Record<string, unknown>) => {
+        eq: (column: string, value: number) => {
+          select: () => {
+            single: () => Promise<{ data: unknown; error: { message: string } | null }>
+          }
+        }
+      }
+    }
+    const { data, error } = await query
+      .update(updates as Record<string, unknown>)
       .eq('token_id', tokenId)
       .select()
       .single()
@@ -494,7 +503,13 @@ export class CharacterRepository implements ICharacterRepository {
       // Run updates in parallel within each batch
       const results = await Promise.allSettled(
         batch.map(async (u) => {
-          const { error } = await (client.from(CHARACTERS_TABLE) as any)
+          // Cast required: Supabase generated types may not allow partial updates on this table
+          const query = client.from(CHARACTERS_TABLE) as unknown as {
+            update: (values: Record<string, unknown>) => {
+              eq: (column: string, value: number) => Promise<{ error: { message: string } | null }>
+            }
+          }
+          const { error } = await query
             .update({
               owner_address: u.ownerAddress?.toLowerCase() || null,
               updated_at: new Date().toISOString(),
@@ -530,7 +545,13 @@ export class CharacterRepository implements ICharacterRepository {
     ownerAddress: string | null,
     client = supabase
   ): Promise<boolean> {
-    const { error } = await (client.from(CHARACTERS_TABLE) as any)
+    // Cast required: Supabase generated types may not allow partial updates on this table
+    const query = client.from(CHARACTERS_TABLE) as unknown as {
+      update: (values: Record<string, unknown>) => {
+        eq: (column: string, value: number) => Promise<{ error: { message: string } | null }>
+      }
+    }
+    const { error } = await query
       .update({
         owner_address: ownerAddress?.toLowerCase() || null,
         updated_at: new Date().toISOString(),

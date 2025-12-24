@@ -3,7 +3,7 @@
  * Provides a configured ElizaClient instance for server-side use
  */
 
-import { ElizaClient } from '@eliza/sdk'
+import { ElizaClient, type ElizaClientConfig } from '@eliza/sdk'
 import { elizaConfig } from './config'
 
 let serverClient: ElizaClient | null = null
@@ -18,12 +18,14 @@ export function getElizaClient(): ElizaClient {
   }
 
   if (!serverClient) {
-    serverClient = new ElizaClient({
+    const config: ElizaClientConfig = {
       baseUrl: elizaConfig.baseUrl,
       apiKey: elizaConfig.apiKey,
       timeout: elizaConfig.timeout,
       retry: elizaConfig.retry,
-    })
+    }
+
+    serverClient = new ElizaClient(config)
   }
 
   return serverClient
@@ -34,12 +36,14 @@ export function getElizaClient(): ElizaClient {
  * Used when proxying requests for a specific user
  */
 export function createUserClient(accessToken: string): ElizaClient {
-  return new ElizaClient({
+  const config: ElizaClientConfig = {
     baseUrl: elizaConfig.baseUrl,
     accessToken,
     timeout: elizaConfig.timeout,
     retry: elizaConfig.retry,
-  })
+  }
+
+  return new ElizaClient(config)
 }
 
 /**

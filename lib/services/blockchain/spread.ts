@@ -2,7 +2,7 @@
 // Handles infection spreading mechanics
 
 import { BaseBlockchainService, BaseServiceConfig } from './base'
-import { Address, ContractError } from '@/types/blockchain'
+import { Address, ContractError, ContractErrorType } from '@/types/blockchain'
 import { spreadABI } from '@/lib/contracts/abis/spread'
 import { getContractAddresses } from '@/lib/contracts/addresses'
 
@@ -74,7 +74,7 @@ export class SpreadService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -113,7 +113,7 @@ export class SpreadService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }

@@ -43,11 +43,11 @@ const wealthyEquipment: Equipment = {
     gold: 99999,
 };
 
-const legacyFormatEquipment = {
+const legacyFormatEquipment: Record<string, string> = {
     armor: 'Plate Mail',
     back: 'Cloak of Shadows',
     mask: 'Mask of the Undying',
-} as any;
+};
 
 export const Default: Story = {
     args: {

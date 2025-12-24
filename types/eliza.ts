@@ -3,24 +3,42 @@
  * Based on data-model.md specification
  */
 
-// Re-export SDK types that we need to use
+// Re-export types from our SDK adapter (these are defined locally since the SDK doesn't export them)
 export type {
-  Character as SDKCharacter,
-  CreateCharacterInput as SDKCreateCharacterInput,
-  UpdateCharacterInput as SDKUpdateCharacterInput,
-  ExampleMessage as SDKExampleMessage,
-  ChatMessage as SDKChatMessage,
-  ChatResponse as SDKChatResponse,
-  Conversation as SDKConversation,
-  ConversationDetail as SDKConversationDetail,
+  AgentCharacter,
+  AgentMessage,
+  AgentMessageExample,
+  CharacterRecord,
+  AuthTokens,
   StreamCallbacks,
-  StreamCallback,
-  StreamCompleteCallback,
-  StreamErrorCallback,
-  CharacterStyle as SDKCharacterStyle,
-} from '@eliza/sdk'
+  ChatResponse as SDKChatResponse,
+} from '@/lib/eliza/sdkAdapter'
 
-// Note: FIELD_LIMITS is defined locally below since SDK doesn't export it
+// Re-export SDK errors (these are actually exported by the SDK)
+export { ElizaError } from '@eliza/sdk'
+
+// Define SDK types that aren't exported but we use locally
+export interface SDKChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt?: string
+}
+
+export interface SDKConversationSummary {
+  id: string
+  title?: string
+  characterId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SDKConversationDetail extends SDKConversationSummary {
+  messages: SDKChatMessage[]
+}
+
+// Note: SDK v0.2 exports FIELD_LIMITS, but we keep a local FIELD_LIMITS below as the app contract
+// to avoid breaking changes if the SDK validation limits change unexpectedly.
 
 /**
  * Style configuration for different communication contexts
@@ -173,6 +191,17 @@ export interface ChatResponse {
 export interface TokenResponse {
   accessToken: string
   expiresAt: string
+}
+
+export interface ElizaAuthNonceResponse {
+  sessionId: string
+  nonce: string
+  message: string
+  issuedAt: string
+}
+
+export interface ElizaAuthVerifyRequest {
+  signature: string
 }
 
 /**

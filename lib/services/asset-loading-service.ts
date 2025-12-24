@@ -197,7 +197,7 @@ export class AssetLoadingService implements IAssetLoadingService {
   /**
    * Estimate asset size for caching
    */
-  private estimateAssetSize(asset: any): number {
+  private estimateAssetSize(asset: { size?: number; src?: string }): number {
     if (asset.size) {
       return asset.size;
     }

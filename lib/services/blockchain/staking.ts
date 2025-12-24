@@ -2,7 +2,7 @@
 // Handles character staking in WagdieWorld
 
 import { BaseBlockchainService, BaseServiceConfig } from './base'
-import { Address, ContractError, StakingStatus, LocationInfo } from '@/types/blockchain'
+import { Address, ContractError, ContractErrorType, StakingStatus, LocationInfo } from '@/types/blockchain'
 import {
   StakeWagdiesParams,
   UnstakeWagdiesParams,
@@ -130,12 +130,12 @@ export class StakingService extends BaseBlockchainService {
         abi: wagdieWorldABI,
         functionName: 'locationIdToInfo',
         args: [locationId],
-      })) as any
+      })) as { name: string; owner: Address; nftsLocked: boolean; exists: boolean }
 
       return {
         locationId,
         name: info.name,
-        owner: info.owner as Address,
+        owner: info.owner,
         nftsLocked: info.nftsLocked,
         exists: info.exists,
       } as LocationInfo
@@ -186,7 +186,7 @@ export class StakingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -231,7 +231,7 @@ export class StakingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -242,7 +242,7 @@ export class StakingService extends BaseBlockchainService {
         address: this.contractAddresses.wagdieWorld,
         abi: wagdieWorldABI,
         functionName: 'stakeWagdies',
-        args: [params as any],
+        args: [params as readonly { locationId: bigint; wagdieId: number }[]],
         account,
       })
 
@@ -261,7 +261,7 @@ export class StakingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -272,7 +272,7 @@ export class StakingService extends BaseBlockchainService {
         address: this.contractAddresses.wagdieWorld,
         abi: wagdieWorldABI,
         functionName: 'unstakeWagdies',
-        args: [params as any],
+        args: [params as readonly { wagdieId: number }[]],
         account,
       })
 
@@ -291,7 +291,7 @@ export class StakingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -302,7 +302,7 @@ export class StakingService extends BaseBlockchainService {
         address: this.contractAddresses.wagdieWorld,
         abi: wagdieWorldABI,
         functionName: 'changeWagdieLocations',
-        args: [params as any],
+        args: [params as readonly { locationId: bigint; wagdieId: number }[]],
         account,
       })
 

@@ -2,7 +2,7 @@
 // Handles curing infected characters by burning mushroom tokens
 
 import { BaseBlockchainService, BaseServiceConfig } from './base'
-import { Address, ContractError } from '@/types/blockchain'
+import { Address, ContractError, ContractErrorType } from '@/types/blockchain'
 import { mushroomABI } from '@/lib/contracts/abis/mushroom'
 import { getContractAddresses, TOKEN_IDS } from '@/lib/contracts/addresses'
 
@@ -138,7 +138,7 @@ export class CureService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }

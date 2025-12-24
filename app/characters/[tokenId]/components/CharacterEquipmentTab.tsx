@@ -7,10 +7,18 @@
  */
 
 import { SheetEquipment } from '@/components/characters/SheetEquipment'
+import type { Equipment } from '@/types/character'
+
+// NFT format equipment type
+interface NFTEquipment {
+  armor?: string
+  back?: string
+  mask?: string
+}
 
 interface CharacterEquipmentTabProps {
-  equipment: any
-  metadataEquipment: any
+  equipment: Equipment | null
+  metadataEquipment: NFTEquipment | null | undefined
   isEditMode: boolean
 }
 

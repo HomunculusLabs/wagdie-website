@@ -2,7 +2,7 @@
 // Handles character searing and taming operations
 
 import { BaseBlockchainService, BaseServiceConfig } from './base'
-import { Address, ContractError } from '@/types/blockchain'
+import { Address, ContractError, ContractErrorType } from '@/types/blockchain'
 import { SearConcordsParams, TameBeastsParams } from '@/types/contracts'
 import { searingABI } from '@/lib/contracts/abis/searing'
 import { concordABI } from '@/lib/contracts/abis/concord'
@@ -191,7 +191,7 @@ export class SearingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -221,7 +221,7 @@ export class SearingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -232,7 +232,7 @@ export class SearingService extends BaseBlockchainService {
         address: this.contractAddresses.searing,
         abi: searingABI,
         functionName: 'searConcords',
-        args: [params as any],
+        args: [params as readonly SearConcordsParams[]],
         account,
       })
 
@@ -251,7 +251,7 @@ export class SearingService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -262,7 +262,7 @@ export class SearingService extends BaseBlockchainService {
         address: this.contractAddresses.searing,
         abi: searingABI,
         functionName: 'tameBeasts',
-        args: [params as any],
+        args: [params as readonly TameBeastsParams[]],
         account,
       })
 

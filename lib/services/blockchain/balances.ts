@@ -80,7 +80,7 @@ export class BalancesService extends BaseBlockchainService {
       return { error: result.error }
     }
 
-    const balances: Record<TokenType, TokenBalance> = {} as any
+    const balances: Record<TokenType, TokenBalance> = {} as Record<TokenType, TokenBalance>
 
     tokenTypes.forEach((tokenType, index) => {
       const { contractAddress, tokenId } = this.getTokenConfig(tokenType)
@@ -156,7 +156,7 @@ export class BalancesService extends BaseBlockchainService {
    */
   private getTokenConfig(tokenType: TokenType): {
     contractAddress: Address
-    abi: any
+    abi: readonly unknown[]
     tokenId: bigint
   } {
     switch (tokenType) {

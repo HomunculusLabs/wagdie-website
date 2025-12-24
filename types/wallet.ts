@@ -75,6 +75,24 @@ export interface UserSession {
     nonce: string // Used nonce
   }
   expires: number // Session expiration (Unix timestamp)
+
+  /**
+   * Optional Eliza auth state (v0.2 SIWE flow + user-scoped token).
+   * Kept optional so existing sessions remain valid.
+   */
+  eliza?: {
+    siwe: {
+      nonce: string
+      sessionId: string
+      message: string
+      issuedAt: string // ISO 8601 timestamp
+    }
+    tokens?: {
+      accessToken: string
+      expiresAt: number // Unix timestamp in ms
+    }
+  }
+
   selectedCharacter?: number // Currently selected token ID
 }
 

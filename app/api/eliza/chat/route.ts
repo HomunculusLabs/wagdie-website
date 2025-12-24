@@ -7,7 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { getElizaClient } from '@/lib/eliza/client'
+import { createUserClient } from '@/lib/eliza/client'
+import { resolveCharacterByTokenId } from '@/lib/eliza/characterResolver'
 import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import { createClient } from '@supabase/supabase-js'
 // ErrorResponse type used indirectly through NextResponse.json
@@ -33,6 +34,30 @@ export async function POST(request: NextRequest): Promise<Response> {
         { status: 401 }
       )
     }
+
+    // Require user-scoped Eliza auth token (SIWE flow)
+    const accessToken = session.eliza?.tokens?.accessToken
+    const expiresAt = session.eliza?.tokens?.expiresAt
+    const now = Date.now()
+
+    if (
+      typeof accessToken !== 'string' ||
+      accessToken.trim().length === 0 ||
+      typeof expiresAt !== 'number' ||
+      expiresAt <= now
+    ) {
+      return NextResponse.json(
+        {
+          error: 'UNAUTHORIZED',
+          message:
+            'Eliza authentication required. Call /api/eliza/auth/nonce (then /api/eliza/auth/verify) to obtain a user-scoped token.',
+        },
+        { status: 401 }
+      )
+    }
+
+    // Create user-scoped Eliza client
+    const elizaClient = createUserClient(accessToken)
 
     // Parse request body
     const body: ChatRequest = await request.json()
@@ -67,50 +92,62 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    const elizaClient = getElizaClient()
+    // Resolve or auto-create character in Eliza (FR-011) via centralized resolver
+    const record = await resolveCharacterByTokenId({
+      elizaClient,
+      tokenId: body.tokenId,
+      wagdieDefaults: {
+        name: wagdieCharacter.name ?? null,
+        backgroundStory: wagdieCharacter.background_story ?? null,
+      },
+    })
 
-    // Get or create AI character
-    let aiCharacter = await elizaClient.characters.getByExternalId(body.tokenId)
-
-    if (!aiCharacter) {
-      // Auto-create AI character on first chat (FR-011)
-      aiCharacter = await elizaClient.characters.create({
-        externalId: body.tokenId,
-        name: wagdieCharacter.name || `Character #${body.tokenId}`,
-        personality: `A mysterious character from the world of WAGDIE. Character #${body.tokenId}.`,
-        backstory: wagdieCharacter.background_story || '',
-      })
-    }
-
-    // Create SSE stream
+    // Create SSE stream (event format must stay identical for frontend compatibility)
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          await elizaClient.chat.sendMessageStream(
+          // The streaming callback interface may differ from SDK types at runtime
+          interface RuntimeStreamCallbacks {
+            onToken: (token: string) => void
+            onComplete: (response: { message: { id: string; content: string }; conversationId: string }) => void
+            onError: (error: unknown) => void
+          }
+          const streamApi = elizaClient.chat.sendMessageStream as unknown as (
+            input: { characterId: string; message: string; conversationId?: string },
+            callbacks: RuntimeStreamCallbacks
+          ) => Promise<void>
+
+          await streamApi(
             {
-              characterId: aiCharacter!.id,
+              characterId: record.id,
               message: body.message,
               conversationId: body.conversationId,
             },
             {
-              onChunk: (chunk: string) => {
-                const event = `event: token\ndata: ${JSON.stringify({ token: chunk })}\n\n`
+              onToken: (token: string) => {
+                const event = `event: token\ndata: ${JSON.stringify({ token })}\n\n`
                 controller.enqueue(encoder.encode(event))
               },
-              onComplete: (message, conversationId) => {
+              onComplete: (response) => {
                 const event = `event: complete\ndata: ${JSON.stringify({
-                  id: message.id,
-                  content: message.content,
-                  conversationId,
+                  id: response.message.id,
+                  content: response.message.content,
+                  conversationId: response.conversationId,
                 })}\n\n`
                 controller.enqueue(encoder.encode(event))
                 controller.close()
               },
               onError: (error) => {
-                const event = `event: error\ndata: ${JSON.stringify({
-                  message: error.message || 'Chat failed',
-                })}\n\n`
+                const message =
+                  (error &&
+                  typeof error === 'object' &&
+                  'message' in error &&
+                  typeof (error as { message?: unknown }).message === 'string'
+                    ? (error as { message: string }).message
+                    : null) || 'Chat failed'
+
+                const event = `event: error\ndata: ${JSON.stringify({ message })}\n\n`
                 controller.enqueue(encoder.encode(event))
                 controller.close()
               },
@@ -129,7 +166,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
       },
     })
   } catch (error) {

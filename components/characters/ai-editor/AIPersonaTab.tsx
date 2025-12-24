@@ -72,7 +72,7 @@ function AIPersonaTabComponent({
     if (aiCharacter?.knowledge) {
       knowledge.setDocuments(aiCharacter.knowledge)
     }
-  }, [aiCharacter?.knowledge])
+  }, [aiCharacter?.knowledge, knowledge])
 
   // Save handler
   const handleSave = useCallback(async () => {

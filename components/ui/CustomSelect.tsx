@@ -257,7 +257,7 @@ export const CustomSelectItem = React.memo<{ value: string; children: React.Reac
   // Register this item
   useEffect(() => {
     context.registerItem(value);
-  }, [value, context.registerItem]);
+  }, [value, context]);
 
   const handleClick = useCallback(() => {
     if (!disabled) {

@@ -302,7 +302,7 @@ export const ViewportUtils = {
   isPortrait: () => getViewportInfo().isPortrait,
 };
 
-export default {
+export const viewportDetectionUtils = {
   getViewportInfo,
   isViewportSize,
   isViewportInRange,
@@ -314,3 +314,5 @@ export default {
   ViewportUtils,
   DEFAULT_BREAKPOINTS,
 };
+
+export default viewportDetectionUtils;

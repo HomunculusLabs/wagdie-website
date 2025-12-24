@@ -34,7 +34,7 @@ export class OwnershipService extends BaseBlockchainService {
     if (!validateTokenId(tokenId)) {
       return {
         error: {
-          type: 'invalid_params' as any,
+          type: ContractErrorType.INVALID_PARAMS,
           message: 'Invalid token ID',
         },
       }
@@ -66,7 +66,7 @@ export class OwnershipService extends BaseBlockchainService {
     if (!validateTokenId(tokenId)) {
       return {
         error: {
-          type: 'invalid_params' as any,
+          type: ContractErrorType.INVALID_PARAMS,
           message: 'Invalid token ID',
         },
       }

@@ -90,7 +90,7 @@ export function AlignmentDropdown({
         className={`
           flex items-center gap-2 px-3 py-2 min-w-[170px]
           bg-black/40 border rounded-sm
-          font-display text-md  tracking-wider
+          font-eskapade text-md  tracking-wider
           transition-all duration-200
           ${isOpen ? 'border-soul-accent text-soul-accent' : 'border-neutral-700 text-neutral-400'}
           ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-600'}
@@ -141,7 +141,7 @@ export function AlignmentDropdown({
               setIsOpen(false)
             }}
             className={`
-              w-full px-3 py-2 text-left text-md font-display  tracking-wider
+              w-full px-3 py-2 text-left text-md font-eskapade  tracking-wider
               transition-colors hover:bg-neutral-800/50
               ${!value ? 'text-soul-accent bg-soul-accent/10' : 'text-neutral-400'}
             `}

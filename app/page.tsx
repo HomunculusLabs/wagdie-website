@@ -35,6 +35,7 @@ function FeatureCard({ title, description, imageSrc, href, isExternal }: Feature
     >
       <Card className="h-full overflow-hidden transition-all duration-500 hover:border-soul-accent/40 hover:shadow-[0_0_30px_rgba(200,170,110,0.1)] bg-black/40 flex flex-col">
         <div className="relative h-48 overflow-hidden border-b border-neutral-900">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageSrc}
             alt={title}

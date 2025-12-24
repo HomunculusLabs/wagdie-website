@@ -2,7 +2,7 @@
 // Handles corpse token burning mechanics
 
 import { BaseBlockchainService, BaseServiceConfig } from './base'
-import { Address, ContractError } from '@/types/blockchain'
+import { Address, ContractError, ContractErrorType } from '@/types/blockchain'
 import { corpseABI } from '@/lib/contracts/abis/corpse'
 import { mushroomABI } from '@/lib/contracts/abis/mushroom'
 import { getContractAddresses, TOKEN_IDS } from '@/lib/contracts/addresses'
@@ -83,7 +83,7 @@ export class CorpseService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }
@@ -113,7 +113,7 @@ export class CorpseService extends BaseBlockchainService {
     if (!this.walletClient) {
       return {
         error: {
-          type: 'unknown' as any,
+          type: ContractErrorType.UNKNOWN,
           message: 'Wallet client not initialized',
         },
       }

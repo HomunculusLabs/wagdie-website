@@ -9,7 +9,7 @@ function base64UrlDecode(input: string): string {
   return Buffer.from(padded, 'base64').toString('utf8')
 }
 
-function decodeJwtPayload(token: string): Record<string, any> | null {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const parts = token.split('.')
   if (parts.length < 2) return null
   try {

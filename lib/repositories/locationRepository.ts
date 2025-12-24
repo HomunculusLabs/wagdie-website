@@ -63,13 +63,13 @@ function formatSupabaseError(err: unknown): string {
 }
 
 function normalizeLocation(raw: unknown): Location {
-  const loc = (raw ?? {}) as Record<string, any>;
-  const safeLoc: Record<string, any> = isPlainObject(loc) ? loc : {};
+  const loc = (raw ?? {}) as Record<string, unknown>;
+  const safeLoc: Record<string, unknown> = isPlainObject(loc) ? loc : {};
   const now = new Date().toISOString();
   const createdAt = typeof safeLoc.created_at === 'string' ? safeLoc.created_at : now;
   const updatedAt = typeof safeLoc.updated_at === 'string' ? safeLoc.updated_at : now;
   return {
-    ...(safeLoc as Location),
+    ...(safeLoc as unknown as Location),
     metadata: normalizeLocationMetadata(safeLoc.metadata) as unknown as Location['metadata'],
     created_at: createdAt,
     updated_at: updatedAt,
@@ -96,7 +96,7 @@ export class LocationRepository implements ILocationRepository {
         setTimeout(() => reject(new Error('Supabase query timeout')), 5000);
       });
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as { data?: unknown; error?: { message?: string } };
 
       if (error) {
         throw new Error(`Failed to fetch locations: ${error.message}`);

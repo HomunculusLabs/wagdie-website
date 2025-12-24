@@ -56,7 +56,7 @@ export async function GET(
 
     // Map SDK response to our types
     // SDK returns { items, total, page, pageSize, hasMore }
-    const conversations: Conversation[] = response.items.map((conv) => ({
+    const conversations: Conversation[] = response.items.map((conv: { id: string; characterId: string; messageCount: number; createdAt: string; lastMessageAt: string }) => ({
       id: conv.id,
       characterId: conv.characterId,
       userId: session.address!.toLowerCase(), // User is always current user (SDK scopes by auth)

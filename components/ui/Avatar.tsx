@@ -47,10 +47,11 @@ export const Avatar: React.FC<AvatarProps> = ({
         `}
       >
         {src ? (
-          <img 
-            src={src} 
-            alt={alt} 
-            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${shape === 'diamond' ? '-rotate-45 scale-[1.45]' : ''}`} 
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={src}
+            alt={alt}
+            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${shape === 'diamond' ? '-rotate-45 scale-[1.45]' : ''}`}
           />
         ) : (
           <span className={`font-display font-bold text-neutral-400 ${shape === 'diamond' ? '-rotate-45' : ''}`}>

@@ -40,7 +40,8 @@ export function CustomTweet({
             shape="square"
           />
           <div>
-            <p className="font-display  tracking-wider text-sm text-neutral-200">
+            {/* REPOMARK:SCOPE: 1 - Replace font-display with font-eskapade for CustomTweet username/metadata (UI font contract) */}
+            <p className="font-eskapade  tracking-wider text-sm text-neutral-200">
               @{tweet.author_username}
             </p>
             <p className="text-xs text-neutral-600 font-eskapade">{formatDate(tweet.created_at)}</p>

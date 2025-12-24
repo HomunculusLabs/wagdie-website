@@ -188,8 +188,14 @@ export function useErrorHandler() {
 
     // In production, you might want to send this to an error reporting service
     // e.g., Sentry, LogRocket, etc.
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.captureException(error, {
+    interface WindowWithSentry {
+      Sentry?: {
+        captureException: (error: Error, options?: { extra?: unknown }) => void;
+      };
+    }
+    const windowWithSentry = typeof window !== 'undefined' ? (window as unknown as WindowWithSentry) : null;
+    if (windowWithSentry?.Sentry) {
+      windowWithSentry.Sentry.captureException(error, {
         extra: errorInfo,
       });
     }

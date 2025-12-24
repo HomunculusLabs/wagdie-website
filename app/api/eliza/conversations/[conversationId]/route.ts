@@ -43,7 +43,7 @@ export async function GET(
     const sdkConversation = await elizaClient.conversations.get(conversationId)
 
     // Map SDK messages to our types
-    const messages: ChatMessage[] = sdkConversation.messages.map((msg) => ({
+    const messages: ChatMessage[] = sdkConversation.messages.map((msg: { id: string; role: 'user' | 'assistant'; content: string; createdAt: string }) => ({
       id: msg.id,
       conversationId: conversationId,
       role: msg.role,

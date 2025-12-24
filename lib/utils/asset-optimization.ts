@@ -274,14 +274,24 @@ export class AssetOptimizer {
     // Get pixel ratio
     const pixelRatio = window.devicePixelRatio || 1;
 
-    // Get connection information
-    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
-    const connectionType = connection?.effectiveType || 'unknown';
+    // Get connection information (Network Information API)
+    interface NetworkInformation {
+      effectiveType?: string;
+      saveData?: boolean;
+    }
+    const navigatorWithConnection = navigator as Navigator & {
+      connection?: NetworkInformation;
+      mozConnection?: NetworkInformation;
+      webkitConnection?: NetworkInformation;
+      deviceMemory?: number;
+    };
+    const connection = navigatorWithConnection.connection || navigatorWithConnection.mozConnection || navigatorWithConnection.webkitConnection;
+    const connectionType = (connection?.effectiveType || 'unknown') as DeviceCapabilities['connectionType'];
     const saveData = connection?.saveData || false;
 
     // Get hardware info
     const hardwareConcurrency = navigator.hardwareConcurrency || 4;
-    const memory = (navigator as any).deviceMemory || 4;
+    const memory = navigatorWithConnection.deviceMemory || 4;
 
     return {
       supportsWebP,
@@ -531,10 +541,12 @@ export async function loadOptimizedImage(
   });
 }
 
-export default {
+export const assetOptimizationUtils = {
   AssetOptimizer,
   LazyImageLoader,
   getAssetOptimizer,
   getLazyImageLoader,
   loadOptimizedImage,
 };
+
+export default assetOptimizationUtils;

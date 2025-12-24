@@ -192,7 +192,7 @@ export class CharacterLocationRepository implements ICharacterLocationRepository
         setTimeout(() => reject(new Error('Supabase query timeout')), 5000);
       });
 
-      const result = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+      const result = (await Promise.race([fetchPromise, timeoutPromise])) as { data?: unknown; error?: { message?: string } };
       const data = result?.data;
       const error = result?.error;
 

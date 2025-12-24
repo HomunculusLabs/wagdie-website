@@ -63,6 +63,7 @@ export const NoPadding: Story = {
     padded: false,
     children: (
       <div className="p-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt="Placeholder"
           className="w-full h-48 object-cover rounded-t-lg"

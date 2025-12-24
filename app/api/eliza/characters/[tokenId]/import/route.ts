@@ -7,8 +7,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
 import { elizaCharacterExportSchema } from '@/lib/eliza/validation'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { UpdateCharacterInput, ExampleMessage as SDKExampleMessage } from '@eliza/sdk'
+
+// Local type definition since @eliza/sdk types are not bundled in dist
+interface SDKExampleMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
 
 interface RouteParams {
   params: Promise<{ tokenId: string }>

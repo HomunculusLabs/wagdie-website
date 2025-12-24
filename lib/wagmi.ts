@@ -1,12 +1,13 @@
 import { createConfig, http } from 'wagmi'
 import { injected, coinbaseWallet } from 'wagmi/connectors'
+import type { Chain } from 'wagmi/chains'
 import { getSupportedChains, mainnet, sepolia } from './contracts/chains'
 
 // Get supported chains based on environment
 const chains = getSupportedChains()
 
 export const config = createConfig({
-  chains: chains as any,
+  chains: chains as unknown as readonly [Chain, ...Chain[]],
   connectors: [
     injected({
       shimDisconnect: true,

@@ -270,7 +270,7 @@ export interface UseLocationsReturn {
   locations: Location[];
   isLoading: boolean;
   error: Error | null;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<void>;
 }
 
 /**
@@ -280,7 +280,7 @@ export interface UseCharacterLocationsReturn {
   characterLocations: CharacterLocation[];
   isLoading: boolean;
   error: Error | null;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<void>;
 }
 
 /**
@@ -303,7 +303,7 @@ export class MapError extends Error {
   constructor(
     message: string,
     public code: string,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'MapError';
@@ -324,7 +324,7 @@ export class AssetError extends MapError {
  * Error for location-related operations
  */
 export class LocationError extends MapError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(message, 'LOCATION_ERROR', details);
     this.name = 'LocationError';
   }

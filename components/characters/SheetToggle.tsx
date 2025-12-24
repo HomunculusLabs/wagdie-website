@@ -55,7 +55,8 @@ export function SheetToggle({
           `} />
         </div>
       </span>
-      <span className="text-md font-display  tracking-wider text-neutral-400">
+      {/* REPOMARK:SCOPE: 1 - Replace font-display with font-eskapade for SheetToggle label text (UI font contract) */}
+      <span className="text-md font-eskapade  tracking-wider text-neutral-400">
         Has Sheet
       </span>
     </label>

@@ -105,22 +105,22 @@ export abstract class BaseBlockchainService {
   protected async multicall<T extends readonly unknown[]>(
     contracts: readonly {
       address: Address
-      abi: any
+      abi: readonly unknown[]
       functionName: string
       args?: readonly unknown[]
     }[]
   ): Promise<{ data?: T; error?: ContractError }> {
     try {
-      const results = (await this.publicClient.multicall({
-        contracts,
-      })) as any
+      const results = await this.publicClient.multicall({
+        contracts: contracts as Parameters<typeof this.publicClient.multicall>[0]['contracts'],
+      })
 
-      const data = results.map((result: any) => {
+      const data = results.map((result) => {
         if (result.status === 'failure') {
           throw result.error
         }
         return result.result
-      }) as T
+      }) as unknown as T
 
       return { data }
     } catch (error) {

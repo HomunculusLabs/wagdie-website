@@ -127,7 +127,7 @@ export function FilterSidebar({
       {/* Mobile Filter Toggle Button */}
       <button
         onClick={toggleMobile}
-        className="lg:hidden fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 bg-soul-accent text-black font-display text-sm tracking-wider rounded-sm shadow-lg hover:bg-soul-accent/90 transition-colors"
+        className="lg:hidden fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 bg-soul-accent text-black font-eskapade text-sm tracking-wider rounded-sm shadow-lg hover:bg-soul-accent/90 transition-colors"
         aria-label="Toggle filters"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,9 +166,9 @@ export function FilterSidebar({
         <div className="flex items-center justify-between p-4 border-b border-neutral-800">
           {!isCollapsed && (
             <div className="flex items-center gap-2">
-              <h2 className="font-display text-lg text-neutral-200 tracking-wider">Filters</h2>
+              <h2 className="font-eskapade text-lg text-neutral-200 tracking-wider">Filters</h2>
               {activeFilterCount > 0 && (
-                <span className="flex items-center justify-center w-5 h-5 bg-soul-accent/20 text-soul-accent rounded-full text-xs font-display">
+                <span className="flex items-center justify-center w-5 h-5 bg-soul-accent/20 text-soul-accent rounded-full text-xs font-eskapade">
                   {activeFilterCount}
                 </span>
               )}
@@ -208,14 +208,14 @@ export function FilterSidebar({
           <div className="flex flex-col overflow-y-auto max-h-[calc(100vh-400px)] lg:max-h-none">
             {/* Results Count */}
             <div className="px-4 py-3 border-b border-neutral-800/50">
-              <p className="text-sm text-neutral-500 font-display">
+              <p className="text-sm text-neutral-500 font-eskapade">
                 {totalCount.toLocaleString()} characters
               </p>
             </div>
 
             {/* Search Input */}
             <div className="p-4 border-b border-neutral-800/50">
-              <label className="block text-xs font-display text-neutral-500 mb-2 tracking-wider">
+              <label className="block text-xs font-eskapade text-neutral-500 mb-2 tracking-wider">
                 SEARCH
               </label>
               <div className="relative">
@@ -253,7 +253,7 @@ export function FilterSidebar({
 
             {/* Category Tabs */}
             <div className="p-4 border-b border-neutral-800/50">
-              <label className="block text-xs font-display text-neutral-500 mb-2 tracking-wider">
+              <label className="block text-xs font-eskapade text-neutral-500 mb-2 tracking-wider">
                 CATEGORY
               </label>
               <Tabs
@@ -266,12 +266,12 @@ export function FilterSidebar({
 
             {/* Sort Toggle */}
             <div className="p-4 border-b border-neutral-800/50">
-              <label className="block text-xs font-display text-neutral-500 mb-2 tracking-wider">
+              <label className="block text-xs font-eskapade text-neutral-500 mb-2 tracking-wider">
                 SORT ORDER
               </label>
               <button
                 onClick={() => onSortChange(currentSort === 'asc' ? 'desc' : 'asc')}
-                className="flex items-center justify-between w-full px-3 py-2 bg-black/40 border border-neutral-800 rounded-sm text-neutral-400 hover:text-soul-accent hover:border-soul-accent/50 transition-colors font-display text-sm"
+                className="flex items-center justify-between w-full px-3 py-2 bg-black/40 border border-neutral-800 rounded-sm text-neutral-400 hover:text-soul-accent hover:border-soul-accent/50 transition-colors font-eskapade text-sm"
               >
                 <span>Token ID</span>
                 <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export function FilterSidebar({
 
             {/* Trait Filters Section */}
             <div className="p-4 border-b border-neutral-800/50">
-              <label className="block text-xs font-display text-neutral-500 mb-3 tracking-wider">
+              <label className="block text-xs font-eskapade text-neutral-500 mb-3 tracking-wider">
                 TRAIT FILTERS
               </label>
 
@@ -324,7 +324,7 @@ export function FilterSidebar({
 
             {/* Equipment Filters Section */}
             <div className="p-4 border-b border-neutral-800/50">
-              <label className="block text-xs font-display text-neutral-500 mb-3 tracking-wider">
+              <label className="block text-xs font-eskapade text-neutral-500 mb-3 tracking-wider">
                 EQUIPMENT FILTERS
               </label>
 
@@ -363,7 +363,7 @@ export function FilterSidebar({
               <div className="p-4">
                 <button
                   onClick={onClearAllFilters}
-                  className="w-full px-4 py-2 border border-neutral-700 text-neutral-400 hover:text-soul-accent hover:border-soul-accent/50 transition-colors font-display text-sm tracking-wider rounded-sm"
+                  className="w-full px-4 py-2 border border-neutral-700 text-neutral-400 hover:text-soul-accent hover:border-soul-accent/50 transition-colors font-eskapade text-sm tracking-wider rounded-sm"
                 >
                   Clear All Filters ({activeFilterCount})
                 </button>

@@ -6,7 +6,7 @@ import { PublicClient } from 'viem'
 
 export interface MultiCallRequest {
   address: Address
-  abi: any
+  abi: readonly unknown[]
   functionName: string
   args?: readonly unknown[]
 }
@@ -26,22 +26,22 @@ export async function executeMulticall<T extends readonly unknown[]>(
 ): Promise<MultiCallResult<T>[]> {
   try {
     const results = await publicClient.multicall({
-      contracts: contracts as any,
+      contracts: contracts as Parameters<typeof publicClient.multicall>[0]['contracts'],
     })
 
-    return results.map((result: any) => {
+    return results.map((result) => {
       if (result.status === 'success') {
         return {
-          success: true,
-          data: result.result,
+          success: true as const,
+          data: result.result as T,
         }
       } else {
         return {
-          success: false,
+          success: false as const,
           error: result.error,
         }
       }
-    })
+    }) as MultiCallResult<T>[]
   } catch (error) {
     // If the entire multicall fails, return error for all requests
     return contracts.map(() => ({
@@ -75,7 +75,7 @@ export async function batchMulticall<T extends readonly unknown[]>(
  */
 export function createMultiCallRequest(
   address: Address,
-  abi: any,
+  abi: readonly unknown[],
   functionName: string,
   args?: readonly unknown[]
 ): MultiCallRequest {
@@ -118,6 +118,6 @@ export function anySucceeded<T>(results: MultiCallResult<T>[]): boolean {
 /**
  * Combine multiple ABIs for multi-call
  */
-export function combineAbis(...abis: any[]): any[] {
+export function combineAbis(...abis: readonly unknown[][]): readonly unknown[] {
   return abis.flat()
 }

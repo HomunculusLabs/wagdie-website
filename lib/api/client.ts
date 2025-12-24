@@ -12,7 +12,7 @@ export class ApiError extends Error {
     public status: number,
     public statusText: string,
     message: string,
-    public data?: any
+    public data?: unknown
   ) {
     super(message)
     this.name = 'ApiError'
@@ -71,7 +71,7 @@ export class ApiClient {
       })
 
       // Parse response body
-      let data: any
+      let data: unknown
       const contentType = response.headers.get('content-type')
       if (contentType?.includes('application/json')) {
         data = await response.json()
@@ -81,10 +81,11 @@ export class ApiClient {
 
       // Handle errors
       if (!response.ok) {
+        const errorData = data as { error?: string; message?: string } | null
         throw new ApiError(
           response.status,
           response.statusText,
-          data?.error || data?.message || 'Request failed',
+          errorData?.error || errorData?.message || 'Request failed',
           data
         )
       }
@@ -118,7 +119,7 @@ export class ApiClient {
   /**
    * POST request
    */
-  async post<T>(endpoint: string, body?: any, config?: RequestConfig): Promise<T> {
+  async post<T>(endpoint: string, body?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>(endpoint, {
       ...config,
       method: 'POST',
@@ -129,7 +130,7 @@ export class ApiClient {
   /**
    * PATCH request
    */
-  async patch<T>(endpoint: string, body?: any, config?: RequestConfig): Promise<T> {
+  async patch<T>(endpoint: string, body?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>(endpoint, {
       ...config,
       method: 'PATCH',
