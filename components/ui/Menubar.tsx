@@ -28,7 +28,7 @@ export const MenubarMenu: React.FC<{ trigger: string; children: React.ReactNode 
     <div className="relative" ref={containerRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`px-3 py-1 text-sm font-display  tracking-wider transition-colors rounded-sm ${isOpen ? 'bg-neutral-900 text-neutral-200' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50'}`}
+        className={`px-3 py-1 text-sm font-eskapade  tracking-wider transition-colors rounded-sm ${isOpen ? 'bg-neutral-900 text-neutral-200' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/50'}`}
       >
         {trigger}
       </button>

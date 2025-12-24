@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -10,7 +9,7 @@ export const Select: React.FC<SelectProps> = ({ label, options, className = '', 
   return (
     <div className="flex flex-col gap-2 w-full">
       {label && (
-        <label className="text-caption tracking-widest uppercase text-neutral-500 font-display">
+        <label className="text-caption tracking-widest uppercase text-neutral-500 font-eskapade">
           {label}
         </label>
       )}

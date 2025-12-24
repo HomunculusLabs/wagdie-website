@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
@@ -8,7 +7,7 @@ interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
 export const Label: React.FC<LabelProps> = ({ children, className = '', required, ...props }) => {
   return (
     <label 
-        className={`text-xs  tracking-widest text-neutral-500 font-display flex items-center gap-1 mb-1.5 ${className}`} 
+        className={`text-xs  tracking-widest text-neutral-500 font-eskapade flex items-center gap-1 mb-1.5 ${className}`}
         {...props}
     >
       {children}

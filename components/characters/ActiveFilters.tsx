@@ -107,7 +107,7 @@ export function ActiveFilters({
       {activeCount > 1 && (
         <button
           onClick={onClearAll}
-          className="ml-auto text-[12px] font-display  tracking-widest text-neutral-500 hover:text-soul-accent transition-colors"
+          className="ml-auto text-[12px] font-eskapade  tracking-widest text-neutral-500 hover:text-soul-accent transition-colors"
         >
           Clear All
         </button>

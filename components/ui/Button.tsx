@@ -19,7 +19,7 @@ const sizes = {
 } as const;
 
 const baseStyles =
-  "relative inline-flex items-center justify-center font-display transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden";
+  "relative inline-flex items-center justify-center font-eskapade transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden";
 
 export const Button = React.memo<ButtonProps>(({
   children,

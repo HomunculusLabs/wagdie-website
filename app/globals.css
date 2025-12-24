@@ -17,8 +17,9 @@
 
 @layer base {
   /* Base body text uses Eskapade */
+  /* REPOMARK:SCOPE: 1 - Replace hardcoded body font-family with Tailwind token via @apply font-eskapade */
   body {
-    font-family: 'Eskapade Fraktur', serif;
+    @apply font-eskapade;
   }
 }
 
@@ -52,8 +53,9 @@
   }
 
   /* Labels and captions */
+  /* REPOMARK:SCOPE: 2 - Switch .form-label from font-display to font-eskapade (UI font contract) */
   .form-label {
-    @apply text-caption font-display tracking-widest uppercase text-neutral-500;
+    @apply text-caption font-eskapade tracking-widest uppercase text-neutral-500;
   }
 
   .caption-text {

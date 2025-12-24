@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface BadgeProps {
@@ -8,7 +7,7 @@ interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => {
-  const baseStyles = "inline-flex items-center px-2 py-0.5 text-[16px]  tracking-widest font-display border";
+  const baseStyles = "inline-flex items-center px-2 py-0.5 text-caption  tracking-widest font-eskapade border";
 
   const variants = {
     default: "bg-neutral-900 border-neutral-700 text-neutral-400",

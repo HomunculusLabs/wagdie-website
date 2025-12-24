@@ -92,7 +92,7 @@ export { Toggle } from './Toggle'
 export { ToggleGroup } from './ToggleGroup'
 
 // Typography
-export { Blockquote, Code, List } from './Typography'
+export { Blockquote, Code, List, Heading, Text, UiLabel } from './Typography'
 
 // WAGDIE-Specific Cards
 export { LoreCard } from './LoreCard'

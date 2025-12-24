@@ -119,7 +119,7 @@ export const Tabs = React.memo<TabsProps>(({
     if (variant === 'vertical') {
       return `
         flex items-center gap-2 px-3 py-2 w-full
-        font-display text-sm tracking-wider rounded-sm
+        font-eskapade text-sm tracking-wider rounded-sm
         transition-all duration-200
         focus:outline-none focus-visible:ring-1 focus-visible:ring-soul-accent/50
         ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -131,7 +131,7 @@ export const Tabs = React.memo<TabsProps>(({
     }
     return `
       flex items-center gap-2 px-4 md:px-6 py-3
-      font-display text-xl
+      font-eskapade text-xl
       transition-all duration-300 border-b-2
       group relative overflow-hidden
       focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent/50

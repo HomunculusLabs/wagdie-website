@@ -38,7 +38,7 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
   return (
     <div className="flex flex-col gap-2 w-full" ref={containerRef}>
         {label && (
-        <label className="text-caption tracking-widest uppercase text-neutral-500 font-display">
+        <label className="text-caption tracking-widest uppercase text-neutral-500 font-eskapade">
           {label}
         </label>
       )}

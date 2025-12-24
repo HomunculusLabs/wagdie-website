@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface PaginationProps {
@@ -9,7 +8,7 @@ interface PaginationProps {
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
   return (
-    <div className="flex items-center justify-center gap-2 font-display text-sm">
+    <div className="flex items-center justify-center gap-2 font-eskapade text-sm">
       <button 
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}

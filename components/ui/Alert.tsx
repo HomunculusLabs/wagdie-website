@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from './Button';
 
@@ -22,7 +21,8 @@ export const Alert: React.FC<AlertProps> = ({ title, children, variant = 'defaul
     <div className={`relative w-full rounded-sm border p-4 ${styles[variant]} flex gap-4 items-start ${className}`}>
       {icon && <div className="shrink-0 mt-0.5">{icon}</div>}
       <div className="space-y-1">
-        {title && <h5 className="font-display  tracking-wider text-sm font-bold leading-none">{title}</h5>}
+        {/* REPOMARK:SCOPE: 1 - In Alert primitive, change title typography from font-display to font-eskapade (UI font contract) */}
+        {title && <h5 className="font-eskapade  tracking-wider text-sm font-bold leading-none">{title}</h5>}
         <div className="text-sm font-eskapade opacity-90 leading-relaxed">
           {children}
         </div>
