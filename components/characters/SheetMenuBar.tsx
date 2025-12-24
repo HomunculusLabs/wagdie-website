@@ -39,7 +39,7 @@ export function SheetMenuBar({
           Back
         </Button>
 
-        <h2 className="text-lg font-display  tracking-widest text-neutral-200">
+        <h2 className="text-lg font-eskapade  tracking-widest text-neutral-200">
           Character #{tokenId}
         </h2>
 

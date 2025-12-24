@@ -8,6 +8,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import type { TraitCount } from '@/types/character'
+import { Spinner } from '@/components/ui/Spinner'
 
 interface TraitDropdownProps {
   /** The trait type label (e.g., "Armor", "Back", "Mask") */
@@ -70,7 +71,7 @@ export function TraitDropdown({
         className={`
           flex items-center gap-2 px-3 py-2 min-w-[140px]
           bg-black/40 border rounded-sm
-          font-display text-md tracking-wider
+          font-eskapade text-md tracking-wider
           transition-all duration-200
           ${isOpen ? 'border-soul-accent text-soul-accent' : 'border-neutral-700 text-neutral-400'}
           ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-600'}
@@ -81,15 +82,12 @@ export function TraitDropdown({
       >
         {isLoading ? (
           <span className="flex items-center gap-2">
-            <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+            <Spinner size="sm" />
             Loading...
           </span>
         ) : (
           <>
-            <span className="flex-1 text-left truncate">{displayValue}</span>
+            <span className="flex-1 text-left truncate text-[14px]">{displayValue}</span>
             {value && selectedOption && (
               <span className="text-[12px] text-neutral-500">
                 ({selectedOption.count})
@@ -123,7 +121,7 @@ export function TraitDropdown({
               setIsOpen(false)
             }}
             className={`
-              w-full px-3 py-2 text-left text-md font-display tracking-wider
+              w-full px-3 py-2 text-left text-md font-eskapade tracking-wider
               transition-colors hover:bg-neutral-800/50
               ${!value ? 'text-soul-accent bg-soul-accent/10' : 'text-neutral-400'}
             `}

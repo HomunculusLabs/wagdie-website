@@ -5,7 +5,7 @@
 /* Custom font faces */
 @font-face {
   font-family: 'Wagdie Fraktur';
-  src: url('/fonts/Wagdie_Fraktur_21.ttf') format('truetype');
+  src: url('/fonts/wagdie.ttf') format('truetype');
   font-display: swap;
 }
 
