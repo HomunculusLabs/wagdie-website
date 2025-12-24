@@ -178,7 +178,7 @@ export const Tabs = React.memo<TabsProps>(({
                 />
               )}
 
-              <span className={`${variant === 'default' ? 'relative z-10' : ''} flex items-center gap-2`}>
+              <span className={`${variant === 'default' ? 'relative z-10' : ''} flex items-center gap-2 text-sm`}>
                 {item.icon && React.cloneElement(item.icon, { size: variant === 'vertical' ? 14 : 16 })}
                 {item.label}
               </span>

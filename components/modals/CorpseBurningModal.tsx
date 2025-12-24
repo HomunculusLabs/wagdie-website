@@ -7,6 +7,9 @@ import { useState, useEffect } from 'react'
 import { useCorpseBurning } from '@/hooks/useCorpseBurning'
 import { TransactionStatus as TxStatusComponent } from '@/components/TransactionStatus'
 import { TransactionStatus } from '@/types/blockchain'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 
 interface CorpseBurningModalProps {
   isOpen: boolean
@@ -39,7 +42,6 @@ export function CorpseBurningModal({ isOpen, onClose, onSuccess }: CorpseBurning
       fetchBalances()
       checkIfApproved()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   useEffect(() => {
@@ -82,139 +84,127 @@ export function CorpseBurningModal({ isOpen, onClose, onSuccess }: CorpseBurning
     }
   }
 
-  if (!isOpen) return null
-
   const amountNum = parseInt(amount, 10) || 0
   const hasEnoughBalance = corpseBalance && BigInt(amountNum) <= corpseBalance
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-md rounded-lg border border-white/20 bg-black p-6">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-white">Touch Corpse</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 transition-colors hover:text-white"
-            disabled={isBurning || isApproving}
-          >
-            ✕
-          </button>
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Touch Corpse"
+      hideFooter
+    >
+      <div className="space-y-4">
+        <Spinner size="md" />
 
-        {/* Content */}
-        <div className="space-y-4">
-          {/* Balance Display */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-sm text-gray-400">Corpse Tokens</p>
-              <p className="text-2xl font-bold text-white">
-                {corpseBalance?.toString() ?? '0'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-sm text-gray-400">Mushrooms</p>
-              <p className="text-2xl font-bold text-white">
-                {mushroomBalance?.toString() ?? '0'}
-              </p>
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-lg border border-neutral-700 bg-white/5 p-4">
+            <p className="text-sm text-neutral-400">Corpse Tokens</p>
+            <p className="text-2xl font-eskapade text-neutral-200">
+              {corpseBalance?.toString() ?? '0'}
+            </p>
           </div>
-
-          {/* Approval Step */}
-          {step === 'approval' && (
-            <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
-              <p className="mb-3 text-sm text-yellow-400">
-                Before burning corpses, you need to approve the Mushroom contract to handle your
-                Corpse tokens.
-              </p>
-              <button
-                onClick={handleApprove}
-                disabled={isApproving}
-                className="w-full rounded-lg bg-yellow-500 px-4 py-2 font-medium text-black transition-colors hover:bg-yellow-400 disabled:opacity-50"
-              >
-                {isApproving ? 'Approving...' : 'Approve Contract'}
-              </button>
-            </div>
-          )}
-
-          {/* Input Step */}
-          {step === 'input' && (
-            <>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-300">
-                    Amount to Burn
-                  </label>
-                  <button
-                    onClick={handleMaxClick}
-                    className="text-xs text-blue-400 hover:text-blue-300"
-                    disabled={!corpseBalance || corpseBalance === 0n}
-                  >
-                    Max: {corpseBalance?.toString() ?? '0'}
-                  </button>
-                </div>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                  className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                  min="1"
-                  disabled={isBurning}
-                />
-                <p className="mt-1 text-xs text-gray-400">
-                  Burn corpses to receive mushrooms (1:1 ratio)
-                </p>
-              </div>
-
-              {!hasEnoughBalance && amountNum > 0 && (
-                <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
-                  <p className="text-sm text-red-400">Insufficient corpse token balance</p>
-                </div>
-              )}
-
-              <button
-                onClick={handleBurn}
-                disabled={
-                  !hasEnoughBalance ||
-                  !amount ||
-                  amountNum <= 0 ||
-                  isBurning ||
-                  !corpseBalance ||
-                  corpseBalance === 0n
-                }
-                className="w-full rounded-lg bg-gold px-4 py-3 font-bold text-black transition-colors hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isBurning ? 'Burning...' : 'Touch Corpse'}
-              </button>
-            </>
-          )}
-
-          {/* Transaction Status */}
-          {(step === 'burning' || txHash) && (
-            <TxStatusComponent
-              status={txStatus}
-              hash={txHash ?? undefined}
-              error={error?.message}
-            />
-          )}
-
-          {/* Error Display */}
-          {error && step !== 'burning' && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-              <p className="text-sm text-red-400">{error.message}</p>
-            </div>
-          )}
-
-          {/* Info */}
-          <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
-            <p className="text-xs text-blue-300">
-              Burning Corpse tokens will mint an equal amount of Strange Mushroom tokens. This
-              action is irreversible.
+          <div className="rounded-lg border border-neutral-700 bg-white/5 p-4">
+            <p className="text-sm text-neutral-400">Mushrooms</p>
+            <p className="text-2xl font-eskapade text-neutral-200">
+              {mushroomBalance?.toString() ?? '0'}
             </p>
           </div>
         </div>
+
+        {step === 'approval' && (
+          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
+            <p className="mb-3 text-sm text-yellow-400 font-eskapade">
+              Before burning corpses, you need to approve the Mushroom contract to handle your
+              Corpse tokens.
+            </p>
+            <Button
+              onClick={handleApprove}
+              disabled={isApproving}
+              isLoading={isApproving}
+              variant="danger"
+              className="w-full"
+            >
+              Approve Contract
+            </Button>
+          </div>
+        )}
+
+        {step === 'input' && (
+          <>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-sm font-eskapade text-neutral-300">
+                  Amount to Burn
+                </label>
+                <button
+                  onClick={handleMaxClick}
+                  className="text-xs text-soul-accent hover:text-soul-accent/80"
+                  disabled={!corpseBalance || corpseBalance === 0n}
+                >
+                  Max: {corpseBalance?.toString() ?? '0'}
+                </button>
+              </div>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-lg border border-neutral-700 bg-white/10 px-4 py-2 text-neutral-200 placeholder-neutral-500 focus:border-soul-accent focus:outline-none font-eskapade"
+                min="1"
+                disabled={isBurning}
+              />
+              <p className="mt-1 text-xs text-neutral-400 font-eskapade">
+                Burn corpses to receive mushrooms (1:1 ratio)
+              </p>
+            </div>
+
+            {!hasEnoughBalance && amountNum > 0 && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
+                <p className="text-sm text-red-400 font-eskapade">Insufficient corpse token balance</p>
+              </div>
+            )}
+
+            <Button
+              onClick={handleBurn}
+              disabled={
+                !hasEnoughBalance ||
+                !amount ||
+                amountNum <= 0 ||
+                isBurning ||
+                !corpseBalance ||
+                corpseBalance === 0n
+              }
+              isLoading={isBurning}
+              variant="primary"
+              className="w-full"
+            >
+              Touch Corpse
+            </Button>
+          </>
+        )}
+
+        {(step === 'burning' || txHash) && (
+          <TxStatusComponent
+            status={txStatus}
+            hash={txHash ?? undefined}
+            error={error?.message}
+          />
+        )}
+
+        {error && step !== 'burning' && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+            <p className="text-sm text-red-400 font-eskapade">{error.message}</p>
+          </div>
+        )}
+
+        <div className="rounded-lg border border-soul-accent/20 bg-soul-accent/5 p-4">
+          <p className="text-xs text-soul-accent font-eskapade">
+            Burning Corpse tokens will mint an equal amount of Strange Mushroom tokens. This
+            action is irreversible.
+          </p>
+        </div>
       </div>
-    </div>
+    </Modal>
   )
 }

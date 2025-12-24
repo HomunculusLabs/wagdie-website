@@ -17,8 +17,8 @@ const config: Config = {
       },
       fontSize: {
         // Standardized typography scale
-        'h1': ['2.5rem', { lineHeight: '3rem', letterSpacing: '0.1em' }],      // 40px - Page titles
-        'h2': ['2rem', { lineHeight: '2.5rem', letterSpacing: '0.08em' }],     // 32px - Section titles
+        'h1': ['2.5rem', { lineHeight: '3rem', letterSpacing: '0.025em' }],      // 40px - Page titles (1px letter-spacing)
+        'h2': ['2rem', { lineHeight: '2.5rem', letterSpacing: '0.03125em' }],     // 32px - Section titles (1px letter-spacing)
         'h3': ['1.5rem', { lineHeight: '2rem', letterSpacing: '0.05em' }],     // 24px - Card titles
         'h4': ['1.25rem', { lineHeight: '1.75rem', letterSpacing: '0.03em' }], // 20px - Subsections
         'body': ['1rem', { lineHeight: '1.625rem' }],                          // 16px - Body text

@@ -103,18 +103,11 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="min-h-[80vh] flex flex-col items-center justify-center py-20 px-4 relative">
         <div className="animate-fade-in flex flex-col items-center w-full max-w-4xl">
-            {/* Logo Placeholder / Icon */}
-            <div className="mb-12 relative">
-                 <div className="absolute inset-0 bg-soul-accent/20 blur-3xl rounded-full" />
-                 <svg className="w-32 h-32 text-neutral-200 relative z-10 drop-shadow-[0_0_15px_rgba(0,0,0,1)]" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L2 22h20L12 2zm0 4l6.5 13h-13L12 6z"/>
-                    <circle cx="12" cy="15" r="2" className="text-soul-accent" fill="currentColor"/>
-                 </svg>
-            </div>
-
-            <h1 className="text-h1 md:text-[3.5rem] font-display text-neutral-100 text-center mb-6 drop-shadow-2xl leading-tight">
-            We Are All <br/> <span className="text-soul-accent text-[4rem] md:text-[5rem]">Going to Die</span>
-            </h1>
+            <img
+              src="/images/logo_home.png"
+              alt="WAGDIE - We Are All Going to Die"
+              className="mb-12 max-w-md mx-auto drop-shadow-2xl"
+            />
 
             <p className="text-body md:text-h4 text-neutral-500 text-center max-w-2xl tracking-wide leading-relaxed mb-12 font-eskapade">
             A community-driven dark fantasy project where your choices shape the narrative of a dying world.
@@ -126,11 +119,6 @@ export default function HomePage() {
             </div>
         </div>
         
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 animate-bounce">
-            <span className="text-tiny font-display tracking-widest uppercase text-neutral-500">Descend</span>
-            <div className="w-px h-12 bg-gradient-to-b from-soul-accent to-transparent"></div>
-        </div>
       </section>
 
       {/* Video Section */}
