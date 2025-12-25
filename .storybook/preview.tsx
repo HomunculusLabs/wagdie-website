@@ -7,6 +7,7 @@ import { createConfig, http, injected } from 'wagmi';
 import { mainnet, sepolia } from '@/lib/contracts/chains';
 import { MockAuthProvider, MockTokenBalancesProvider, MockStakingStatusProvider, MockCharacterOwnershipProvider } from './mock-providers';
 import { handlers } from './mocks/handlers';
+import { HookMocksProvider } from './mocks/hook-mocks/HookMocksProvider';
 import { setupWorker } from 'msw/browser';
 
 // Initialize MSW worker for Storybook
@@ -67,23 +68,26 @@ const mockStates = {
 const withProviders = (Story: React.ComponentType, context: any) => {
   // Check if story has mock state parameter
   const mockState = context.globals?.mockState || 'connected';
+  const hookMocks = context.parameters?.hookMocks;
 
   return (
-    <WagmiProvider config={storybookConfig}>
-      <QueryClientProvider client={queryClient}>
-        <MockAuthProvider>
-          <MockTokenBalancesProvider>
-            <MockStakingStatusProvider>
-              <MockCharacterOwnershipProvider>
-                <div style={{ padding: '1rem' }}>
-                  <Story />
-                </div>
-              </MockCharacterOwnershipProvider>
-            </MockStakingStatusProvider>
-          </MockTokenBalancesProvider>
-        </MockAuthProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <HookMocksProvider mocks={hookMocks}>
+      <WagmiProvider config={storybookConfig}>
+        <QueryClientProvider client={queryClient}>
+          <MockAuthProvider>
+            <MockTokenBalancesProvider>
+              <MockStakingStatusProvider>
+                <MockCharacterOwnershipProvider>
+                  <div style={{ padding: '1rem' }}>
+                    <Story />
+                  </div>
+                </MockCharacterOwnershipProvider>
+              </MockStakingStatusProvider>
+            </MockTokenBalancesProvider>
+          </MockAuthProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </HookMocksProvider>
   );
 };
 

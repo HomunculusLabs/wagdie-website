@@ -1,11 +1,9 @@
-
 import type { Meta, StoryObj } from '@storybook/react';
 import { SearingModal } from './SearingModal';
 import { TransactionStatus } from '@/types/blockchain';
 
-// Mock the hooks
-jest.mock('@/hooks/useSearing', () => ({
-    useSearing: () => ({
+const hookMocks = {
+    useSearing: {
         isSearing: false,
         isApproving: false,
         error: null,
@@ -14,15 +12,19 @@ jest.mock('@/hooks/useSearing', () => ({
         searConcords: async () => { },
         checkApproval: async () => true,
         approveForSearing: async () => { },
-    }),
-}));
-
-jest.mock('@/hooks/useTokenBalances', () => ({
-    useSingleTokenBalance: () => ({
-        balance: { balance: 10n, symbol: 'CONCORD' },
+    },
+    useTokenBalances: {
+        balances: {
+            CONCORD: {
+                balance: 10n,
+                symbol: 'CONCORD',
+            },
+        },
+        isLoading: false,
+        error: null,
         refetch: async () => { },
-    }),
-}));
+    },
+};
 
 const meta: Meta<typeof SearingModal> = {
     component: SearingModal,
@@ -63,6 +65,9 @@ export const Default: Story = {
         onClose: () => { },
         onSuccess: () => { },
     },
+    parameters: {
+        hookMocks,
+    },
 };
 
 export const Closed: Story = {
@@ -72,6 +77,9 @@ export const Closed: Story = {
         isOpen: false,
         onClose: () => { },
         onSuccess: () => { },
+    },
+    parameters: {
+        hookMocks,
     },
 };
 
@@ -84,6 +92,7 @@ export const Interactive: Story = {
         onSuccess: () => alert('Concords seared!'),
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Interactive demo - enter Concord ID and click sear button',

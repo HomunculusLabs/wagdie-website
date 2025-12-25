@@ -1,10 +1,8 @@
-
 import type { Meta, StoryObj } from '@storybook/react';
 import { InfectionModal } from './InfectionModal';
 import { TransactionStatus } from '@/types/blockchain';
 
-// Mock the useSpread hook
-jest.mock('@/hooks/useSpread', () => ({
+const hookMocks = {
     useSpread: () => ({
         isSpreading: false,
         error: null,
@@ -17,7 +15,7 @@ jest.mock('@/hooks/useSpread', () => ({
         fetchInfectionPrice: async () => { },
         fetchEthBalance: async () => { },
     }),
-}));
+};
 
 const meta: Meta<typeof InfectionModal> = {
     component: InfectionModal,
@@ -64,6 +62,9 @@ export const SpecificCharacter: Story = {
         onClose: () => { },
         onSuccess: () => { },
     },
+    parameters: {
+        hookMocks,
+    },
 };
 
 export const RandomInfection: Story = {
@@ -74,6 +75,7 @@ export const RandomInfection: Story = {
         onSuccess: () => { },
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Random infection mode - infect multiple random characters',
@@ -91,6 +93,9 @@ export const Closed: Story = {
         onClose: () => { },
         onSuccess: () => { },
     },
+    parameters: {
+        hookMocks,
+    },
 };
 
 export const Interactive: Story = {
@@ -101,6 +106,7 @@ export const Interactive: Story = {
         onSuccess: () => alert('Infection spread!'),
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Interactive demo - enter quantity and click spread button',

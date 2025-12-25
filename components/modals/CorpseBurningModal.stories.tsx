@@ -1,24 +1,18 @@
-
 import type { Meta, StoryObj } from '@storybook/react';
 import { CorpseBurningModal } from './CorpseBurningModal';
 import { TransactionStatus } from '@/types/blockchain';
 
-// Mock the useCorpseBurning hook
-jest.mock('@/hooks/useCorpseBurning', () => ({
-    useCorpseBurning: () => ({
+const hookMocks = {
+    useCorpseBurning: {
         isBurning: false,
-        isApproving: false,
         error: null,
         txHash: null,
         txStatus: TransactionStatus.IDLE,
-        corpseBalance: 100n,
-        mushroomBalance: 50n,
         burnCorpse: async () => { },
-        checkApproval: async () => true,
-        approveForBurning: async () => { },
-        fetchBalances: async () => { },
-    }),
-}));
+        batchBurnCorpses: async () => { },
+    },
+};
+
 
 const meta: Meta<typeof CorpseBurningModal> = {
     component: CorpseBurningModal,
@@ -49,6 +43,9 @@ export const Default: Story = {
         onClose: () => { },
         onSuccess: () => { },
     },
+    parameters: {
+        hookMocks,
+    },
 };
 
 export const Closed: Story = {
@@ -58,6 +55,7 @@ export const Closed: Story = {
         onSuccess: () => { },
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Modal in closed state (not visible)',
@@ -73,6 +71,7 @@ export const WithHighBalance: Story = {
         onSuccess: () => { },
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Modal showing high corpse and mushroom balances',
@@ -88,6 +87,7 @@ export const Interactive: Story = {
         onSuccess: () => alert('Burn successful!'),
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Interactive demo - enter amount and click burn button',

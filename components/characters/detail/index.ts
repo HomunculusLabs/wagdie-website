@@ -1,6 +1,6 @@
 /**
  * Character Detail Page Components
- * Barrel export for extracted components.
+ * Extracted from app/characters/[tokenId] for better organization and Storybook testing.
  */
 
 export { CharacterStoryTab } from './CharacterStoryTab'

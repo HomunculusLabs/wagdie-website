@@ -17,7 +17,7 @@ import { AIPersonaTab } from '@/components/characters/ai-editor'
 import {
   CharacterStoryTab, CharacterEquipmentTab, CharacterWalletTab,
   CharacterHeader, CharacterModals, CharacterActions,
-} from './components'
+} from '@/components/characters/detail'
 import { useCharacterEditor } from '@/hooks/useCharacterEditor'
 import { Card, CardTitle, CardContent, CardDescription, Button, Spinner, Separator, Badge, Tabs } from '@/components/ui'
 import type { TabItem } from '@/components/ui'

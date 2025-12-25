@@ -14,7 +14,7 @@ const meta: Meta<typeof Button> = {
     },
     size: {
       control: 'select',
-      options: ['sm', 'md', 'lg'],
+      options: ['sm', 'md', 'icon'],
       description: 'Size of the button',
     },
     disabled: {
@@ -55,10 +55,10 @@ export const Small: Story = {
   },
 };
 
-export const Large: Story = {
+export const Icon: Story = {
   args: {
-    size: 'md',
-    children: 'Large Button',
+    size: 'icon',
+    children: '!',
   },
 };
 

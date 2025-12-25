@@ -3,11 +3,11 @@
 // ErrorBoundary Component
 // Catches and displays React errors gracefully
 
-import React, { Component, ReactNode } from 'react'
+import * as React from 'react'
 
 interface Props {
-  children: ReactNode
-  fallback?: ReactNode
+  children: React.ReactNode
+  fallback?: React.ReactNode
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void
 }
 
@@ -16,7 +16,7 @@ interface State {
   error?: Error
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props)
     this.state = { hasError: false }
@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  render(): ReactNode {
+  render(): React.ReactNode {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback

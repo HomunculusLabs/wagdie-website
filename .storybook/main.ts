@@ -1,8 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import { resolve } from 'path';
-import commonjs from '@rollup/plugin-commonjs';
-import nodeResolve from '@rollup/plugin-node-resolve';
-import replace from '@rollup/plugin-replace';
 
 const config: StorybookConfig = {
   stories: [
@@ -27,6 +24,19 @@ const config: StorybookConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': resolve(__dirname, '../'),
+      '@/hooks/useSearing': resolve(__dirname, './mocks/hooks/useSearing'),
+      '@/hooks/useSpread': resolve(__dirname, './mocks/hooks/useSpread'),
+      '@/hooks/useCure': resolve(__dirname, './mocks/hooks/useCure'),
+      '@/hooks/useCorpseBurning': resolve(__dirname, './mocks/hooks/useCorpseBurning'),
+      '@/hooks/useTokenBalances': resolve(__dirname, './mocks/hooks/useTokenBalances'),
+      '@/hooks/useStaking': resolve(__dirname, './mocks/hooks/useStaking'),
+      '@/hooks/useAICharacter': resolve(__dirname, './mocks/hooks/useAICharacter'),
+      'next/link': resolve(__dirname, './mocks/next/link'),
+      'next/image': resolve(__dirname, './mocks/next/image'),
+      'next/navigation': resolve(__dirname, './mocks/next/navigation'),
+      'next/dynamic': resolve(__dirname, './mocks/next/dynamic'),
+      // ESM/CJS interop fix for eventemitter3 (used by wagmi)
+      'eventemitter3': resolve(__dirname, './mocks/eventemitter3'),
     };
 
     // Polyfill process.env for Storybook
@@ -35,18 +45,22 @@ const config: StorybookConfig = {
       'process.env': {},
     };
 
-    // Add plugins to handle problematic packages
-    config.plugins = config.plugins || [];
-    config.plugins.push(
-      replace({
-        preventAssignment: true,
-        'import pkg from \'../../package.json\' with { type: \'json\' };': 'import pkg from \'../../package.json\';',
-      }),
-      nodeResolve({
-        extensions: ['.js', '.json'],
-      }),
-      commonjs()
-    );
+    // Handle ESM/CJS interop issues
+    config.optimizeDeps = config.optimizeDeps || {};
+    config.optimizeDeps.include = [
+      ...(config.optimizeDeps.include || []),
+      'eventemitter3',
+      'react',
+      'react-dom',
+    ];
+    config.optimizeDeps.esbuildOptions = {
+      ...(config.optimizeDeps.esbuildOptions || {}),
+      target: 'es2020',
+    };
+
+    // Force bundling of problematic ESM packages
+    config.ssr = config.ssr || {};
+    config.ssr.noExternal = ['eventemitter3'];
 
     return config;
   },

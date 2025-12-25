@@ -1,26 +1,16 @@
-
 import type { Meta, StoryObj } from '@storybook/react';
 import { CureModal } from './CureModal';
 import { TransactionStatus } from '@/types/blockchain';
 
-// Mock the useCure hook
-jest.mock('@/hooks/useCure', () => ({
-    useCure: () => ({
+const hookMocks = {
+    useCure: {
         isCuring: false,
         error: null,
         txHash: null,
         txStatus: TransactionStatus.IDLE,
-        cureStatus: {
-            canCure: true,
-            hasEnoughMushrooms: true,
-            mushroomBalance: 10n,
-            mushroomsRequired: 1n,
-            isMintingEnabled: true,
-        },
-        cureCharacter: async () => { },
-        fetchCureStatus: async () => { },
-    }),
-}));
+        cureWagdie: async () => { },
+    },
+};
 
 const meta: Meta<typeof CureModal> = {
     component: CureModal,
@@ -61,6 +51,9 @@ export const Default: Story = {
         onClose: () => { },
         onSuccess: () => { },
     },
+    parameters: {
+        hookMocks,
+    },
 };
 
 export const Closed: Story = {
@@ -70,6 +63,9 @@ export const Closed: Story = {
         isOpen: false,
         onClose: () => { },
         onSuccess: () => { },
+    },
+    parameters: {
+        hookMocks,
     },
 };
 
@@ -82,6 +78,7 @@ export const Interactive: Story = {
         onSuccess: () => alert('Character cured!'),
     },
     parameters: {
+        hookMocks,
         docs: {
             description: {
                 story: 'Interactive demo - click cure button to see action',
