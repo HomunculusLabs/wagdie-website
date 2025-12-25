@@ -43,11 +43,16 @@ function verifyAuthorization(request: NextRequest): boolean {
  * Create a Supabase admin client for bypassing RLS
  */
 function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Missing Supabase configuration for admin client')
+    throw new Error(
+      'Missing Supabase configuration for admin client (set SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL)'
+    )
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {

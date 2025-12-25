@@ -1,7 +1,22 @@
-// Blockchain Chain Configurations
-// Mainnet and Sepolia testnet support
+/**
+ * Blockchain Chain Configurations
+ * Mainnet and Sepolia testnet support
+ */
 
 import { Chain } from 'wagmi/chains'
+
+const mainnetRpcUrl =
+  process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
+  (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+    ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+    : 'https://eth.llamarpc.com')
+
+const sepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
+  (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+    ? `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+    : 'https://rpc.sepolia.org')
 
 export const mainnet: Chain = {
   id: 1,
@@ -13,10 +28,7 @@ export const mainnet: Chain = {
   },
   rpcUrls: {
     default: {
-      http: [
-        process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
-          'https://eth-mainnet.g.alchemy.com/v2/' + process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
-      ],
+      http: [mainnetRpcUrl],
     },
     public: {
       http: ['https://eth.llamarpc.com', 'https://rpc.ankr.com/eth'],
@@ -50,10 +62,7 @@ export const sepolia: Chain = {
   },
   rpcUrls: {
     default: {
-      http: [
-        process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
-          'https://eth-sepolia.g.alchemy.com/v2/' + process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
-      ],
+      http: [sepoliaRpcUrl],
     },
     public: {
       http: ['https://rpc.sepolia.org'],
@@ -73,7 +82,7 @@ export const sepolia: Chain = {
 
 // Get supported chains based on environment
 export function getSupportedChains(): Chain[] {
-  const chainId = process.env.NEXT_PUBLIC_CHAIN_ID
+  const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || process.env.CHAIN_ID
 
   if (chainId === '11155111') {
     return [sepolia, mainnet]

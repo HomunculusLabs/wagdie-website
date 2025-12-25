@@ -21,10 +21,15 @@ export class OwnershipSyncService {
   private config: Required<Omit<SyncServiceConfig, 'supabaseClient'>> & { supabaseClient?: SupabaseClient }
 
   constructor(config: SyncServiceConfig = {}) {
-    // Create a server-side public client for blockchain queries
+    const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || process.env.ALCHEMY_API_KEY
     const rpcUrl =
+      process.env.MAINNET_RPC_URL ||
+      process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+      process.env.ALCHEMY_RPC_URL ||
       process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
-      `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+      (alchemyKey
+        ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`
+        : 'https://eth.llamarpc.com')
 
     const publicClient = createPublicClient({
       chain: mainnet,

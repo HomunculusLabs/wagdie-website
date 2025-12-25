@@ -206,25 +206,6 @@ export default function HomePage() {
         
       </section>
 
-      {/* Logo Section */}
-      <section className="container mx-auto px-4 py-12 mb-12">
-        <div className="max-w-5xl mx-auto relative">
-             {/* Decorative Frame Elements */}
-            <div className="absolute -top-4 -left-4 w-12 h-12 border-t border-l border-soul-accent/30" />
-            <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b border-r border-soul-accent/30" />
-            
-            <AspectRatio ratio={16/9}>
-                <div className="relative bg-black border border-neutral-800 shadow-2xl overflow-hidden flex items-center justify-center w-full h-full">
-                  <img
-                    src="/images/logo_home.png"
-                    alt="WAGDIE - We Are All Going to Die"
-                    className="max-w-md w-full h-auto drop-shadow-2xl"
-                  />
-                </div>
-            </AspectRatio>
-        </div>
-      </section>
-
       {/* Quote Break */}
       <div className="max-w-3xl mx-auto py-12">
         <Blockquote cite="The First Pilgrim">

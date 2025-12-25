@@ -6,6 +6,19 @@ import { getSupportedChains, mainnet, sepolia } from './contracts/chains'
 // Get supported chains based on environment
 const chains = getSupportedChains()
 
+const mainnetRpcUrl =
+  process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+  process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
+  (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+    ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+    : 'https://eth.llamarpc.com')
+
+const sepoliaRpcUrl =
+  process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
+  (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
+    ? `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+    : 'https://rpc.sepolia.org')
+
 export const config = createConfig({
   chains: chains as unknown as readonly [Chain, ...Chain[]],
   connectors: [
@@ -19,21 +32,13 @@ export const config = createConfig({
   ],
   ssr: true,
   transports: {
-    [mainnet.id]: http(
-      process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
-        `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-      {
-        batch: true,
-        retryCount: 3,
-      }
-    ),
-    [sepolia.id]: http(
-      process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
-        `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-      {
-        batch: true,
-        retryCount: 3,
-      }
-    ),
+    [mainnet.id]: http(mainnetRpcUrl, {
+      batch: true,
+      retryCount: 3,
+    }),
+    [sepolia.id]: http(sepoliaRpcUrl, {
+      batch: true,
+      retryCount: 3,
+    }),
   },
 })

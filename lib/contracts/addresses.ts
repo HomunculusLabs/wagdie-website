@@ -1,5 +1,11 @@
-// Smart Contract Addresses
-// Source: specs/004-blockchain-integration/contracts/addresses.json
+/*
+ * Smart Contract Addresses
+ * Source: specs/004-blockchain-integration/contracts/addresses.json
+ *
+ * Supports optional overrides via env vars:
+ * - NEXT_PUBLIC_* for client-safe overrides
+ * - server-only variants without NEXT_PUBLIC_
+ */
 
 export type Address = `0x${string}`
 
@@ -38,17 +44,52 @@ export const TOKEN_IDS = {
   mushroom: 1n,
 } as const
 
+function getEnvAddress(names: string[]): Address | undefined {
+  for (const name of names) {
+    const value = process.env[name]
+    if (!value) continue
+    if (/^0x[a-fA-F0-9]{40}$/.test(value)) return value as Address
+    console.warn(`Invalid address for ${name}: ${value}`)
+    return undefined
+  }
+  return undefined
+}
+
+function applyOverrides(base: ContractAddresses): ContractAddresses {
+  const overrides: Partial<ContractAddresses> = {
+    wagdie: getEnvAddress(['NEXT_PUBLIC_WAGDIE_ADDRESS', 'WAGDIE_ADDRESS']),
+    tokensOfConcord: getEnvAddress([
+      'NEXT_PUBLIC_CONCORD_ADDRESS',
+      'CONCORD_ADDRESS',
+      'NEXT_PUBLIC_TOKENS_OF_CONCORD_ADDRESS',
+      'TOKENS_OF_CONCORD_ADDRESS',
+    ]),
+    corpse: getEnvAddress(['NEXT_PUBLIC_CORPSE_ADDRESS', 'CORPSE_ADDRESS']),
+    mushroom: getEnvAddress(['NEXT_PUBLIC_MUSHROOM_ADDRESS', 'MUSHROOM_ADDRESS']),
+    searing: getEnvAddress(['NEXT_PUBLIC_SEARING_ADDRESS', 'SEARING_ADDRESS']),
+    spread: getEnvAddress(['NEXT_PUBLIC_SPREAD_ADDRESS', 'SPREAD_ADDRESS']),
+    wagdieWorld: getEnvAddress(['NEXT_PUBLIC_WAGDIE_WORLD_ADDRESS', 'WAGDIE_WORLD_ADDRESS']),
+  }
+
+  const next = { ...base }
+  ;(Object.keys(overrides) as (keyof ContractAddresses)[]).forEach((key) => {
+    const value = overrides[key]
+    if (value) next[key] = value
+  })
+  return next
+}
+
 // Get contract addresses based on chain ID
 export function getContractAddresses(chainId: number): ContractAddresses {
   switch (chainId) {
     case 1: // Mainnet
-      return mainnetAddresses
+      return applyOverrides(mainnetAddresses)
     case 11155111: // Sepolia
       // Return mainnet addresses for contracts not deployed on Sepolia
-      return {
+      return applyOverrides({
         ...mainnetAddresses,
         ...sepoliaAddresses,
-      } as ContractAddresses
+      } as ContractAddresses)
     default:
       throw new Error(`Unsupported chain ID: ${chainId}`)
   }

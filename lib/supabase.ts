@@ -33,6 +33,7 @@ export function createSupabaseClient(options: SupabaseClientOptions = {}) {
 
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
     process.env.SERVICE_ROLE_KEY ||
     ''
 
@@ -46,7 +47,7 @@ export function createSupabaseClient(options: SupabaseClientOptions = {}) {
   if (!selectedKey) {
     throw new Error(
       useAdmin
-        ? 'Missing Supabase service role key (set SUPABASE_SERVICE_ROLE_KEY)'
+        ? 'Missing Supabase service role key (set SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_KEY)'
         : 'Missing Supabase anon key (set NEXT_PUBLIC_SUPABASE_ANON_KEY)'
     )
   }
@@ -55,7 +56,7 @@ export function createSupabaseClient(options: SupabaseClientOptions = {}) {
   const payload = decodeJwtPayload(selectedKey)
   // Note: don't assume non-local URLs are hosted Supabase (cloudflared tunnels are common).
   // We keep this as a soft guard for the common hosted Supabase URL format.
-  if (payload?.iss === 'supabase-demo' && /\\.supabase\\.co\\b/.test(supabaseUrl)) {
+  if (payload?.iss === 'supabase-demo' && /\.supabase\.co\b/.test(supabaseUrl)) {
     console.warn(
       `Supabase key issuer is "supabase-demo" but URL looks hosted (${supabaseUrl}). ` +
         'If this is a hosted Supabase project, update your anon/service role keys.'

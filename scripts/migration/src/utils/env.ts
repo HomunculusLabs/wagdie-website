@@ -3,13 +3,27 @@
  */
 
 import { config } from 'dotenv';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 
 export function loadDotenv(): void {
-  config({
-    path: '.env.local'
-  });
+  const explicit = process.env.MIGRATION_ENV_FILE;
+  if (explicit) {
+    config({ path: explicit });
+    return;
+  }
 
-  config({
-    path: '.env'
-  });
+  const cwd = process.cwd();
+  const paths = [
+    resolve(cwd, '.env.local'),
+    resolve(cwd, '.env'),
+    resolve(cwd, '../.env.local'),
+    resolve(cwd, '../.env'),
+  ];
+
+  for (const path of paths) {
+    if (existsSync(path)) {
+      config({ path });
+    }
+  }
 }
