@@ -1,21 +1,67 @@
+"use client";
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Layout, Button, Card, CardHeader, CardTitle, CardContent, CardDescription, Separator, AspectRatio, Blockquote, Badge } from '@/components/ui';
 
 // --- Video Player Component ---
-const VideoPlayer = ({ videoSrc, posterSrc, className }: { videoSrc: string, posterSrc: string, className?: string }) => (
-  <div className={`relative bg-black border border-neutral-800 shadow-2xl overflow-hidden ${className}`}>
-    <video
-      src={videoSrc}
-      poster={posterSrc}
-      controls
-      className="w-full h-full object-cover"
-      preload="metadata"
-    >
-      Your browser does not support the video tag.
-    </video>
-  </div>
-);
+const VIDEO_CONSENT_COOKIE = 'wagdie_video_consent';
+const VIDEO_CONSENT_MAX_AGE = 60 * 60 * 24 * 365;
+
+const readVideoConsent = () => {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${VIDEO_CONSENT_COOKIE}=([^;]*)`));
+  const value = match ? decodeURIComponent(match[1]) : null;
+  return value === 'granted' || value === 'denied' ? value : null;
+};
+
+const setVideoConsentCookie = (value: 'granted' | 'denied') => {
+  document.cookie = `${VIDEO_CONSENT_COOKIE}=${encodeURIComponent(value)}; Max-Age=${VIDEO_CONSENT_MAX_AGE}; Path=/; SameSite=Lax`;
+};
+
+const VideoPlayer = ({ videoSrc, posterSrc, className, hasConsent }: { videoSrc: string, posterSrc: string, className?: string, hasConsent: boolean }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  const handleUnmute = () => {
+    if (!hasConsent) return;
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = false;
+    video.volume = 1;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.catch(() => undefined);
+    }
+    setIsMuted(false);
+  };
+
+  return (
+    <div className={`relative bg-black border border-neutral-800 shadow-2xl overflow-hidden ${className}`}>
+      <video
+        ref={videoRef}
+        src={videoSrc}
+        poster={posterSrc}
+        autoPlay={hasConsent}
+        muted={hasConsent ? isMuted : true}
+        loop
+        playsInline
+        className="w-full h-full object-cover"
+        preload="metadata"
+      >
+        Your browser does not support the video tag.
+      </video>
+      {hasConsent && isMuted && (
+        <button
+          type="button"
+          onClick={handleUnmute}
+          className="absolute inset-0 flex items-center justify-center bg-black/45 text-neutral-100 text-sm md:text-base tracking-wide uppercase"
+          aria-label="Unmute video"
+        >
+          <span className="sr-only">Unmute video</span>
+        </button>
+      )}
+    </div>
+  );
+};
 
 interface FeatureCardProps {
   title: string;
@@ -99,16 +145,54 @@ function Section({ title, subtitle, children }: SectionProps) {
 }
 
 export default function HomePage() {
+  const [videoConsent, setVideoConsent] = useState<'granted' | 'denied' | null>(null);
+
+  useEffect(() => {
+    setVideoConsent(readVideoConsent());
+  }, []);
+
+  const handleConsent = (value: 'granted' | 'denied') => {
+    setVideoConsentCookie(value);
+    setVideoConsent(value);
+  };
+
   return (
     <Layout>
+      {videoConsent === null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="w-full max-w-lg border border-neutral-800 bg-black/90 p-8 shadow-2xl">
+            <h2 className="text-h4 font-display text-neutral-100 mb-4">Epilepsy warning + cookie notice</h2>
+            <p className="text-body text-neutral-400 mb-4 font-eskapade">
+              This hero video contains flashing imagery. Do you want to enable autoplay?
+            </p>
+            <p className="text-sm text-neutral-500 mb-6 font-eskapade">
+              We only use essential cookies (session, security, and your video preference). No tracking cookies.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button className="h-12 px-8 text-base" onClick={() => handleConsent('granted')}>
+                Enable autoplay
+              </Button>
+              <Button variant="secondary" className="h-12 px-8 text-base" onClick={() => handleConsent('denied')}>
+                No autoplay
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="min-h-[80vh] flex flex-col items-center justify-center py-20 px-4 relative">
-        <div className="animate-fade-in flex flex-col items-center w-full max-w-4xl">
-            <img
-              src="/images/logo_home.png"
-              alt="WAGDIE - We Are All Going to Die"
-              className="mb-12 max-w-md mx-auto drop-shadow-2xl"
-            />
+        <div className="animate-fade-in flex flex-col items-center w-full max-w-5xl">
+            <div className="w-full mb-12">
+              <AspectRatio ratio={16/9}>
+                  <VideoPlayer
+                    videoSrc="/videos/intro.mp4"
+                    posterSrc="/images/video-preview.png"
+                    className="w-full h-full"
+                    hasConsent={videoConsent === 'granted'}
+                  />
+              </AspectRatio>
+            </div>
 
             <p className="text-body md:text-h4 text-neutral-500 text-center max-w-2xl tracking-wide leading-relaxed mb-12 font-eskapade">
             A community-driven dark fantasy project where your choices shape the narrative of a dying world.
@@ -122,7 +206,7 @@ export default function HomePage() {
         
       </section>
 
-      {/* Video Section */}
+      {/* Logo Section */}
       <section className="container mx-auto px-4 py-12 mb-12">
         <div className="max-w-5xl mx-auto relative">
              {/* Decorative Frame Elements */}
@@ -130,11 +214,13 @@ export default function HomePage() {
             <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b border-r border-soul-accent/30" />
             
             <AspectRatio ratio={16/9}>
-                <VideoPlayer
-                    videoSrc="/videos/intro.mp4"
-                    posterSrc="/images/video-preview.png"
-                    className="w-full h-full"
-                />
+                <div className="relative bg-black border border-neutral-800 shadow-2xl overflow-hidden flex items-center justify-center w-full h-full">
+                  <img
+                    src="/images/logo_home.png"
+                    alt="WAGDIE - We Are All Going to Die"
+                    className="max-w-md w-full h-auto drop-shadow-2xl"
+                  />
+                </div>
             </AspectRatio>
         </div>
       </section>
