@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/sync/ownership?secret=${SYNC_SECRET_KEY}",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
