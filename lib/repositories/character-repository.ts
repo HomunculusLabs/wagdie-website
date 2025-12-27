@@ -65,14 +65,23 @@ export class CharacterRepository implements ICharacterRepository {
    * Find characters with filtering, pagination, and sorting
    */
   async findMany(filters: CharacterFilters): Promise<CharactersResponse> {
+    // Safety net: 'owned' tab without wallet returns empty (not all characters)
+    if (filters.tab === 'owned' && !filters.wallet) {
+      return { characters: [], hasMore: false, totalCount: 0 }
+    }
+
     let query = supabase
       .from(CHARACTERS_TABLE)
       .select('*', { count: 'exact' })
 
-    // Apply filters based on tab
-    if (filters.tab === 'owned' && filters.wallet) {
+    // Apply wallet filter whenever wallet is provided
+    // This allows wallet-scoped queries for any tab (owned, staked, etc.)
+    if (filters.wallet) {
       query = query.eq('owner_address', filters.wallet.toLowerCase())
-    } else if (filters.tab === 'infected') {
+    }
+
+    // Apply tab-specific filters (additive to wallet filter)
+    if (filters.tab === 'infected') {
       // `wagdie_characters` uses a boolean column `infected`
       query = query.eq('infected', true)
     } else if (filters.tab === 'cured') {
@@ -82,6 +91,7 @@ export class CharacterRepository implements ICharacterRepository {
       // Staked characters are those with a non-null location_id
       query = query.not('location_id', 'is', null)
     }
+    // Note: 'owned' and 'all' tabs only use the wallet filter above
 
     // Apply search filter
     if (filters.search) {

@@ -118,6 +118,9 @@ export function useOwnedCharacters(
     setError(null)
 
     try {
+      // Fetch only 'owned' tab with wallet - this returns all characters
+      // owned by the wallet, including staked ones (owner_address is preserved).
+      // The repository now correctly applies wallet filter for all tabs.
       const ownedUrl = buildCharactersUrl({
         tab: 'owned',
         wallet,
@@ -126,44 +129,22 @@ export function useOwnedCharacters(
         search,
       })
 
-      const stakedUrl = buildCharactersUrl({
-        tab: 'staked',
-        wallet,
-        perPage,
-        sort,
-        search,
-      })
-
-      const [owned, staked] = await Promise.all([
-        fetchCharacters(ownedUrl, controller.signal),
-        fetchCharacters(stakedUrl, controller.signal),
-      ])
-
-      const byTokenId = new Map<number, Character>()
-
-      // Owned first...
-      for (const c of owned) {
-        if (typeof c?.token_id === 'number') {
-          byTokenId.set(c.token_id, c)
-        }
-      }
-
-      // ...then staked overwrites on duplicates (staked wins)
-      for (const c of staked) {
-        if (typeof c?.token_id === 'number') {
-          byTokenId.set(c.token_id, c)
-        }
-      }
-
-      // Stable ordering for UI
-      const merged = Array.from(byTokenId.values()).sort(
-        (a, b) => a.token_id - b.token_id
-      )
+      const owned = await fetchCharacters(ownedUrl, controller.signal)
 
       // Ignore results if we were aborted
       if (controller.signal.aborted) return
 
-      setCharacters(merged)
+      // Defensive filter: ensure all returned characters match the wallet
+      // This protects against any backend bugs returning wrong characters
+      const walletLower = wallet.toLowerCase()
+      const filtered = owned.filter(c =>
+        c?.owner_address?.toLowerCase() === walletLower
+      )
+
+      // Stable ordering for UI
+      const sorted = filtered.sort((a, b) => a.token_id - b.token_id)
+
+      setCharacters(sorted)
     } catch (err) {
       // Ignore abort errors (expected during wallet/options changes)
       if (controller.signal.aborted) return

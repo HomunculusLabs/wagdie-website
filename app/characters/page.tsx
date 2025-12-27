@@ -120,6 +120,11 @@ function CharactersPageContent() {
     return () => clearTimeout(timer)
   }, [searchInput, updateURL])
 
+  // Only pass wallet for 'owned' tab - other tabs are global views
+  const walletForQuery = tab === 'owned' ? address : undefined
+  // Disable query when 'owned' tab is selected but no wallet is connected
+  const canQuery = tab !== 'owned' || !!address
+
   // Fetch characters using custom hook with React Query
   const {
     characters,
@@ -130,7 +135,7 @@ function CharactersPageContent() {
   } = useCharacters({
     tab,
     sort,
-    wallet: address,
+    wallet: walletForQuery,
     page,
     perPage: ITEMS_PER_PAGE,
     search: searchQuery || undefined,
@@ -140,6 +145,7 @@ function CharactersPageContent() {
     armor: armor || undefined,
     back: back || undefined,
     mask: mask || undefined,
+    enabled: canQuery,
   })
 
   // Compute whether any filters are active (beyond defaults)

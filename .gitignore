@@ -48,3 +48,4 @@ scripts/migration/.env
 storybook-static/
 .vite/
 volumes/db/data/
+scripts/indexer/state.json

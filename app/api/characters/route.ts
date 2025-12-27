@@ -49,6 +49,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Safety net: 'owned' tab without wallet returns empty (not all characters)
+    if (tab === 'owned' && !wallet) {
+      return NextResponse.json({
+        characters: [],
+        hasMore: false,
+        totalCount: 0
+      })
+    }
+
     // Fetch characters
     const result = await getCharacters({
       tab,

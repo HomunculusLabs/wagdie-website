@@ -169,9 +169,29 @@ services:
       - homelab_homelab
     restart: unless-stopped
 
+  indexer:
+    build:
+      context: .
+      dockerfile: scripts/indexer/Dockerfile
+    depends_on:
+      - kong
+    environment:
+      WS_RPC_URL: ${WS_RPC_URL}
+      HTTP_RPC_URL: ${HTTP_RPC_URL}
+      NEXT_PUBLIC_SUPABASE_URL: https://wagdie-api.runiverse.ai
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      STATE_FILE: /app/data/state.json
+      CHAIN_ID: 1
+    volumes:
+      - indexer-data:/app/data
+    networks:
+      - default
+    restart: unless-stopped
+
 networks:
   homelab_homelab:
     external: true
 
 volumes:
   db-data:
+  indexer-data:
