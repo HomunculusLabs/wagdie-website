@@ -48,25 +48,47 @@ export function useStaking(): UseStakingResult {
   const checkApproval = async (tokenId?: bigint): Promise<boolean> => {
     if (!address || !publicClient) return false
 
-    try {
-      const service = new StakingService({ publicClient, walletClient })
-      await service.initialize()
+    const maxRetries = 3
+    const baseDelay = 1000 // 1 second
 
-      // Prefer operator approval (setApprovalForAll) for "approve once, stake many"
-      const operatorApproval = await service.isApprovedForStaking(address)
-      if (operatorApproval.data) return true
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const service = new StakingService({ publicClient, walletClient })
+        await service.initialize()
 
-      // If operator approval is not set, optionally fall back to per-token approval
-      if (tokenId) {
-        const tokenApproval = await service.isApprovedForStaking(address, tokenId)
-        return tokenApproval.data ?? false
+        // Prefer operator approval (setApprovalForAll) for "approve once, stake many"
+        const operatorApproval = await service.isApprovedForStaking(address)
+        if (operatorApproval.data) return true
+
+        // If operator approval is not set, optionally fall back to per-token approval
+        if (tokenId) {
+          const tokenApproval = await service.isApprovedForStaking(address, tokenId)
+          return tokenApproval.data ?? false
+        }
+
+        return false
+      } catch (err) {
+        const isLastAttempt = attempt === maxRetries - 1
+        const errorMessage = err instanceof Error ? err.message : String(err)
+
+        // Log with attempt info
+        console.warn(
+          `[checkApproval] Attempt ${attempt + 1}/${maxRetries} failed:`,
+          errorMessage
+        )
+
+        if (isLastAttempt) {
+          logError(err, 'checkApproval')
+          return false
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = baseDelay * Math.pow(2, attempt)
+        await new Promise(resolve => setTimeout(resolve, delay))
       }
-
-      return false
-    } catch (err) {
-      logError(err, 'checkApproval')
-      return false
     }
+
+    return false
   }
 
   const approveForStaking = async (tokenId?: bigint): Promise<void> => {

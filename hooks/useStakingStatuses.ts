@@ -1,9 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { usePublicClient, useWalletClient } from 'wagmi'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ContractError, StakingStatus } from '@/types/blockchain'
-import { StakingService } from '@/lib/services/blockchain/staking'
 
 export interface UseStakingStatusesOptions {
   enabled?: boolean
@@ -16,24 +14,50 @@ export interface UseStakingStatusesResult {
   refetch: () => Promise<void>
 }
 
-function buildStatusesMap(
-  wagdieIds: number[],
-  locations: Map<number, bigint>
-): Map<number, StakingStatus> {
-  const next = new Map<number, StakingStatus>()
+interface ApiStakingStatus {
+  tokenId: number
+  isStaked: boolean
+  locationId: string | null
+}
 
-  for (const wagdieId of wagdieIds) {
-    const locationId = locations.get(wagdieId) ?? 0n
-    const isStaked = locationId > 0n
+interface ApiResponse {
+  statuses: ApiStakingStatus[]
+  error?: string
+}
 
-    next.set(wagdieId, {
-      tokenId: BigInt(wagdieId),
-      isStaked,
-      locationId: isStaked ? locationId : undefined,
+function buildStatusesMap(apiStatuses: ApiStakingStatus[]): Map<number, StakingStatus> {
+  const map = new Map<number, StakingStatus>()
+
+  for (const status of apiStatuses) {
+    map.set(status.tokenId, {
+      tokenId: BigInt(status.tokenId),
+      isStaked: status.isStaked,
+      // Convert string locationId to bigint if present
+      locationId: status.locationId ? BigInt(status.locationId) : undefined,
     })
   }
 
-  return next
+  return map
+}
+
+async function fetchStakingStatusFromApi(
+  tokenIds: number[],
+  signal: AbortSignal
+): Promise<{ statuses: ApiStakingStatus[]; error?: string }> {
+  const url = `/api/characters/staking-status?tokenIds=${tokenIds.join(',')}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    signal,
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => 'Request failed')
+    throw new Error(text || `Request failed (${response.status})`)
+  }
+
+  return (await response.json()) as ApiResponse
 }
 
 export function useStakingStatuses(
@@ -41,14 +65,14 @@ export function useStakingStatuses(
   options?: UseStakingStatusesOptions
 ): UseStakingStatusesResult {
   const enabled = options?.enabled ?? true
-  const publicClient = usePublicClient()
-  const { data: walletClient } = useWalletClient()
 
   const [statuses, setStatuses] = useState<Map<number, StakingStatus>>(
     () => new Map()
   )
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<ContractError | null>(null)
+
+  const abortRef = useRef<AbortController | null>(null)
 
   // Stabilize wagdieIds reference by content (not by array identity)
   const wagdieIdsKey = Array.isArray(wagdieIds) ? wagdieIds.join(',') : ''
@@ -57,11 +81,6 @@ export function useStakingStatuses(
   const fetchStatuses = useCallback(async (): Promise<void> => {
     if (!enabled) return
 
-    if (!publicClient) {
-      // wagmi not ready; don't treat as an error, just no-op
-      return
-    }
-
     if (stableWagdieIds.length === 0) {
       setStatuses(new Map())
       setIsLoading(false)
@@ -69,45 +88,68 @@ export function useStakingStatuses(
       return
     }
 
+    // Abort any in-flight request
+    if (abortRef.current) {
+      abortRef.current.abort()
+    }
+
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setIsLoading(true)
     setError(null)
 
     try {
-      const service = new StakingService({ publicClient, walletClient })
-      await service.initialize()
+      const result = await fetchStakingStatusFromApi(
+        stableWagdieIds,
+        controller.signal
+      )
 
-      const result = await service.getStakedLocations(stableWagdieIds)
+      // Ignore if aborted
+      if (controller.signal.aborted) return
 
       if (result.error) {
-        setError(result.error)
+        setError({
+          type: 'unknown' as any,
+          message: result.error,
+        })
         setStatuses(new Map())
         return
       }
 
-      const locations = result.data ?? new Map<number, bigint>()
-      setStatuses(buildStatusesMap(stableWagdieIds, locations))
+      setStatuses(buildStatusesMap(result.statuses))
     } catch (err) {
-      // StakingService should already parse contract errors internally, but
-      // keep a safe fallback for unexpected runtime errors.
-      const fallback: ContractError = {
+      // Ignore abort errors
+      if (controller.signal.aborted) return
+
+      const message =
+        err instanceof Error ? err.message : 'Failed to fetch staking statuses'
+
+      setError({
         type: 'unknown' as any,
-        message: 'Failed to fetch staking statuses',
+        message,
         originalError: err instanceof Error ? err : undefined,
-      }
-      setError(fallback)
+      })
       setStatuses(new Map())
     } finally {
-      setIsLoading(false)
+      if (!controller.signal.aborted) {
+        setIsLoading(false)
+      }
     }
-  }, [enabled, publicClient, walletClient, stableWagdieIds])
+  }, [enabled, stableWagdieIds])
 
   useEffect(() => {
     if (!enabled) return
-    if (!publicClient) return
     if (stableWagdieIds.length === 0) return
 
     void fetchStatuses()
-  }, [enabled, publicClient, stableWagdieIds, fetchStatuses])
+
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort()
+      }
+    }
+  }, [enabled, stableWagdieIds, fetchStatuses])
 
   return {
     statuses,

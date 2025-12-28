@@ -31,6 +31,16 @@ export abstract class BaseBlockchainService {
       const data = await fn()
       return { data }
     } catch (error) {
+      // Enhanced debug logging for RPC errors
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`[RPC Error] ${context || 'readContract'}:`, {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : 'Unknown',
+          cause: (error as any)?.cause,
+          details: (error as any)?.details,
+          shortMessage: (error as any)?.shortMessage,
+        })
+      }
       const parsedError = parseContractError(error)
       logError(error, context)
       return { error: parsedError }
@@ -124,6 +134,17 @@ export abstract class BaseBlockchainService {
 
       return { data }
     } catch (error) {
+      // Enhanced debug logging for multicall RPC errors
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[RPC Error] multicall:', {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : 'Unknown',
+          cause: (error as any)?.cause,
+          details: (error as any)?.details,
+          shortMessage: (error as any)?.shortMessage,
+          contractCount: contracts.length,
+        })
+      }
       const parsedError = parseContractError(error)
       logError(error, 'multicall')
       return { error: parsedError }

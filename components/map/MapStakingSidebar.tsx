@@ -620,12 +620,24 @@ export function MapStakingSidebar({
               </div>
             ) : (
               <>
-                {/* Approval banner (only when not approved) */}
+                {/* Approval status banner */}
+                {isConnected && approvalState === 'approved' && (
+                  <div className="rounded-lg bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center shrink-0">
+                        <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-green-300 font-eskapade">Ready to stake</p>
+                    </div>
+                  </div>
+                )}
                 {showApprovalBanner && (
                   <div className="rounded-lg bg-gradient-to-r from-soul-accent/5 to-transparent border border-soul-accent/20 p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-soul-accent/10 border border-soul-accent/30 flex items-center justify-center shrink-0">
-                        {approvalState === 'checking' ? (
+                        {(approvalState === 'idle' || approvalState === 'checking') ? (
                           <Spinner size="sm" />
                         ) : approvalState === 'error' ? (
                           <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -638,7 +650,7 @@ export function MapStakingSidebar({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        {approvalState === 'checking' && (
+                        {(approvalState === 'idle' || approvalState === 'checking') && (
                           <>
                             <p className="text-base text-neutral-300 font-eskapade">Checking approval...</p>
                             <p className="text-sm text-neutral-500 font-eskapade mt-0.5">Verifying contract permissions</p>
@@ -660,7 +672,7 @@ export function MapStakingSidebar({
                       <Button
                         size="sm"
                         onClick={handleApprove}
-                        disabled={approvalState === 'checking' || isApproving}
+                        disabled={approvalState === 'idle' || approvalState === 'checking' || isApproving}
                         className="shrink-0"
                       >
                         {isApproving ? 'Approving…' : 'Approve'}
