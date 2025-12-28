@@ -97,9 +97,11 @@ const DEFAULT_STATE: CharacterEditorState = {
 function initializeFromCharacter(character: Character | null): CharacterEditorState {
   if (!character) return DEFAULT_STATE
 
+  // Prefer DB columns over metadata (columns are the source of truth after saves)
+  // Use ?? (nullish coalescing) so empty strings are respected
   return {
-    name: character.name || character.metadata?.name || '',
-    story: character.metadata?.background_story || character.background_story || '',
+    name: character.name ?? character.metadata?.name ?? '',
+    story: character.background_story ?? character.metadata?.background_story ?? '',
     coreStats: {
       str: character.str ?? null,
       dex: character.dex ?? null,

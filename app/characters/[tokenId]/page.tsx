@@ -63,8 +63,11 @@ export default function CharacterDetailPage() {
   }, [tokenId])
 
   const userIsAdmin = isAdmin(address)
+  // Include staker_address check for staked characters (user is the staker)
   const isOwner = character && address
-    ? (character.owner_address?.toLowerCase() === address.toLowerCase()) || userIsAdmin
+    ? (character.owner_address?.toLowerCase() === address.toLowerCase()) ||
+      (character.staker_address?.toLowerCase() === address.toLowerCase()) ||
+      userIsAdmin
     : false
 
   const handleEditToggle = useCallback(() => {
@@ -101,7 +104,8 @@ export default function CharacterDetailPage() {
       const updates: Record<string, unknown> = {}
       const origName = character.name || character.metadata?.name || ''
       if (editor.state.name !== origName) updates.name = editor.state.name
-      const origStory = character.metadata?.background_story || character.background_story || ''
+      // Prefer DB column over metadata for comparison (column is the source of truth after saves)
+      const origStory = character.background_story ?? character.metadata?.background_story ?? ''
       if (editor.state.story !== origStory) updates.background_story = editor.state.story
 
       for (const key of ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const) {
@@ -116,9 +120,21 @@ export default function CharacterDetailPage() {
       if (!Object.keys(updates).length) { setIsEditMode(false); toast.success('No changes'); return }
 
       const response = await fetch(`/api/characters/${tokenId}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates)
+        method: 'PATCH',
+        credentials: 'include', // Ensure session cookie is sent
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
       })
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to update')
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        // Surface validation details if present
+        if (errorData.details && Array.isArray(errorData.details)) {
+          throw new Error(`${errorData.error}: ${errorData.details.join(', ')}`)
+        }
+        throw new Error(errorData.error || 'Failed to update')
+      }
+
       setCharacter(await response.json())
       setIsEditMode(false)
       toast.success('Character updated!')
@@ -133,7 +149,8 @@ export default function CharacterDetailPage() {
 
   const name = character?.name || character?.metadata?.name || `Character #${tokenId}`
   const imageUrl = useLocalImage ? getLocalImagePath(tokenId) : getCharacterImageFallback(character?.metadata?.image, character?.image_url)
-  const level = character?.metadata?.level || character?.level || 1
+  // Prefer DB column over metadata (column is source of truth after saves)
+  const level = character?.level ?? character?.metadata?.level ?? 1
   const attrs = character
     ? { str: character.str || 0, dex: character.dex || 0, con: character.con || 0, int: character.int || 0, wis: character.wis || 0, cha: character.cha || 0 }
     : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }

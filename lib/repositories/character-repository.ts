@@ -4,7 +4,7 @@
  * Abstracts Supabase implementation details from business logic
  */
 
-import { supabase } from '../supabase'
+import { supabase, getSupabaseAdmin } from '../supabase'
 import { CHARACTERS_TABLE } from '@/lib/db/tables'
 import type { Character, CharacterFilters, CharactersResponse, CharacterConcord, Concord, EditableCharacterFields, OriginCount, OriginsResponse, AlignmentCount, AlignmentsResponse, TraitCount, TraitCountsResponse } from '@/types/character'
 import type { NormalizedLocationMetadata } from '@/lib/domain/location/metadata-types'
@@ -216,13 +216,21 @@ export class CharacterRepository implements ICharacterRepository {
 
   /**
    * Update character data
+   * Uses admin client (service role) to bypass RLS since auth is handled at API route level
    */
   async update(
     tokenId: number,
     updates: Partial<Pick<Character, EditableCharacterFields>>
   ): Promise<Character | null> {
+    // Use admin client for writes - auth/ownership is validated at API route level
+    const client = getSupabaseAdmin()
+    if (!client) {
+      console.error('[Repository] Supabase admin client not initialized (missing service role key)')
+      throw new Error('Database client not configured. Please check server configuration.')
+    }
+
     // Cast required: Supabase generated types may not allow partial updates on this table
-    const query = supabase.from(CHARACTERS_TABLE) as unknown as {
+    const query = client.from(CHARACTERS_TABLE) as unknown as {
       update: (values: Record<string, unknown>) => {
         eq: (column: string, value: number) => {
           select: () => {
