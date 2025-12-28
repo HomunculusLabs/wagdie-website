@@ -49,11 +49,17 @@ export class CharacterService {
 
   /**
    * Check if a wallet owns a specific character
+   * Checks both owner_address (unstaked) and staker_address (staked)
    */
   async isOwner(tokenId: number, walletAddress: string): Promise<boolean> {
     const character = await this.getCharacter(tokenId)
-    if (!character || !character.owner_address) return false
-    return character.owner_address.toLowerCase() === walletAddress.toLowerCase()
+    if (!character) return false
+
+    const addr = walletAddress.toLowerCase()
+    const owner = character.owner_address?.toLowerCase()
+    const staker = character.staker_address?.toLowerCase()
+
+    return owner === addr || staker === addr
   }
 }
 
