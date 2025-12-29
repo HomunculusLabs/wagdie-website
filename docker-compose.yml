@@ -76,7 +76,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: postgres
       DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
-      DB_ENC_KEY: supabaserealtimedevenckey
+      DB_ENC_KEY: supabaserealtime
       API_JWT_SECRET: ${JWT_SECRET}
       FLY_ALLOC_ID: fly123
       FLY_APP_NAME: realtime
@@ -155,7 +155,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "42069:3000"
     depends_on:
       - kong
     env_file:
