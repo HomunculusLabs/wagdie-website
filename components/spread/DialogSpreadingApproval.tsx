@@ -6,6 +6,7 @@
 'use client'
 
 import { DialogMask } from '@/components/shared/DialogMask'
+import { Button } from '@/components/ui'
 
 interface DialogSpreadingApprovalProps {
   isOpen: boolean
@@ -21,36 +22,36 @@ export function DialogSpreadingApproval({
   contractAddress
 }: DialogSpreadingApprovalProps) {
   return (
-    <DialogMask isOpen={isOpen} onClose={onClose}>
+    <DialogMask
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabelledby="approval-dialog-title"
+    >
       <div className="p-6">
-        <h2 className="text-2xl font-bold text-bone mb-4">Approval Required</h2>
+        <h2 id="approval-dialog-title" className="text-h3 font-display text-neutral-200 mb-4">
+          Approval Required
+        </h2>
 
-        <p className="text-ash mb-4">
+        <p className="text-body text-neutral-400 font-eskapade mb-4">
           Before burning corpses, you need to approve the spreading contract to access your ERC1155 tokens.
         </p>
 
-        <div className="bg-shadow rounded p-4 mb-6">
-          <p className="text-sm text-mist mb-2">Contract Address:</p>
-          <p className="text-xs text-bone font-mono break-all">{contractAddress}</p>
+        <div className="bg-black/40 border border-neutral-800 p-4 mb-6">
+          <p className="text-sm text-neutral-500 font-eskapade mb-2">Contract Address:</p>
+          <p className="text-xs text-neutral-300 font-mono break-all">{contractAddress}</p>
         </div>
 
-        <p className="text-sm text-mist mb-6">
+        <p className="text-sm text-neutral-500 font-eskapade mb-6">
           This is a one-time approval. You only need to do this once per contract.
         </p>
 
         <div className="flex gap-4">
-          <button
-            onClick={onApprove}
-            className="flex-1 px-6 py-3 bg-gold text-abyss font-bold rounded hover:bg-yellow-500 transition-colors"
-          >
+          <Button onClick={onApprove} className="flex-1">
             Approve Contract
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 px-6 py-3 bg-midnight text-ash border border-shadow rounded hover:text-bone transition-colors"
-          >
+          </Button>
+          <Button variant="secondary" onClick={onClose} className="flex-1">
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </DialogMask>

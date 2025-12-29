@@ -6,6 +6,7 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
+import { Button } from '@/components/ui'
 
 export default function AnimatedCharacterPage() {
   const params = useParams()
@@ -13,24 +14,21 @@ export default function AnimatedCharacterPage() {
   const tokenId = params.tokenId as string
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-bone mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-soul-950">
+      <div className="text-center max-w-md">
+        <h1 className="text-h1 font-display text-neutral-200 mb-4">
           Animated View
         </h1>
-        <p className="text-xl text-ash mb-8">
+        <p className="text-h3 text-soul-accent mb-8 font-eskapade">
           Character #{tokenId}
         </p>
-        <p className="text-mist mb-8">
+        <p className="text-body text-neutral-500 mb-8 font-eskapade">
           This feature is coming soon! <br />
           Animated character views will be displayed here.
         </p>
-        <button
-          onClick={() => router.push(`/characters/${tokenId}`)}
-          className="px-6 py-3 bg-gold text-abyss font-bold rounded hover:bg-yellow-500 transition-colors"
-        >
+        <Button onClick={() => router.push(`/characters/${tokenId}`)}>
           Back to Character Sheet
-        </button>
+        </Button>
       </div>
     </div>
   )

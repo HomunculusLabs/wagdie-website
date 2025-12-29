@@ -161,11 +161,11 @@ export function Header() {
                 World Map
               </Link>
               <Link
-                href="/about"
+                href="/lore"
                 onClick={closeDrawer}
                 className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"
               >
-                About Wagdie
+                Lore & History
               </Link>
               <Link
                 href="/spread"
