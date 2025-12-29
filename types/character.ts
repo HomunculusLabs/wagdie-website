@@ -34,6 +34,7 @@ export interface Character {
   staking_status?: StakingStatus
   image_url?: string
   burned?: boolean
+  /** Legacy: use infection_status instead. */
   infected?: boolean
   created_at?: string
   updated_at?: string

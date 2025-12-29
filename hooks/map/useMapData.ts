@@ -8,7 +8,8 @@ export function useMapData() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [stakedCharacters, setStakedCharacters] = useState<CharacterWithLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState('');
   const [loadingStages] = useState([
@@ -101,7 +102,9 @@ export function useMapData() {
 
       } catch (err) {
         console.error('[useMapData] Failed to fetch map data:', err);
-        setError(err as Error);
+        const message =
+          err instanceof Error ? err.message : 'Failed to fetch map data';
+        setError(message);
         setLoadingStage('Error loading data');
       } finally {
         setIsLoading(false);
@@ -112,13 +115,95 @@ export function useMapData() {
     fetchData();
   }, []);
 
+  const fetchStakedCharactersFromApi = async (): Promise<CharacterWithLocation[]> => {
+    const perPage = 100;
+    const maxPages = 50;
+    const rows: CharacterWithLocation[] = [];
+
+    for (let page = 1; page <= maxPages; page += 1) {
+      const response = await fetch(
+        `/api/characters?tab=staked&page=${page}&perPage=${perPage}&sort=asc`,
+        {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        const suffix = text ? ` - ${text}` : '';
+        throw new Error(
+          `Failed to fetch staked characters (${response.status})${suffix}`
+        );
+      }
+
+      const payload = (await response.json()) as {
+        characters?: CharacterWithLocation[];
+        totalCount?: number;
+        hasMore?: boolean;
+      };
+      const pageRows = Array.isArray(payload.characters) ? payload.characters : [];
+      rows.push(...pageRows);
+
+      const hasMore =
+        typeof payload.hasMore === 'boolean'
+          ? payload.hasMore
+          : typeof payload.totalCount === 'number'
+            ? rows.length < payload.totalCount
+            : pageRows.length === perPage;
+
+      if (!hasMore) {
+        break;
+      }
+    }
+
+    return rows;
+  };
+
+  const refetch = async (): Promise<void> => {
+    if (typeof window === 'undefined') return;
+
+    setIsRefreshing(true);
+
+    try {
+      const rows = await fetchStakedCharactersFromApi();
+      const locationMap = new Map(
+        locations.map((location) => [location.id, location])
+      );
+      const joined = rows.map((row) => {
+        const locationId =
+          typeof row.location_id === 'string' ? row.location_id : null;
+        const location = locationId ? locationMap.get(locationId) : null;
+
+        return {
+          ...row,
+          location: location
+            ? {
+                id: location.id,
+                name: location.name,
+                metadata: location.metadata,
+              }
+            : null,
+        } as CharacterWithLocation;
+      });
+
+      setStakedCharacters(joined);
+    } catch (err) {
+      console.error('[useMapData] Failed to refresh staked characters:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return {
     locations,
     stakedCharacters,
     isLoading,
+    isRefreshing,
     error,
     loadingProgress,
     loadingStage,
     loadingStages,
+    refetch,
   };
 }

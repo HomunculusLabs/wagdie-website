@@ -132,6 +132,7 @@ function CharactersPageContent() {
     totalPages,
     isLoading,
     isFetching,
+    isError,
   } = useCharacters({
     tab,
     sort,
@@ -322,8 +323,18 @@ function CharactersPageContent() {
               </div>
             )}
 
+            {isError && (
+              <Alert
+                variant="error"
+                title="Error"
+                className="mb-8"
+              >
+                Failed to load characters. Please try again.
+              </Alert>
+            )}
+
             {/* Empty State */}
-            {!isLoading && characters.length === 0 && (
+            {!isLoading && !isError && characters.length === 0 && (
               <Empty
                 message={hasActiveFilters
                   ? "No characters match your current filters"

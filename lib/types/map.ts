@@ -25,6 +25,7 @@ export interface Location {
   id: string;
   name: string;
   description?: string;
+  chain_location_id?: number | string;
   metadata: LocationMetadata;
   created_at: string;
   updated_at: string;

@@ -4,12 +4,13 @@
 
 export const wagdieWorldABI = [
   // Staking Functions
+  // IMPORTANT: Field order must match contract struct exactly (wagdieId first, then locationId)
   {
     inputs: [
       {
         components: [
-          { internalType: 'uint64', name: 'locationId', type: 'uint64' },
           { internalType: 'uint16', name: 'wagdieId', type: 'uint16' },
+          { internalType: 'uint64', name: 'locationId', type: 'uint64' },
         ],
         internalType: 'struct WagdieWorld.StakeWagdieParams[]',
         name: 'params',
@@ -39,8 +40,8 @@ export const wagdieWorldABI = [
     inputs: [
       {
         components: [
-          { internalType: 'uint64', name: 'locationId', type: 'uint64' },
           { internalType: 'uint16', name: 'wagdieId', type: 'uint16' },
+          { internalType: 'uint64', name: 'locationId', type: 'uint64' },
         ],
         internalType: 'struct WagdieWorld.ChangeWagdieLocationParams[]',
         name: 'params',
@@ -60,10 +61,22 @@ export const wagdieWorldABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  // Returns WagdieInfo struct with current staked location
   {
     inputs: [{ internalType: 'uint16', name: 'wagdieId', type: 'uint16' }],
-    name: 'wagdieIdToStakedLocation',
-    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
+    name: 'wagdieIdToInfo',
+    outputs: [
+      {
+        components: [
+          { internalType: 'uint64', name: 'locationIdCur', type: 'uint64' },
+          { internalType: 'address', name: 'owner', type: 'address' },
+          { internalType: 'uint32', name: 'emptySpace', type: 'uint32' },
+        ],
+        internalType: 'struct WagdieWorld.WagdieInfo',
+        name: '',
+        type: 'tuple',
+      },
+    ],
     stateMutability: 'view',
     type: 'function',
   },
@@ -100,9 +113,11 @@ export const wagdieWorldABI = [
       {
         components: [
           { internalType: 'string', name: 'name', type: 'string' },
-          { internalType: 'address', name: 'owner', type: 'address' },
-          { internalType: 'bool', name: 'nftsLocked', type: 'bool' },
-          { internalType: 'bool', name: 'exists', type: 'bool' },
+          { internalType: 'address', name: 'locationOwner', type: 'address' },
+          { internalType: 'int32', name: 'xCoordinate', type: 'int32' },
+          { internalType: 'int32', name: 'yCoordinate', type: 'int32' },
+          { internalType: 'bool', name: 'isLocationActive', type: 'bool' },
+          { internalType: 'bool', name: 'areNftsLocked', type: 'bool' },
         ],
         internalType: 'struct WagdieWorld.LocationInfo',
         name: '',

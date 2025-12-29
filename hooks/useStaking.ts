@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
-import { ContractError, TransactionHash, TransactionStatus, StakingStatus } from '@/types/blockchain'
+import { ContractError, ContractErrorType, TransactionHash, TransactionStatus, StakingStatus } from '@/types/blockchain'
 import { StakeWagdiesParams, UnstakeWagdiesParams } from '@/types/contracts'
 import { StakingService } from '@/lib/services/blockchain/staking'
 import { logError } from '@/lib/utils/errors'
@@ -16,6 +16,7 @@ import {
   showTransactionErrorToast,
   showApprovalRequiredToast,
   showApprovalSuccessToast,
+  showErrorToast,
 } from '@/lib/utils/toast'
 
 interface UseStakingResult {
@@ -195,8 +196,50 @@ export function useStaking(): UseStakingResult {
       const service = new StakingService({ publicClient, walletClient })
       await service.initialize()
 
+      if (locationId <= 0n) {
+        const err: ContractError = {
+          type: ContractErrorType.INVALID_PARAMS,
+          message: 'Invalid location ID',
+        }
+        setError(err)
+        setTxStatus(TransactionStatus.ERROR)
+        return
+      }
+
+      const stakingEnabled = await service.isStakingEnabled()
+      if (stakingEnabled.error) {
+        setError(stakingEnabled.error)
+        setTxStatus(TransactionStatus.ERROR)
+        showTransactionErrorToast(stakingEnabled.error)
+        return
+      }
+
+      if (!stakingEnabled.data) {
+        const err: ContractError = {
+          type: ContractErrorType.CONTRACT_ERROR,
+          message: 'Staking is currently disabled',
+        }
+        setError(err)
+        setTxStatus(TransactionStatus.ERROR)
+        showErrorToast('Staking Disabled', 'Staking is currently disabled on the contract')
+        return
+      }
+
       // Check if approved
       const isApproved = await checkApproval(BigInt(wagdieId))
+
+      if (process.env.NODE_ENV === 'development') {
+        const chainId = await publicClient.getChainId()
+        console.debug('[useStaking] stakeWagdie', {
+          wagdieId,
+          locationId,
+          locationIdString: locationId.toString(),
+          chainId,
+          address,
+          isApproved,
+        })
+      }
+
       if (!isApproved) {
         const err: ContractError = {
           type: 'contract_error' as any,
@@ -213,7 +256,7 @@ export function useStaking(): UseStakingResult {
         metadata: { wagdieId, locationId: locationId.toString() },
       })
 
-      const params: StakeWagdiesParams[] = [{ locationId, wagdieId }]
+      const params: StakeWagdiesParams[] = [{ wagdieId, locationId }]
       const result = await service.stakeWagdies(params, address)
 
       if (result.error) {
@@ -253,6 +296,16 @@ export function useStaking(): UseStakingResult {
             status: TransactionStatus.SUCCESS,
           })
           showTransactionSuccessToast(result.hash, 'Character staked successfully!')
+
+          try {
+            await fetch('/api/sync/staking', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tokenIds: [wagdieId] }),
+            })
+          } catch (syncError) {
+            console.warn('[useStaking] Failed to sync staking state to DB:', syncError)
+          }
         }
       }
     } catch (err) {
@@ -293,6 +346,15 @@ export function useStaking(): UseStakingResult {
     try {
       const service = new StakingService({ publicClient, walletClient })
       await service.initialize()
+
+      if (process.env.NODE_ENV === 'development') {
+        const chainId = await publicClient.getChainId()
+        console.debug('[useStaking] unstakeWagdie', {
+          wagdieId,
+          chainId,
+          address,
+        })
+      }
 
       addTransaction(txId, 'unstake-wagdie', {
         status: TransactionStatus.PENDING,
@@ -339,6 +401,16 @@ export function useStaking(): UseStakingResult {
             status: TransactionStatus.SUCCESS,
           })
           showTransactionSuccessToast(result.hash, 'Character unstaked successfully!')
+
+          try {
+            await fetch('/api/sync/staking', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tokenIds: [wagdieId] }),
+            })
+          } catch (syncError) {
+            console.warn('[useStaking] Failed to sync staking state to DB:', syncError)
+          }
         }
       }
     } catch (err) {

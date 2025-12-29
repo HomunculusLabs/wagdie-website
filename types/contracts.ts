@@ -15,18 +15,20 @@ export interface TameBeastsParams {
 }
 
 // Staking contract parameters
+// IMPORTANT: Field order must match contract struct exactly (wagdieId first, then locationId)
 export interface StakeWagdiesParams {
-  locationId: bigint
   wagdieId: number
+  locationId: bigint
 }
 
 export interface UnstakeWagdiesParams {
   wagdieId: number
 }
 
+// IMPORTANT: Field order must match contract struct exactly (wagdieId first, then locationId)
 export interface ChangeWagdieLocationParams {
-  locationId: bigint
   wagdieId: number
+  locationId: bigint
 }
 
 export interface AddLocationParams {

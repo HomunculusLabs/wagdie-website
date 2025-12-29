@@ -136,10 +136,13 @@ export function useOwnedCharacters(
 
       // Defensive filter: ensure all returned characters match the wallet
       // This protects against any backend bugs returning wrong characters
+      // Check both owner_address (unstaked) and staker_address (staked)
       const walletLower = wallet.toLowerCase()
-      const filtered = owned.filter(c =>
-        c?.owner_address?.toLowerCase() === walletLower
-      )
+      const filtered = owned.filter(c => {
+        const ownerMatch = c?.owner_address?.toLowerCase() === walletLower
+        const stakerMatch = c?.staker_address?.toLowerCase() === walletLower
+        return ownerMatch || stakerMatch
+      })
 
       // Stable ordering for UI
       const sorted = filtered.sort((a, b) => a.token_id - b.token_id)

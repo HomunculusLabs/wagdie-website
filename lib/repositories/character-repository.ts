@@ -91,11 +91,11 @@ export class CharacterRepository implements ICharacterRepository {
 
     // Apply tab-specific filters (additive to wallet filter)
     if (filters.tab === 'infected') {
-      // `wagdie_characters` uses a boolean column `infected`
-      query = query.eq('infected', true)
+      // `wagdie_characters` uses the canonical infection_status enum
+      query = query.eq('infection_status', 'infected')
     } else if (filters.tab === 'cured') {
-      // No explicit "cured" state in `wagdie_characters`; treat as "not infected"
-      query = query.eq('infected', false)
+      // Cured means 'not infected' - includes both 'healthy' and 'cured' statuses
+      query = query.neq('infection_status', 'infected')
     } else if (filters.tab === 'staked') {
       // Staked characters are those with a non-null location_id
       query = query.not('location_id', 'is', null)

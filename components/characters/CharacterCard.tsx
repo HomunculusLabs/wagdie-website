@@ -32,6 +32,7 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
 
   const level = character.metadata?.level || character.level
   const characterClass = character.class
+  const infectionStatus = character.infection_status ?? (character.infected ? 'infected' : 'healthy')
 
   const handleImageError = () => {
     if (useLocalImage) {
@@ -80,12 +81,12 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
               Fallen
             </span>
           )}
-          {character.infection_status === 'infected' && (
+          {infectionStatus === 'infected' && (
             <span className="px-2 py-0.5 bg-red-950/80 border border-red-900/50 text-red-400 text-caption font-display tracking-widest">
               Infected
             </span>
           )}
-          {character.infection_status === 'cured' && (
+          {infectionStatus === 'cured' && (
             <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-caption font-display tracking-widest">
               Cured
             </span>
@@ -120,4 +121,3 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
     </Card>
   )
 }
-

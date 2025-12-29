@@ -68,9 +68,19 @@ function normalizeLocation(raw: unknown): Location {
   const now = new Date().toISOString();
   const createdAt = typeof safeLoc.created_at === 'string' ? safeLoc.created_at : now;
   const updatedAt = typeof safeLoc.updated_at === 'string' ? safeLoc.updated_at : now;
+  const normalizedMetadata =
+    normalizeLocationMetadata(safeLoc.metadata) as unknown as Location['metadata'];
+  const metadataChainId =
+    isPlainObject(safeLoc.metadata) && 'chain_location_id' in safeLoc.metadata
+      ? (safeLoc.metadata as Record<string, unknown>).chain_location_id
+      : undefined;
+  const chainLocationId =
+    (safeLoc as { chain_location_id?: unknown }).chain_location_id ?? metadataChainId;
+
   return {
     ...(safeLoc as unknown as Location),
-    metadata: normalizeLocationMetadata(safeLoc.metadata) as unknown as Location['metadata'],
+    chain_location_id: chainLocationId as Location['chain_location_id'],
+    metadata: normalizedMetadata,
     created_at: createdAt,
     updated_at: updatedAt,
   };

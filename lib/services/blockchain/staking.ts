@@ -47,44 +47,36 @@ export class StakingService extends BaseBlockchainService {
     data?: StakingStatus
     error?: ContractError
   }> {
-    const contracts = [
-      {
+    return this.readContract(async () => {
+      const info = (await this.publicClient.readContract({
         address: this.contractAddresses.wagdieWorld,
         abi: wagdieWorldABI,
-        functionName: 'wagdieIdToStakedLocation' as const,
-        args: [wagdieId] as const,
-      },
-    ]
+        functionName: 'wagdieIdToInfo',
+        args: [wagdieId],
+      })) as { locationIdCur: bigint; owner: Address; emptySpace: number }
 
-    const result = await this.multicall<[bigint]>(contracts)
+      const locationId = info.locationIdCur
+      const isStaked = locationId > 0n
 
-    if (result.error) {
-      return { error: result.error }
-    }
+      // If staked, get location info
+      let locationInfo: LocationInfo | undefined
 
-    const [locationId] = result.data!
-    const isStaked = locationId > 0n
-
-    // If staked, get location info
-    let locationInfo: LocationInfo | undefined
-
-    if (isStaked) {
-      const locResult = await this.getLocationInfo(locationId)
-      if (locResult.data) {
-        locationInfo = locResult.data
+      if (isStaked) {
+        const locResult = await this.getLocationInfo(locationId)
+        if (locResult.data) {
+          locationInfo = locResult.data
+        }
       }
-    }
 
-    return {
-      data: {
+      return {
         tokenId: BigInt(wagdieId),
         isStaked,
         locationId: isStaked ? locationId : undefined,
         locationName: locationInfo?.name,
         locationOwner: locationInfo?.owner,
         nftsLocked: locationInfo?.nftsLocked,
-      },
-    }
+      } as StakingStatus
+    }, 'getStakingStatus')
   }
 
   async getStakedLocations(
@@ -97,21 +89,24 @@ export class StakingService extends BaseBlockchainService {
     const contracts = wagdieIds.map((wagdieId) => ({
       address: this.contractAddresses.wagdieWorld,
       abi: wagdieWorldABI,
-      functionName: 'wagdieIdToStakedLocation' as const,
+      functionName: 'wagdieIdToInfo' as const,
       args: [wagdieId] as const,
     }))
 
-    const result = await this.multicall<bigint[]>(contracts)
+    const result = await this.multicall<
+      { locationIdCur: bigint; owner: Address; emptySpace: number }[]
+    >(contracts)
 
     if (result.error) {
       return { error: result.error }
     }
 
     const locations = new Map<number, bigint>()
-    const locationIds = result.data ?? []
+    const infos = result.data ?? []
 
     wagdieIds.forEach((wagdieId, index) => {
-      locations.set(wagdieId, locationIds[index] ?? 0n)
+      const info = infos[index]
+      locations.set(wagdieId, info?.locationIdCur ?? 0n)
     })
 
     return { data: locations }
@@ -130,14 +125,21 @@ export class StakingService extends BaseBlockchainService {
         abi: wagdieWorldABI,
         functionName: 'locationIdToInfo',
         args: [locationId],
-      })) as { name: string; owner: Address; nftsLocked: boolean; exists: boolean }
+      })) as {
+        name: string
+        locationOwner: Address
+        xCoordinate: number
+        yCoordinate: number
+        isLocationActive: boolean
+        areNftsLocked: boolean
+      }
 
       return {
         locationId,
         name: info.name,
-        owner: info.owner,
-        nftsLocked: info.nftsLocked,
-        exists: info.exists,
+        owner: info.locationOwner,
+        nftsLocked: info.areNftsLocked,
+        exists: info.isLocationActive,
       } as LocationInfo
     }, 'getLocationInfo')
   }
@@ -242,7 +244,7 @@ export class StakingService extends BaseBlockchainService {
         address: this.contractAddresses.wagdieWorld,
         abi: wagdieWorldABI,
         functionName: 'stakeWagdies',
-        args: [params as readonly { locationId: bigint; wagdieId: number }[]],
+        args: [params as readonly { wagdieId: number; locationId: bigint }[]],
         account,
       })
 
@@ -302,7 +304,7 @@ export class StakingService extends BaseBlockchainService {
         address: this.contractAddresses.wagdieWorld,
         abi: wagdieWorldABI,
         functionName: 'changeWagdieLocations',
-        args: [params as readonly { locationId: bigint; wagdieId: number }[]],
+        args: [params as readonly { wagdieId: number; locationId: bigint }[]],
         account,
       })
 
