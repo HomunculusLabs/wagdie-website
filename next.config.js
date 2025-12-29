@@ -27,6 +27,32 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'storage.googleapis.com',
       },
+      // Twitter/X media domains
+      {
+        protocol: 'https',
+        hostname: 'pbs.twimg.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'abs.twimg.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'video.twimg.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ton.twimg.com',
+      },
+      // Discord CDN
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.discordapp.net',
+      },
     ],
     // Enable optimization for character images (Leaflet uses direct URLs, not Next/Image)
   },

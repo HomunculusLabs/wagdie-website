@@ -19,7 +19,7 @@ const sizes = {
 } as const;
 
 const baseStyles =
-  "relative inline-flex items-center justify-center font-eskapade transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden";
+  "relative inline-flex items-center justify-center font-eskapade transition-all duration-300 border disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent focus-visible:ring-offset-2 focus-visible:ring-offset-soul-950";
 
 export const Button = React.memo<ButtonProps>(({
   children,

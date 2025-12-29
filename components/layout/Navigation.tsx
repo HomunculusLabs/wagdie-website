@@ -14,7 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Characters', path: '/characters' },
   { label: 'World Map', path: '/map' },
   { label: 'Lore', path: '/lore' },
-  { label: 'Gather', path: '/gather' },
+  { label: 'Spread', path: '/spread' },
 ]
 
 interface NavigationProps {

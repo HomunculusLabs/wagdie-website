@@ -2,10 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar - WAGDIE Gothic Theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0C0C0C; /* soul-950 */
+  border-left: 1px solid #1a1410; /* soul-900 border */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3d3528; /* Muted gold/brown */
+  border-radius: 0; /* Sharp edges for gothic feel */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c8aa6e; /* soul-accent on hover */
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #d4af37; /* gold when clicked */
+}
+
+::-webkit-scrollbar-corner {
+  background: #0C0C0C; /* soul-950 */
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3d3528 #0C0C0C;
+}
+
 /* Custom font faces */
 @font-face {
   font-family: 'Wagdie Fraktur';
-  src: url('/fonts/wagdie.ttf') format('truetype');
+  src: url('/fonts/HoldMoney-Regular.ttf') format('truetype');
   font-display: swap;
 }
 
@@ -68,7 +102,7 @@
            focus:border-soul-accent focus:outline-none transition-colors;
   }
 
-  /* Button styles */
+  /* Legacy button styles - DEPRECATED: Use Button component from @/components/ui instead */
   .btn-primary {
     @apply px-4 py-2 bg-blood hover:bg-ember text-bone font-semibold rounded-md transition-colors duration-200;
   }

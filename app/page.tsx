@@ -53,10 +53,16 @@ const VideoPlayer = ({ videoSrc, posterSrc, className, hasConsent }: { videoSrc:
         <button
           type="button"
           onClick={handleUnmute}
-          className="absolute inset-0 flex items-center justify-center bg-black/45 text-neutral-100 text-sm md:text-base tracking-wide uppercase"
+          className="absolute inset-0 flex items-center justify-center bg-black/45 text-neutral-100 text-sm md:text-base tracking-wide uppercase transition-colors hover:bg-black/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent"
           aria-label="Unmute video"
         >
-          <span className="sr-only">Unmute video</span>
+          <span className="flex items-center gap-2 px-4 py-2 border border-neutral-600 bg-black/50 backdrop-blur-sm">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            </svg>
+            <span className="font-eskapade">Click to Unmute</span>
+          </span>
         </button>
       )}
     </div>
@@ -199,8 +205,12 @@ export default function HomePage() {
             </p>
 
             <div className="flex gap-6">
-                <Button className="h-12 px-8 text-base">Enter the Abyss</Button>
-                <Button variant="secondary" className="h-12 px-8 text-base">Read the Lore</Button>
+                <a href="/characters">
+                  <Button className="h-12 px-8 text-base">Enter the Abyss</Button>
+                </a>
+                <a href="/lore">
+                  <Button variant="secondary" className="h-12 px-8 text-base">Read the Lore</Button>
+                </a>
             </div>
         </div>
         
@@ -221,19 +231,19 @@ export default function HomePage() {
             title="Dynamic Narrative"
             description="The story unfolds through community decisions and on-chain events. No fate is pre-written."
             imageSrc="/images/story-1.png"
-            href="#"
+            href="/lore"
           />
           <FeatureCard
             title="Character Growth"
             description="Watch your character grow, change, and adapt to the dark world through permanent metadata updates."
             imageSrc="/images/story-2.png"
-            href="#"
+            href="/characters"
           />
           <FeatureCard
             title="The Library"
             description="Access the ever-expanding archives of history, prophecy, and forgotten truths."
             imageSrc="/images/story-3.png"
-            href="#"
+            href="/lore"
           />
         </Section>
 
@@ -243,19 +253,19 @@ export default function HomePage() {
             title="Character Sheets"
             description="Full RPG attribute systems with equipment slots, background stories, and alignment tracking."
             imageSrc="/images/interactive-1.png"
-            href="#"
+            href="/characters"
           />
           <FeatureCard
             title="The Pyre"
             description="Participate in high-stakes mechanics. Burn assets to spread influence or save the few."
             imageSrc="/images/interactive-2.png"
-            href="#"
+            href="/spread"
           />
           <FeatureCard
-            title="Artifacts"
-            description="Collect, trade, and sear special items for permanent character effects and visual changes."
+            title="World Map"
+            description="Explore the WAGDIE world, stake your characters at locations, and witness the fallen."
             imageSrc="/images/interactive-3.png"
-            href="#"
+            href="/map"
           />
         </Section>
 
@@ -265,20 +275,20 @@ export default function HomePage() {
             title="Community Vote"
             description="Vote on critical narrative decisions and shape the future of the world map."
             imageSrc="/images/community-1.png"
-            href="#"
+            href="https://discord.gg/wagdie"
             isExternal
           />
           <FeatureCard
             title="Collaborative Lore"
             description="Submit your character's backstory to be canonized in the official world history."
             imageSrc="/images/community-2.png"
-            href="#"
+            href="/lore"
           />
           <FeatureCard
             title="Open Development"
             description="The path is built together. Join the development discussions and contribute to the code."
             imageSrc="/images/community-3.png"
-            href="#"
+            href="https://github.com/wagdie"
             isExternal
           />
         </Section>
@@ -297,12 +307,16 @@ export default function HomePage() {
                 Join thousands of travelers exploring the dark world. The flame awaits your kindling.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                <Button variant="primary" className="min-w-[200px] h-14 text-body">
-                Join Discord
-                </Button>
-                <Button variant="secondary" className="min-w-[200px] h-14 text-body">
-                Explore Characters
-                </Button>
+                <a href="https://discord.gg/wagdie" target="_blank" rel="noopener noreferrer">
+                  <Button variant="primary" className="min-w-[200px] h-14 text-body">
+                  Join Discord
+                  </Button>
+                </a>
+                <a href="/characters">
+                  <Button variant="secondary" className="min-w-[200px] h-14 text-body">
+                  Explore Characters
+                  </Button>
+                </a>
             </div>
           </div>
         </section>

@@ -10,10 +10,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Top Vignette */}
       <div className="fixed top-0 left-0 w-full h-32 bg-gradient-to-b from-black to-transparent pointer-events-none z-10" />
       
-      {/* Content */}
-      <main className="w-full max-w-5xl px-4 py-8 md:py-16 z-0 relative flex flex-col flex-grow">
+      {/* Content - using div to avoid nested <main> elements (root main is in app/layout.tsx) */}
+      <div className="w-full max-w-5xl px-4 py-8 md:py-16 z-0 relative flex flex-col flex-grow">
         {children}
-      </main>
+      </div>
 
       {/* Bottom Vignette */}
       <div className="fixed bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent pointer-events-none z-10" />
