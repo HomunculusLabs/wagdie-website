@@ -9,8 +9,12 @@ import { spreadABI } from '@/lib/contracts/abis/spread'
 import { getContractAddresses, TOKEN_IDS } from '@/lib/contracts/addresses'
 import { DEAD_ADDRESS, ZERO_ADDRESS, normalizeAddress, validateAddress } from '@/lib/utils/blockchain'
 
-const DEFAULT_LOOKBACK_BLOCKS = 500_000n
-const MAX_LOOKBACK_BLOCKS = 5_000_000n
+/** Default number of blocks to scan for transaction history */
+export const DEFAULT_LOOKBACK_BLOCKS = 500_000n
+/** Maximum number of blocks to scan (prevents excessive RPC calls) */
+export const MAX_LOOKBACK_BLOCKS = 5_000_000n
+/** Maximum entries in the timestamp cache before cleanup */
+const MAX_TIMESTAMP_CACHE_SIZE = 500
 
 const TRANSFER_SINGLE_EVENT = parseAbiItem(
   'event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)'
@@ -229,6 +233,13 @@ export function useCharacterTxHistory(
 
       const block = await publicClient.getBlock({ blockNumber })
       const timestampMs = Number(block.timestamp * 1000n)
+
+      // Clean up old entries if cache is too large (FIFO eviction)
+      if (cache.size >= MAX_TIMESTAMP_CACHE_SIZE) {
+        const keysToDelete = Array.from(cache.keys()).slice(0, 100)
+        keysToDelete.forEach((k) => cache.delete(k))
+      }
+
       cache.set(blockNumber, timestampMs)
       return timestampMs
     },
