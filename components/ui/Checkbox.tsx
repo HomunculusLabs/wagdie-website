@@ -9,9 +9,9 @@ export const Checkbox: React.FC<CheckboxProps> = ({ label, className = '', ...pr
   return (
     <label className={`flex items-center gap-3 cursor-pointer group ${className}`}>
       <div className="relative flex items-center">
-        <input 
-          type="checkbox" 
-          className="peer appearance-none w-5 h-5 border border-neutral-700 bg-black/40 checked:bg-soul-900 checked:border-soul-accent transition-all duration-300"
+        <input
+          type="checkbox"
+          className="peer appearance-none w-5 h-5 border border-neutral-700 bg-black/40 checked:bg-soul-900 checked:border-soul-accent transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent focus-visible:ring-offset-2 focus-visible:ring-offset-soul-950"
           {...props}
         />
         <svg 

@@ -75,19 +75,31 @@ export function InfectionModal({
   const hasEnoughEth = ethBalance && ethBalance >= totalCost
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="w-full max-w-md rounded-lg border border-white/20 bg-black p-6">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      role="presentation"
+      onClick={(e) => e.target === e.currentTarget && !isSpreading && onClose()}
+    >
+      <div
+        className="w-full max-w-md border border-neutral-800 bg-soul-950 p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="infection-modal-title"
+      >
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-display text-white">
+          <h2 id="infection-modal-title" className="text-2xl font-display text-neutral-200">
             {mode === 'specific' ? 'Infect Character' : 'Spread Infection'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 transition-colors hover:text-white"
+            className="text-neutral-500 transition-colors hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent"
             disabled={isSpreading}
+            aria-label="Close modal"
           >
-            ✕
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -95,9 +107,9 @@ export function InfectionModal({
         <div className="space-y-4">
           {/* Character Info (specific mode) */}
           {mode === 'specific' && tokenId && (
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <p className="text-sm text-gray-400">Infecting Character</p>
-              <p className="text-lg font-display text-white">
+            <div className="border border-neutral-800 bg-black/40 p-4">
+              <p className="text-sm text-neutral-500 font-eskapade">Infecting Character</p>
+              <p className="text-lg font-display text-neutral-200">
                 {tokenName} #{tokenId.toString()}
               </p>
             </div>
@@ -106,36 +118,37 @@ export function InfectionModal({
           {/* Quantity Input (random mode) */}
           {mode === 'random' && (
             <div>
-              <label className="mb-2 block text-sm font-display text-gray-300">
+              <label htmlFor="infection-quantity" className="mb-2 block text-sm font-eskapade text-neutral-400">
                 Number of Infections
               </label>
               <input
+                id="infection-quantity"
                 type="number"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="1"
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                className="w-full border border-neutral-800 bg-black/40 px-4 py-2 text-neutral-200 placeholder-neutral-600 focus:border-soul-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent/50 font-eskapade"
                 min="1"
                 disabled={isSpreading}
               />
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-neutral-500 font-eskapade">
                 Randomly infect this many WAGDIE characters
               </p>
             </div>
           )}
 
           {/* Price Display */}
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div className="border border-neutral-800 bg-black/40 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">Infection Price</p>
-              <p className="text-lg font-display text-white">
+              <p className="text-sm text-neutral-500 font-eskapade">Infection Price</p>
+              <p className="text-lg font-display text-neutral-200">
                 {infectionPrice ? formatEther(infectionPrice) : '...'} ETH
               </p>
             </div>
             {mode === 'random' && quantityNum > 1 && (
-              <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-2">
-                <p className="text-sm font-display text-gray-300">Total Cost</p>
-                <p className="text-xl font-display text-white">
+              <div className="mt-2 flex items-center justify-between border-t border-neutral-800 pt-2">
+                <p className="text-sm font-display text-neutral-400">Total Cost</p>
+                <p className="text-xl font-display text-neutral-200">
                   {formatEther(totalCost)} ETH
                 </p>
               </div>
@@ -143,15 +156,15 @@ export function InfectionModal({
           </div>
 
           {/* Balance Display */}
-          <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div className="border border-neutral-800 bg-black/40 p-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">Your ETH Balance</p>
-              <p className="text-lg font-display text-white">
+              <p className="text-sm text-neutral-500 font-eskapade">Your ETH Balance</p>
+              <p className="text-lg font-display text-neutral-200">
                 {ethBalance ? formatEther(ethBalance) : '...'} ETH
               </p>
             </div>
             {!hasEnoughEth && totalCost > 0n && (
-              <p className="mt-2 text-xs text-red-400">
+              <p className="mt-2 text-xs text-red-400 font-eskapade">
                 Insufficient ETH balance. You need {formatEther(totalCost)} ETH.
               </p>
             )}
@@ -161,7 +174,7 @@ export function InfectionModal({
           <button
             onClick={handleInfect}
             disabled={!hasEnoughEth || isSpreading || !infectionPrice}
-            className="w-full rounded-lg bg-red-600 px-4 py-3 font-display text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full bg-red-900 border border-red-800 px-4 py-3 font-display text-red-400 transition-colors hover:bg-red-800 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             {isSpreading
               ? 'Spreading...'
@@ -181,14 +194,14 @@ export function InfectionModal({
 
           {/* Error Display */}
           {error && !txHash && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-              <p className="text-sm text-red-400">{error.message}</p>
+            <div className="border border-red-900/50 bg-red-950/30 p-4">
+              <p className="text-sm text-red-400 font-eskapade">{error.message}</p>
             </div>
           )}
 
           {/* Info */}
-          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-            <p className="text-xs text-red-300">
+          <div className="border border-red-900/30 bg-red-950/20 p-4">
+            <p className="text-xs text-red-400/80 font-eskapade">
               {mode === 'specific'
                 ? 'Infecting this character requires payment in ETH. The infection is permanent and changes the character state.'
                 : 'Random infections will be applied to random WAGDIE characters in the collection. Each infection costs ETH.'}

@@ -58,16 +58,21 @@ const config: Config = {
           accent: '#c8aa6e',     // Golden accent
           blood: '#8b2635',      // Blood red selection
           900: '#1a1410',        // Dark soul background
-          950: '#0d0a08',        // Darkest soul background
+          950: '#0C0C0C',        // Darkest soul background
         },
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
+        'toast-progress': 'toastProgress var(--toast-duration, 3s) linear forwards',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        toastProgress: {
+          '0%': { width: '100%' },
+          '100%': { width: '0%' },
         },
       },
     },

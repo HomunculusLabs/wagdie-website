@@ -206,7 +206,7 @@ export function FilterSidebar({
 
         {/* Scrollable Content */}
         {!isCollapsed && (
-          <div className="flex flex-col overflow-y-auto max-h-[calc(100vh-400px)] lg:max-h-none">
+          <div className="flex flex-col overflow-y-auto max-h-[calc(100vh-180px)] lg:max-h-[calc(100vh-120px)]">
             {/* Results Count */}
             <div className="px-4 py-3 border-b border-neutral-800/50">
               <p className="text-sm text-neutral-500 font-eskapade">

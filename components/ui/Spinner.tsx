@@ -9,7 +9,11 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg', className?: string }
   };
 
   return (
-    <div className={`relative inline-flex items-center justify-center ${sizes[size]} ${className}`}>
+    <div
+      role="status"
+      aria-label="Loading"
+      className={`relative inline-flex items-center justify-center ${sizes[size]} ${className}`}
+    >
       {/* Outer Ring */}
       <div className="absolute inset-0 border-2 border-transparent border-t-neutral-600 border-r-neutral-600 rounded-full animate-spin"></div>
       {/* Inner Ring Reverse */}

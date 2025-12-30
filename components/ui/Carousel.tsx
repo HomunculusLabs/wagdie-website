@@ -19,14 +19,22 @@ export const Carousel: React.FC<CarouselProps> = ({ items }) => {
       </div>
       
       {/* Controls */}
-      <div className="absolute inset-y-0 left-0 flex items-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={prev} className="bg-black/50 hover:bg-soul-accent/20 text-neutral-200 p-2 border border-neutral-700">
-            ←
+      <div className="absolute inset-y-0 left-0 flex items-center p-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <button
+          onClick={prev}
+          className="bg-black/50 hover:bg-soul-accent/20 text-neutral-200 p-2 border border-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          aria-label="Previous slide"
+        >
+          <span aria-hidden="true">←</span>
         </button>
       </div>
-      <div className="absolute inset-y-0 right-0 flex items-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={next} className="bg-black/50 hover:bg-soul-accent/20 text-neutral-200 p-2 border border-neutral-700">
-            →
+      <div className="absolute inset-y-0 right-0 flex items-center p-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <button
+          onClick={next}
+          className="bg-black/50 hover:bg-soul-accent/20 text-neutral-200 p-2 border border-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          aria-label="Next slide"
+        >
+          <span aria-hidden="true">→</span>
         </button>
       </div>
 
