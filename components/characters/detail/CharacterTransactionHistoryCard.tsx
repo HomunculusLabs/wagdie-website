@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react'
 import { useChainId } from 'wagmi'
 import type { Address } from '@/types/blockchain'
-import { useCharacterTxHistory } from '@/hooks/useCharacterTxHistory'
+import {
+  useCharacterTxHistory,
+  DEFAULT_LOOKBACK_BLOCKS,
+  MAX_LOOKBACK_BLOCKS,
+} from '@/hooks/useCharacterTxHistory'
 import {
   getTransactionUrl,
   normalizeTokenId,
@@ -25,8 +29,6 @@ type Props = {
 }
 
 const PAGE_SIZE = 10
-const DEFAULT_LOOKBACK_BLOCKS = 500_000n
-const MAX_LOOKBACK_BLOCKS = 5_000_000n
 
 export function CharacterTransactionHistoryCard({
   tokenId,

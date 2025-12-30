@@ -29,6 +29,7 @@ export function CharacterWalletTab({
         tokenId={tokenId}
         ownerAddress={ownerAddress}
         stakerAddress={stakerAddress}
+        className="md:col-span-2"
       />
     </div>
   )
