@@ -209,6 +209,27 @@ services:
       - default
     restart: unless-stopped
 
+  searing-indexer:
+    build:
+      context: .
+      dockerfile: scripts/indexer/Dockerfile
+    command: ["npx", "tsx", "scripts/indexer/searing-indexer.ts"]
+    depends_on:
+      - kong
+    environment:
+      WS_RPC_URL: ${WS_RPC_URL}
+      NEXT_PUBLIC_SUPABASE_URL: http://kong:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY}
+      STATE_FILE: /app/data/searing-state.json
+      CHAIN_ID: 1
+      START_BLOCK: 15422334
+    volumes:
+      - searing-indexer-data:/app/data
+    networks:
+      - default
+    restart: unless-stopped
+
 networks:
   homelab_homelab:
     external: true
@@ -217,3 +238,4 @@ volumes:
   db-data:
   indexer-data:
   infection-indexer-data:
+  searing-indexer-data:
