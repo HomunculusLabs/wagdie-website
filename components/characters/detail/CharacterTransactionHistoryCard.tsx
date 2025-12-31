@@ -3,11 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useChainId } from 'wagmi'
 import type { Address } from '@/types/blockchain'
-import {
-  useCharacterTxHistory,
-  DEFAULT_LOOKBACK_BLOCKS,
-  MAX_LOOKBACK_BLOCKS,
-} from '@/hooks/useCharacterTxHistory'
+import { useCharacterTxHistory } from '@/hooks/useCharacterTxHistory'
 import {
   getTransactionUrl,
   normalizeTokenId,
@@ -38,7 +34,6 @@ export function CharacterTransactionHistoryCard({
 }: Props) {
   const chainId = useChainId()
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [lookbackBlocks, setLookbackBlocks] = useState(DEFAULT_LOOKBACK_BLOCKS)
 
   const normalizedTokenId = useMemo(() => normalizeTokenId(tokenId), [tokenId])
 
@@ -46,14 +41,11 @@ export function CharacterTransactionHistoryCard({
     items,
     isLoading,
     error,
-    fromBlock,
-    toBlock,
     refresh,
   } = useCharacterTxHistory({
     tokenId: normalizedTokenId,
     ownerAddress,
     stakerAddress,
-    lookbackBlocks,
   })
 
   const visibleItems = useMemo(
@@ -61,20 +53,9 @@ export function CharacterTransactionHistoryCard({
     [items, visibleCount]
   )
 
-  const canSearchOlder = lookbackBlocks < MAX_LOOKBACK_BLOCKS
-
   const handleRefresh = async () => {
     setVisibleCount(PAGE_SIZE)
     await refresh()
-  }
-
-  const handleSearchOlder = () => {
-    if (!canSearchOlder) return
-    setVisibleCount(PAGE_SIZE)
-    setLookbackBlocks((current) => {
-      const next = current * 2n
-      return next > MAX_LOOKBACK_BLOCKS ? MAX_LOOKBACK_BLOCKS : next
-    })
   }
 
   const handleShowMore = () => {
@@ -91,13 +72,6 @@ export function CharacterTransactionHistoryCard({
     return 'Unknown'
   }
 
-  const renderRange = () => {
-    if (fromBlock === undefined || toBlock === undefined) {
-      return 'Scanning blocks --'
-    }
-    return `Scanning blocks ${fromBlock.toString()} -> ${toBlock.toString()}`
-  }
-
   return (
     <Card className={className}>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between space-y-0 pb-2">
@@ -105,29 +79,16 @@ export function CharacterTransactionHistoryCard({
           <CardTitle>On-chain History</CardTitle>
           <CardDescription>
             Infections and cures recorded on-chain for this character.
-            <span className="block text-[10px] font-display tracking-widest text-neutral-500 mt-1">
-              {renderRange()}
-            </span>
           </CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="h-8 px-3 text-xs"
-          >
-            {isLoading ? <Spinner size="sm" /> : 'Refresh'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleSearchOlder}
-            disabled={isLoading || !canSearchOlder}
-            className="h-8 px-3 text-xs"
-          >
-            Search older
-          </Button>
-        </div>
+        <Button
+          variant="secondary"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="h-8 px-3 text-xs"
+        >
+          {isLoading ? <Spinner size="sm" /> : 'Refresh'}
+        </Button>
       </CardHeader>
       <CardContent>
         {error && !isLoading && (
