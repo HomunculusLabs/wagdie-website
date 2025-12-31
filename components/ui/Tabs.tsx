@@ -101,8 +101,6 @@ export const Tabs = React.memo<TabsProps>(({
     }
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _activeItem = items.find(item => item.id === activeId);
 
   // Determine effective orientation based on variant
   const effectiveOrientation = variant === 'vertical' ? 'vertical' : orientation;
@@ -110,8 +108,8 @@ export const Tabs = React.memo<TabsProps>(({
   // Container classes based on variant
   const tabListClasses = variant === 'vertical'
     ? 'flex flex-col gap-1 w-full'
-    : `flex flex-wrap justify-center gap-2 md:gap-4 border-b border-neutral-800 pb-1 mb-8 ${
-        orientation === 'vertical' ? 'flex-col items-start border-b-0 border-r' : ''
+    : `flex flex-wrap justify-center gap-2 md:gap-4 border-b border-midnight-light/30 pb-1 mb-8 ${
+        orientation === 'vertical' ? 'flex-col items-start border-b-0 border-r border-midnight-light/30' : ''
       }`;
 
   // Button classes based on variant
@@ -124,8 +122,8 @@ export const Tabs = React.memo<TabsProps>(({
         focus:outline-none focus-visible:ring-1 focus-visible:ring-soul-accent/50
         ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${isActive
-          ? 'bg-soul-accent/10 text-soul-accent border-l-2 border-soul-accent'
-          : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 border-l-2 border-transparent'
+          ? 'bg-soul-accent/10 text-soul-accent border-l-2 border-soul-accent shadow-glow-sm'
+          : 'text-mist hover:text-bone hover:bg-midnight/50 border-l-2 border-transparent'
         }
       `;
     }
@@ -137,8 +135,8 @@ export const Tabs = React.memo<TabsProps>(({
       focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent/50
       ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
       ${isActive
-        ? 'border-soul-accent text-soul-accent drop-shadow-[0_0_8px_rgba(200,170,110,0.4)]'
-        : 'border-transparent text-neutral-600 hover:text-neutral-400 hover:border-neutral-800'
+        ? 'border-soul-accent text-soul-accent drop-shadow-[0_0_12px_rgba(200,170,110,0.4)]'
+        : 'border-transparent text-mist hover:text-ash hover:border-midnight-light'
       }
     `;
   };
@@ -174,7 +172,7 @@ export const Tabs = React.memo<TabsProps>(({
               {variant === 'default' && (
                 <div
                   aria-hidden="true"
-                  className={`absolute inset-0 bg-soul-accent/5 translate-y-full transition-transform duration-300 ${isActive ? 'translate-y-0' : 'group-hover:translate-y-0'}`}
+                  className={`absolute inset-0 bg-soul-accent/10 translate-y-full transition-transform duration-300 ${isActive ? 'translate-y-0' : 'group-hover:translate-y-0'}`}
                 />
               )}
 

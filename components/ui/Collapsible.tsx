@@ -18,7 +18,7 @@ export const Collapsible: React.FC<CollapsibleProps> = ({ trigger, children, def
         className="cursor-pointer flex items-center justify-between"
       >
         {trigger}
-        <span className={`text-neutral-600 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}>
+        <span className={`text-mist transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}>
              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </span>
       </div>

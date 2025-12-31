@@ -38,30 +38,30 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
   return (
     <div className="flex flex-col gap-2 w-full" ref={containerRef}>
         {label && (
-        <label className="text-caption tracking-widest uppercase text-neutral-500 font-eskapade">
+        <label className="text-caption tracking-widest uppercase text-mist font-eskapade">
           {label}
         </label>
       )}
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-between flex items-center bg-black/20 border border-neutral-800 px-3 py-2 text-body font-eskapade text-neutral-300 hover:bg-neutral-900 transition-colors"
+          className="w-full justify-between flex items-center bg-midnight/30 border border-midnight-light/50 px-3 py-2 text-body font-eskapade text-ash hover:bg-midnight/50 transition-colors uppercase tracking-widest text-xs"
         >
           {selectedLabel || placeholder}
-          <svg className="ml-2 h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <svg className="ml-2 h-4 w-4 opacity-30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 z-50 w-full mt-1 bg-soul-950 border border-neutral-800 shadow-xl p-1 animate-fade-in">
+          <div className="absolute top-full left-0 z-50 w-full mt-1 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl p-1 animate-fade-in rounded-sm">
              <input
-                className="w-full bg-neutral-900 border border-neutral-800 p-2 text-body-sm text-neutral-200 mb-1 outline-none focus:border-soul-accent"
+                className="w-full bg-midnight/50 border border-midnight-light/30 p-2 text-body-sm text-bone mb-1 outline-none focus:border-soul-accent font-eskapade uppercase tracking-widest text-xs"
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
              />
              <div className="max-h-60 overflow-y-auto">
                 {filteredOptions.length === 0 ? (
-                    <div className="p-2 text-body-sm text-neutral-600 text-center">No results.</div>
+                    <div className="p-2 text-body-sm text-mist text-center uppercase tracking-widest opacity-50">No results.</div>
                 ) : (
                     filteredOptions.map((opt) => (
                         <div
@@ -72,8 +72,8 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
                                 setSearch("");
                             }}
                             className={`
-                                cursor-pointer px-2 py-1.5 text-body-sm font-eskapade flex items-center
-                                ${value === opt.value ? 'text-soul-accent bg-neutral-900' : 'text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'}
+                                cursor-pointer px-2 py-1.5 text-body-sm font-eskapade flex items-center uppercase tracking-widest text-xs transition-colors
+                                ${value === opt.value ? 'text-soul-accent bg-midnight' : 'text-ash hover:bg-midnight/50 hover:text-bone'}
                             `}
                         >
                             <span className={`mr-2 h-4 w-4 flex items-center justify-center ${value === opt.value ? 'opacity-100' : 'opacity-0'}`}>

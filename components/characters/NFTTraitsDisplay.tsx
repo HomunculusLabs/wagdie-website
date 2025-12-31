@@ -46,7 +46,7 @@ export function NFTTraitsDisplay({
           key={trait.type}
           variant={trait.category === 'identity' ? 'accent' : 'default'}
         >
-          {trait.type}: {trait.value}
+          <span className="lowercase">{trait.type}: {trait.value}</span>
         </Badge>
       ))}
     </div>

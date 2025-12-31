@@ -23,7 +23,7 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
   const [useLocalImage, setUseLocalImage] = useState(true)
 
   // Extract data from metadata if available, otherwise use direct fields
-  const name = character.metadata?.name || character.name || `Character #${character.token_id}`
+  const name = character.metadata?.name || character.name || `character #${character.token_id}`
 
   // Use local image first, fallback to IPFS if local fails
   const localImageUrl = getLocalImagePath(character.token_id)
@@ -61,7 +61,7 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
       <div className="relative w-full aspect-square overflow-hidden bg-neutral-900">
         {/* Loading skeleton */}
         {isLoading && (
-          <div className="absolute inset-0 bg-neutral-800 animate-pulse" />
+          <div className="absolute inset-0 bg-midnight animate-pulse" />
         )}
         <Image
           src={imageUrl}
@@ -74,8 +74,8 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
           onError={handleImageError}
         />
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        {/* Solid overlay */}
+        <div className="absolute inset-0 bg-black/20" />
 
         {/* Status Badges */}
         <div className="absolute top-2 right-2 flex flex-col gap-1">
@@ -118,14 +118,14 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
 
       {/* Character Info */}
       <CardContent className="p-4">
-        <h3 className="text-h4 font-display text-neutral-200 group-hover:text-soul-accent transition-colors duration-300 truncate">
-          {name}
+        <h3 className="text-h4 font-display text-bone group-hover:text-soul-accent transition-colors duration-300 truncate lowercase">
+          {name.toLowerCase()}
         </h3>
         {(characterClass || level) && (
-          <p className="text-body-sm text-neutral-500 font-eskapade mt-1">
-            {characterClass && `${characterClass}`}
+          <p className="text-body-sm text-mist font-eskapade mt-1 lowercase">
+            {characterClass && `${characterClass.toLowerCase()}`}
             {characterClass && level && ' · '}
-            {level && `Level ${level}`}
+            {level && `level ${level}`}
           </p>
         )}
       </CardContent>

@@ -34,7 +34,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ trigger, children }) =
       {visible && (
         <div 
             ref={menuRef}
-            className="fixed z-50 w-48 bg-soul-950 border border-neutral-800 shadow-[0_0_20px_rgba(0,0,0,0.8)] py-1 animate-fade-in"
+            className="fixed z-50 w-48 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl py-1 animate-fade-in rounded-sm overflow-hidden"
             style={{ top: position.y, left: position.x }}
         >
           {children}
@@ -46,17 +46,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ trigger, children }) =
 
 export const ContextMenuItem: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({ className = '', ...props }) => (
     <button
-      className={`block w-full text-left px-4 py-2 text-sm font-eskapade text-neutral-400 hover:bg-neutral-900 hover:text-soul-accent transition-colors ${className}`}
+      className={`block w-full text-left px-4 py-2 text-sm font-eskapade text-ash hover:bg-midnight/50 hover:text-bone transition-all duration-200 ${className}`}
       {...props}
     />
 );
 
 export const ContextMenuSeparator: React.FC = () => (
-    <div className="h-px bg-neutral-800 my-1 mx-2" />
+    <div className="h-px bg-midnight-light/20 my-1 mx-2" />
 );
 
 export const ContextMenuLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="px-4 py-1 text-xs font-display  tracking-widest text-neutral-600">
+    <div className="px-4 py-1 text-xs font-display tracking-widest text-mist uppercase">
         {children}
     </div>
 );

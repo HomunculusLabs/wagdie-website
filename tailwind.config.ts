@@ -37,14 +37,16 @@ const config: Config = {
       },
       colors: {
         // Gothic dark theme - Backgrounds
-        abyss: '#0a0a0a',        // Deepest black
-        shadow: '#1a1a1a',       // Card/panel backgrounds
-        midnight: '#252525',     // Hover states, borders
+        abyss: '#050505',        // Deepest black - Base background
+        shadow: '#0a0a0a',       // Section background
+        midnight: '#121212',     // Component background
+        'midnight-light': '#1a1a1a', // Hover states, borders
 
         // Text colors
         bone: '#e8e8e8',         // Primary text (off-white)
         ash: '#b0b0b0',          // Secondary text
         mist: '#707070',         // Tertiary text, disabled
+        dark: '#404040',         // Muted/Quiet text
 
         // Accent colors - Gothic fantasy
         blood: '#8b2635',        // Primary accent (muted red)
@@ -59,7 +61,15 @@ const config: Config = {
           blood: '#8b2635',      // Blood red selection
           900: '#1a1410',        // Dark soul background
           950: '#0C0C0C',        // Darkest soul background
+          800: '#251c16',        // Muted soul background
         },
+      },
+      backgroundImage: {
+        'glass': 'rgba(255, 255, 255, 0.05)',
+      },
+      boxShadow: {
+        'soul-glow': '0 0 20px rgba(200, 170, 110, 0.15)',
+        'blood-glow': '0 0 20px rgba(139, 38, 53, 0.15)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',

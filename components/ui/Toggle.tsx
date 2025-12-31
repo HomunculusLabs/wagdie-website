@@ -35,8 +35,8 @@ export const Toggle: React.FC<ToggleProps> = ({
         inline-flex items-center justify-center rounded-sm text-sm font-medium transition-colors 
         h-9 px-3 border
         ${isPressed 
-          ? 'bg-soul-900 text-soul-accent border-soul-accent shadow-[0_0_10px_rgba(200,170,110,0.2)]' 
-          : 'bg-transparent text-neutral-400 border-neutral-800 hover:bg-neutral-900 hover:text-neutral-200'
+          ? 'bg-soul-900 text-soul-accent border-soul-accent shadow-glow-sm' 
+          : 'bg-transparent text-mist border-midnight-light/50 hover:bg-midnight/50 hover:text-bone'
         }
       `}
     >

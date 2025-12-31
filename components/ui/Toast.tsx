@@ -33,10 +33,10 @@ export const Toast: React.FC<ToastProps> = ({
   }, [isVisible, duration, onClose]);
 
   const variants = {
-    default: "border-neutral-700 bg-neutral-900 text-neutral-300",
-    success: "border-soul-accent/50 bg-soul-900 text-soul-accent shadow-[0_0_15px_rgba(200,170,110,0.1)]",
-    error: "border-red-900/50 bg-red-950/90 text-red-400 shadow-[0_0_15px_rgba(153,27,27,0.1)]",
-    warning: "border-orange-900/50 bg-orange-950/90 text-orange-400",
+    default: "border-midnight-light/50 bg-soul-950/95 text-bone shadow-2xl",
+    success: "border-soul-accent/50 bg-soul-950/95 text-soul-accent shadow-soul-glow",
+    error: "border-blood/50 bg-soul-950/95 text-blood shadow-blood-glow",
+    warning: "border-ember/50 bg-soul-950/95 text-ember",
   };
 
   const icons = {
@@ -60,7 +60,7 @@ export const Toast: React.FC<ToastProps> = ({
     <div 
       className={`
         fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 
-        border backdrop-blur-md max-w-sm w-full
+        border backdrop-blur-xl max-w-sm w-full rounded-sm
         transition-all duration-500 ease-out transform
         ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
         ${variants[variant]}
@@ -68,7 +68,7 @@ export const Toast: React.FC<ToastProps> = ({
     >
       <div className="shrink-0">{icons[variant]}</div>
       <div className="flex-1">
-        <p className="font-display tracking-wide text-sm">{message}</p>
+        <p className="font-display tracking-widest text-sm uppercase">{message}</p>
       </div>
       {/* Progress bar for timer */}
       <div

@@ -93,10 +93,10 @@ export function LevelExperienceEditor({
   // Display mode
   if (!isEditMode || !isOwner) {
     return (
-      <p className={`text-lg font-display  tracking-widest text-soul-accent ${className}`}>
-        {characterClass ? `${characterClass} • ` : ''}Level {stats.level ?? 1}
+      <p className={`text-lg font-display tracking-widest text-soul-accent lowercase ${className}`}>
+        {characterClass ? `${characterClass.toLowerCase()} • ` : ''}level {stats.level ?? 1}
         {stats.experience !== null && stats.experience > 0 && (
-          <span className="text-neutral-500 text-md ml-2">({stats.experience.toLocaleString()} XP)</span>
+          <span className="text-mist text-md ml-2 lowercase">({stats.experience.toLocaleString()} xp)</span>
         )}
       </p>
     )

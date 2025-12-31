@@ -6,15 +6,15 @@ export const Calendar: React.FC = () => {
   const dates = Array.from({ length: 31 }, (_, i) => i + 1);
 
   return (
-    <div className="w-full max-w-[280px] border border-neutral-800 bg-black/40 p-4">
-      <div className="flex justify-between items-center mb-4 border-b border-neutral-800 pb-2">
-        <h4 className="font-display  text-soul-accent tracking-widest text-sm">Moon of Frost</h4>
-        <div className="text-xs text-neutral-500">Year 4092</div>
+    <div className="w-full max-w-[280px] border border-midnight-light/50 bg-soul-900/40 backdrop-blur-sm p-4 rounded-sm shadow-2xl">
+      <div className="flex justify-between items-center mb-4 border-b border-midnight-light/30 pb-2">
+        <h4 className="font-display text-soul-accent tracking-widest text-sm uppercase">Moon of Frost</h4>
+        <div className="text-[10px] text-mist font-eskapade uppercase tracking-widest">Year 4092</div>
       </div>
       
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
         {days.map(d => (
-            <div key={d} className="text-[10px]  text-neutral-600 font-display">{d}</div>
+            <div key={d} className="text-[10px] text-mist font-display uppercase tracking-tighter opacity-70">{d}</div>
         ))}
       </div>
       
@@ -26,9 +26,9 @@ export const Calendar: React.FC = () => {
                 <button 
                     key={date} 
                     className={`
-                        aspect-square flex items-center justify-center text-xs font-eskapade transition-colors
-                        ${isToday ? 'text-soul-accent border border-soul-accent' : 'text-neutral-400 hover:bg-neutral-800'}
-                        ${isSelected ? 'bg-soul-900 text-soul-accent shadow-inner' : ''}
+                        aspect-square flex items-center justify-center text-xs font-eskapade transition-all duration-300 rounded-sm
+                        ${isToday ? 'text-soul-accent border border-soul-accent shadow-soul-glow' : 'text-ash hover:bg-midnight/50 hover:text-bone'}
+                        ${isSelected ? 'bg-soul-900 text-soul-accent border border-soul-accent/50 shadow-inner' : ''}
                     `}
                 >
                     {date}

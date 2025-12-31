@@ -11,7 +11,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({ label, className = '', ...pr
       <div className="relative flex items-center">
         <input
           type="checkbox"
-          className="peer appearance-none w-5 h-5 border border-neutral-700 bg-black/40 checked:bg-soul-900 checked:border-soul-accent transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent focus-visible:ring-offset-2 focus-visible:ring-offset-soul-950"
+          className="peer appearance-none w-5 h-5 border border-midnight-light/50 bg-midnight/30 checked:bg-soul-900 checked:border-soul-accent transition-all duration-300 focus:outline-none focus-visible:ring-1 focus-visible:ring-soul-accent"
           {...props}
         />
         <svg 
@@ -20,11 +20,11 @@ export const Checkbox: React.FC<CheckboxProps> = ({ label, className = '', ...pr
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </div>
       {label && (
-        <span className="text-sm font-eskapade text-neutral-500 group-hover:text-neutral-300 transition-colors select-none">
+        <span className="text-sm font-eskapade text-mist group-hover:text-ash transition-colors select-none uppercase tracking-widest">
           {label}
         </span>
       )}

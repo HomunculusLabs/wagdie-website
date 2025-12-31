@@ -6,23 +6,14 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center bg-soul-950 text-neutral-300 selection:bg-soul-blood selection:text-white overflow-x-hidden">
-      {/* Top Vignette */}
-      <div className="fixed top-0 left-0 w-full h-32 bg-gradient-to-b from-black to-transparent pointer-events-none z-10" />
-      
+    <div className="min-h-screen flex flex-col items-center bg-soul-950 text-ash selection:bg-blood selection:text-white overflow-x-hidden">
       {/* Content - using div to avoid nested <main> elements (root main is in app/layout.tsx) */}
-      <div className="w-full max-w-5xl px-4 py-8 md:py-16 z-0 relative flex flex-col flex-grow">
-        {children}
-      </div>
-
-      {/* Bottom Vignette */}
-      <div className="fixed bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent pointer-events-none z-10" />
       
       {/* Corner Ornaments (Decorative) */}
-      <div className="fixed top-4 left-4 w-16 h-16 border-t-2 border-l-2 border-soul-accent/20 pointer-events-none z-20" />
-      <div className="fixed top-4 right-4 w-16 h-16 border-t-2 border-r-2 border-soul-accent/20 pointer-events-none z-20" />
-      <div className="fixed bottom-4 left-4 w-16 h-16 border-b-2 border-l-2 border-soul-accent/20 pointer-events-none z-20" />
-      <div className="fixed bottom-4 right-4 w-16 h-16 border-b-2 border-r-2 border-soul-accent/20 pointer-events-none z-20" />
+      <div className="fixed top-4 left-4 w-16 h-16 border-t font-display  border-l border-soul-accent/20 pointer-events-none z-20" />
+      <div className="fixed top-4 right-4 w-16 h-16 border-t border-r border-soul-accent/20 pointer-events-none z-20" />
+      <div className="fixed bottom-4 left-4 w-16 h-16 border-b border-l border-soul-accent/20 pointer-events-none z-20" />
+      <div className="fixed bottom-4 right-4 w-16 h-16 border-b border-r border-soul-accent/20 pointer-events-none z-20" />
     </div>
   );
 };

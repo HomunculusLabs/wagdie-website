@@ -13,14 +13,14 @@ export const Input: React.FC<InputProps> = ({ label, className = '', id: provide
       {label && (
         <label
           htmlFor={inputId}
-          className="text-caption tracking-widest uppercase text-neutral-500 font-eskapade"
+          className="text-caption tracking-widest uppercase text-mist font-eskapade group-focus-within:text-soul-accent transition-colors duration-300"
         >
           {label}
         </label>
       )}
       <input
         id={inputId}
-        className={`bg-transparent border-b border-neutral-800 py-2 px-1 text-body font-eskapade placeholder-neutral-700 focus:outline-none focus:border-soul-accent focus:bg-soul-accent/5 focus-visible:ring-2 focus-visible:ring-soul-accent/50 transition-all duration-300 text-neutral-200 ${className}`}
+        className={`bg-midnight/30 border-b border-midnight-light py-2 px-2 text-body font-eskapade placeholder-mist/30 focus:outline-none focus:border-soul-accent focus:bg-soul-accent/5 transition-all duration-300 text-bone ${className}`}
         {...props}
       />
     </div>

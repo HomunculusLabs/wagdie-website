@@ -11,12 +11,12 @@ export const Slider: React.FC<SliderProps> = ({ label, valueDisplay = false, cla
     <div className="flex flex-col gap-4 w-full">
       <div className="flex justify-between items-end">
         {label && (
-          <label className="text-xs  tracking-widest text-neutral-500 font-display">
+          <label className="text-[10px] tracking-widest text-mist font-display uppercase">
             {label}
           </label>
         )}
         {valueDisplay && (
-          <span className="text-xs font-mono text-soul-accent border border-soul-accent/20 px-1.5 py-0.5 bg-black/50">
+          <span className="text-[10px] font-mono text-soul-accent border border-soul-accent/20 px-1.5 py-0.5 bg-midnight/50 rounded-sm">
             {props.value}
           </span>
         )}
@@ -40,9 +40,9 @@ export const Slider: React.FC<SliderProps> = ({ label, valueDisplay = false, cla
             
             [&::-webkit-slider-runnable-track]:w-full
             [&::-webkit-slider-runnable-track]:h-1
-            [&::-webkit-slider-runnable-track]:bg-neutral-800
+            [&::-webkit-slider-runnable-track]:bg-midnight
             [&::-webkit-slider-runnable-track]:border
-            [&::-webkit-slider-runnable-track]:border-neutral-900
+            [&::-webkit-slider-runnable-track]:border-midnight-light/30
           `}
           {...props}
         />

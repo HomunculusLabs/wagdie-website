@@ -56,8 +56,8 @@ export function NameEditor({
   // Display mode (not editing or not owner)
   if (!isEditMode || !isOwner) {
     return (
-      <h2 className={`text-4xl md:text-5xl font-display  tracking-wider text-neutral-100 ${className}`}>
-        {name || 'Unnamed'}
+      <h2 className={`text-4xl md:text-5xl font-display tracking-wider text-bone lowercase ${className}`}>
+        {name?.toLowerCase() || 'unnamed'}
       </h2>
     )
   }
@@ -73,11 +73,11 @@ export function NameEditor({
         maxLength={100}
         placeholder="Enter character name..."
         className={`
-          w-full bg-black/40 border px-4 py-2
-          text-3xl md:text-4xl font-display  tracking-wider text-neutral-100
-          placeholder:text-neutral-600 placeholder:normal-case placeholder:tracking-normal
+          w-full bg-midnight/50 border px-4 py-2
+          text-3xl md:text-4xl font-display tracking-wider text-bone lowercase
+          placeholder:text-mist placeholder:normal-case placeholder:tracking-normal
           focus:outline-none focus:ring-2 focus:ring-soul-accent/50
-          ${error ? 'border-red-500' : 'border-neutral-700 focus:border-soul-accent'}
+          ${error ? 'border-blood' : 'border-midnight-light focus:border-soul-accent'}
         `}
         aria-label="Character name"
         aria-invalid={!!error}

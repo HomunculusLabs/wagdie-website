@@ -7,7 +7,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({ className = '', variant = 'rectangular', ...props }) => {
-  const baseStyles = "animate-pulse bg-neutral-900/50 border border-neutral-800/30";
+  const baseStyles = "animate-pulse bg-midnight-light/20 border border-midnight-light/10 overflow-hidden relative";
   
   const variants = {
     text: "h-4 w-full rounded",

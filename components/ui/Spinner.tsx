@@ -15,7 +15,7 @@ export const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg', className?: string }
       className={`relative inline-flex items-center justify-center ${sizes[size]} ${className}`}
     >
       {/* Outer Ring */}
-      <div className="absolute inset-0 border-2 border-transparent border-t-neutral-600 border-r-neutral-600 rounded-full animate-spin"></div>
+      <div className="absolute inset-0 border-2 border-transparent border-t-soul-accent/40 border-r-soul-accent/40 rounded-full animate-spin"></div>
       {/* Inner Ring Reverse */}
       <div className="absolute inset-1 border-2 border-transparent border-b-soul-accent border-l-soul-accent rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
       {/* Core */}

@@ -39,8 +39,8 @@ export function SheetMenuBar({
           Back
         </Button>
 
-        <h2 className="text-lg font-eskapade  tracking-widest text-neutral-200">
-          Character #{tokenId}
+        <h2 className="text-lg font-eskapade tracking-widest text-mist lowercase">
+          character #{tokenId}
         </h2>
 
         <div className="flex items-center gap-3">

@@ -238,14 +238,15 @@ export class MapScene extends Phaser.Scene {
         const newZoom = Phaser.Math.Clamp(oldZoom + zoomDelta, MIN_ZOOM, MAX_ZOOM);
 
         if (newZoom !== oldZoom) {
-          // Zoom towards mouse position
-          const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-          camera.zoom = newZoom;
+          // Calculate the scroll adjustment to keep the point under the cursor static
+          // Formula: scroll += (pointerPos - centerPos) * (1/oldZoom - 1/newZoom)
+          const centerX = camera.width / 2;
+          const centerY = camera.height / 2;
 
-          // Adjust camera to zoom towards pointer
-          const newWorldPoint = camera.getWorldPoint(pointer.x, pointer.y);
-          camera.scrollX += worldPoint.x - newWorldPoint.x;
-          camera.scrollY += worldPoint.y - newWorldPoint.y;
+          camera.scrollX += (pointer.x - centerX) * (1 / oldZoom - 1 / newZoom);
+          camera.scrollY += (pointer.y - centerY) * (1 / oldZoom - 1 / newZoom);
+
+          camera.setZoom(newZoom);
 
           this.emitCameraChanged();
         }

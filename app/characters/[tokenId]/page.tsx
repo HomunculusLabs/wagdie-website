@@ -156,7 +156,7 @@ export default function CharacterDetailPage() {
     : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }
   const hasCharacterSheet = attrs.str > 0 || attrs.dex > 0 || attrs.con > 0 || attrs.int > 0 || attrs.wis > 0 || attrs.cha > 0
   const hasAnyStats = character && ((character.str ?? 0) > 0 || (character.dex ?? 0) > 0 || (character.hp ?? 0) > 0 || (character.level ?? 1) > 1)
-  const tabs: TabItem[] = [{ id: 'story', label: 'Story' }, { id: 'ai-persona', label: 'AI Persona' }, { id: 'equipment', label: 'Equipment' }, { id: 'wallet', label: 'Wallet' }]
+  const tabs: TabItem[] = [{ id: 'story', label: 'story' }, { id: 'ai-persona', label: 'ai persona' }, { id: 'equipment', label: 'equipment' }, { id: 'wallet', label: 'wallet' }]
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-soul-950">
@@ -191,7 +191,7 @@ export default function CharacterDetailPage() {
             <Card className="overflow-hidden">
               <div className="relative aspect-square">
                 <Image src={imageUrl} alt={name} fill sizes="(max-width: 1024px) 100vw, 40vw" className="object-cover [image-rendering:pixelated]" priority unoptimized onError={() => useLocalImage && setUseLocalImage(false)} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-black/40" />
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
                   {character.infection_status === 'infected' && <Badge className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge>}
                   {character.infection_status === 'cured' && <Badge className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge>}
@@ -211,7 +211,7 @@ export default function CharacterDetailPage() {
 
               <div className="mb-6">
                 <DerivedStatsEditor stats={isEditMode ? editor.state.derivedStats : { hp: character.hp ?? null, max_hp: character.max_hp ?? null, ac: character.ac ?? null, speed: character.speed ?? null }} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setDerivedStats} />
-                {!isEditMode && <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-black/30"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-widest text-neutral-500 mb-1">Token</p><p className="text-2xl font-display text-neutral-200">#{tokenId}</p></CardContent></Card></div>}
+                {!isEditMode && <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-midnight/50"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-widest text-mist mb-1 lowercase">token</p><p className="text-2xl font-display text-bone">#{tokenId}</p></CardContent></Card></div>}
               </div>
 
               {(hasCharacterSheet || (isOwner && isEditMode)) && <CoreStatsEditor stats={isEditMode ? editor.state.coreStats : attrs} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setCoreStats} className="h-full" />}

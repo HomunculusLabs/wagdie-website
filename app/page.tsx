@@ -93,7 +93,7 @@ function FeatureCard({ title, description, imageSrc, href, isExternal }: Feature
             alt={title}
             className="w-full h-full object-cover grayscale-[50%] contrast-125 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-black/40 opacity-80" />
           {isExternal && (
             <div className="absolute top-2 right-2">
                 <Badge variant="outline">External</Badge>

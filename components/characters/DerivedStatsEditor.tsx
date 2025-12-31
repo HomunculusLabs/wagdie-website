@@ -47,7 +47,7 @@ export function DerivedStatsEditor({
       <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${className}`}>
         {stats.hp !== null && (
           <div className="bg-black/30 border border-neutral-800 p-3 text-center">
-            <p className="text-[18px] font-display  tracking-widest text-neutral-500 mb-1">HP</p>
+            <p className="text-[18px] font-display tracking-widest text-mist mb-1 lowercase">hp</p>
             <p className="text-2xl font-display text-soul-accent">
               {stats.hp}
               {stats.max_hp !== null && (
@@ -58,13 +58,13 @@ export function DerivedStatsEditor({
         )}
         {stats.ac !== null && (
           <div className="bg-black/30 border border-neutral-800 p-3 text-center">
-            <p className="text-[18px] font-display  tracking-widest text-neutral-500 mb-1">AC</p>
+            <p className="text-[18px] font-display tracking-widest text-mist mb-1 lowercase">ac</p>
             <p className="text-2xl font-display text-neutral-200">{stats.ac}</p>
           </div>
         )}
         {stats.speed !== null && (
           <div className="bg-black/30 border border-neutral-800 p-3 text-center">
-            <p className="text-[18px] font-display  tracking-widest text-neutral-500 mb-1">Speed</p>
+            <p className="text-[18px] font-display tracking-widest text-mist mb-1 lowercase">speed</p>
             <p className="text-2xl font-display text-neutral-200">
               {stats.speed}<span className="text-xs text-neutral-500"> ft</span>
             </p>
@@ -82,7 +82,7 @@ export function DerivedStatsEditor({
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatEditor
-          label="HP"
+          label="hp"
           value={stats.hp}
           min={STAT_CONSTRAINTS.hp.min}
           max={STAT_CONSTRAINTS.hp.max}
@@ -91,7 +91,7 @@ export function DerivedStatsEditor({
           onChange={(value) => handleStatChange('hp', value)}
         />
         <StatEditor
-          label="Max HP"
+          label="max hp"
           value={stats.max_hp}
           min={STAT_CONSTRAINTS.maxHp.min}
           max={STAT_CONSTRAINTS.maxHp.max}
@@ -100,7 +100,7 @@ export function DerivedStatsEditor({
           onChange={(value) => handleStatChange('max_hp', value)}
         />
         <StatEditor
-          label="AC"
+          label="ac"
           value={stats.ac}
           min={STAT_CONSTRAINTS.ac.min}
           max={STAT_CONSTRAINTS.ac.max}
@@ -109,7 +109,7 @@ export function DerivedStatsEditor({
           onChange={(value) => handleStatChange('ac', value)}
         />
         <StatEditor
-          label="Speed"
+          label="speed"
           value={stats.speed}
           min={STAT_CONSTRAINTS.speed.min}
           max={STAT_CONSTRAINTS.speed.max}

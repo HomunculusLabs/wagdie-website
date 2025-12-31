@@ -13,14 +13,14 @@ export const TextArea: React.FC<TextAreaProps> = ({ label, className = '', id: p
       {label && (
         <label
           htmlFor={textareaId}
-          className="text-caption tracking-widest uppercase text-neutral-500 font-eskapade"
+          className="text-caption tracking-widest uppercase text-mist font-eskapade group-focus-within:text-soul-accent transition-colors duration-300"
         >
           {label}
         </label>
       )}
       <textarea
         id={textareaId}
-        className={`bg-transparent border border-neutral-800 p-3 text-body font-eskapade placeholder-neutral-700 focus:outline-none focus:border-soul-accent focus:bg-soul-accent/5 focus-visible:ring-2 focus-visible:ring-soul-accent/50 transition-all duration-300 text-neutral-200 resize-none min-h-[100px] ${className}`}
+        className={`bg-midnight/30 border border-midnight-light p-3 text-body font-eskapade placeholder-mist/30 focus:outline-none focus:border-soul-accent focus:bg-soul-accent/5 transition-all duration-300 text-bone resize-none min-h-[120px] ${className}`}
         {...props}
       />
     </div>

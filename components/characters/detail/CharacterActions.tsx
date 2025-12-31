@@ -41,23 +41,23 @@ export function CharacterActions({
   return (
     <Card className="mt-auto">
       <CardContent className="p-4">
-        <p className="text-[16px] font-display tracking-widest text-neutral-500 mb-3">
-          Blockchain Actions
+        <p className="text-[16px] font-display tracking-widest text-mist mb-3 lowercase">
+          blockchain actions
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" onClick={onSear} className="gap-2">
-            <FireIcon /> Sear Concords
+          <Button variant="primary" onClick={onSear} className="gap-2 lowercase">
+            <FireIcon /> sear concords
           </Button>
-          <Button variant="danger" onClick={onInfect} className="gap-2">
-            <SkullIcon /> Infect
+          <Button variant="danger" onClick={onInfect} className="gap-2 lowercase">
+            <SkullIcon /> infect
           </Button>
           {isInfected && (
             <Button
               variant="secondary"
               onClick={onCure}
-              className="gap-2 border-emerald-900/50 text-emerald-500 hover:border-emerald-700"
+              className="gap-2 border-emerald-900/50 text-emerald-500 hover:border-emerald-700 lowercase"
             >
-              <HeartIcon /> Cure
+              <HeartIcon /> cure
             </Button>
           )}
         </div>

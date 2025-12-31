@@ -40,7 +40,7 @@ export const SidebarProvider = React.memo<{ children: React.ReactNode; defaultOp
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <div className="flex h-full w-full bg-soul-950 text-neutral-200 overflow-hidden border border-neutral-800 min-h-[300px]">
+      <div className="flex h-full w-full bg-soul-950 text-bone overflow-hidden border border-midnight-light/50 min-h-[300px]">
         {children}
       </div>
     </SidebarContext.Provider>
@@ -57,7 +57,7 @@ export const Sidebar = React.memo<{ children: React.ReactNode; className?: strin
       role="navigation"
       aria-label="Main sidebar"
       className={`
-        bg-black/40 border-r border-neutral-800 transition-all duration-300 flex flex-col
+        bg-midnight/30 backdrop-blur-md border-r border-midnight-light/50 transition-all duration-300 flex flex-col
         ${isOpen ? 'w-64' : 'w-16'}
         ${className}
       `}
@@ -73,7 +73,7 @@ export const SidebarHeader = React.memo<{ children: React.ReactNode; className?:
   children,
   className = ''
 }) => (
-  <div className={`h-14 flex items-center px-4 border-b border-neutral-800 font-display  tracking-widest text-sm text-soul-accent whitespace-nowrap overflow-hidden ${className}`}>
+  <div className={`h-14 flex items-center px-4 border-b border-midnight-light/20 font-display tracking-widest text-sm text-soul-accent whitespace-nowrap overflow-hidden ${className}`}>
     {children}
   </div>
 ));
@@ -95,7 +95,7 @@ export const SidebarFooter = React.memo<{ children: React.ReactNode; className?:
   children,
   className = ''
 }) => (
-  <div className={`p-4 border-t border-neutral-800 ${className}`}>
+  <div className={`p-4 border-t border-midnight-light/20 ${className}`}>
     {children}
   </div>
 ));
@@ -111,7 +111,7 @@ export const SidebarTrigger = React.memo<{ className?: string }>(({ className = 
       onClick={toggle}
       aria-expanded={isOpen}
       aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-      className={`p-2 hover:bg-neutral-800 rounded-sm text-neutral-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent/50 ${className}`}
+      className={`p-2 hover:bg-midnight-light/50 rounded-sm text-mist hover:text-bone transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-soul-accent/50 ${className}`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -157,10 +157,10 @@ export const SidebarItem = React.memo<SidebarItemProps>(({
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       className={`
-        w-full flex items-center gap-3 px-3 py-2 text-sm font-eskapade transition-colors relative group
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-soul-accent/50
-        ${active ? 'bg-neutral-900 text-soul-accent' : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-200'}
-        ${!isOpen ? 'justify-center' : ''}
+        w-full flex items-center gap-3 px-3 py-2 text-sm font-eskapade transition-all duration-200 relative group
+        focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-soul-accent/50
+        ${active ? 'bg-soul-accent/10 text-soul-accent border-r-2 border-soul-accent' : 'text-ash hover:bg-midnight/50 hover:text-bone'}
+        ${!isOpen ? 'justify-center border-r-0' : ''}
         ${className}
       `}
     >
@@ -172,7 +172,7 @@ export const SidebarItem = React.memo<SidebarItemProps>(({
       {!isOpen && (
         <div
           role="tooltip"
-          className="absolute left-full ml-2 px-2 py-1 bg-neutral-900 border border-neutral-800 text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
+          className="absolute left-full ml-2 px-2 py-1 bg-midnight border border-midnight-light/50 text-xs text-bone rounded-sm opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-2xl"
           aria-hidden="true"
         >
           {label}
@@ -188,7 +188,7 @@ export const SidebarInset = React.memo<{ children: React.ReactNode; className?: 
   children,
   className = ''
 }) => (
-  <main className={`flex-1 flex flex-col bg-black/20 relative ${className}`}>
+  <main className={`flex-1 flex flex-col bg-abyss/20 relative ${className}`}>
     {children}
   </main>
 ));

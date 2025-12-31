@@ -10,7 +10,7 @@ export const Separator: React.FC<SeparatorProps> = ({ orientation = 'horizontal'
   return (
     <div 
         className={`
-            bg-neutral-800 shrink-0 
+            bg-midnight-light/50 shrink-0 
             ${orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]'}
             ${className}
         `} 

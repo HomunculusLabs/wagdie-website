@@ -51,7 +51,7 @@ export function CharacterHeader({
           <Button variant="secondary" onClick={onBack} className="gap-2">
             <BackIcon /><span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-lg font-display text-neutral-400">Character #{tokenId}</h1>
+          <h1 className="text-lg font-display text-mist lowercase">character #{tokenId}</h1>
           <div className="flex items-center gap-2">
             {isOwner && (
               <>

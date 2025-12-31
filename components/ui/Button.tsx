@@ -7,9 +7,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary: "bg-soul-900 border-soul-accent/40 text-soul-accent hover:bg-soul-accent/10 hover:border-soul-accent hover:shadow-[0_0_15px_rgba(200,170,110,0.15)]",
-  secondary: "bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200",
-  danger: "bg-soul-900 border-red-900/50 text-red-700 hover:bg-red-950/30 hover:border-red-800 hover:text-red-500",
+  primary: "bg-soul-900 border-soul-accent/40 text-soul-accent hover:bg-soul-accent/10 hover:border-soul-accent hover:shadow-soul-glow",
+  secondary: "bg-transparent border-midnight-light text-ash hover:border-mist hover:text-bone",
+  danger: "bg-soul-900 border-blood/50 text-blood hover:bg-blood/10 hover:border-blood hover:text-ember hover:shadow-blood-glow",
 } as const;
 
 const sizes = {

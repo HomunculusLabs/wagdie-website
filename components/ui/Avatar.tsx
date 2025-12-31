@@ -31,16 +31,16 @@ export const Avatar: React.FC<AvatarProps> = ({
   };
 
   const statusColors = {
-    online: "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]",
-    offline: "bg-neutral-500",
-    busy: "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]",
+    online: "bg-poison shadow-glow-sm",
+    offline: "bg-mist",
+    busy: "bg-blood shadow-blood-glow",
   };
 
   return (
     <div className={`relative inline-block ${shape === 'diamond' ? 'p-2' : ''}`}>
       <div 
         className={`
-          relative flex items-center justify-center overflow-hidden border border-neutral-700 bg-neutral-900
+          relative flex items-center justify-center overflow-hidden border border-midnight-light/50 bg-midnight/50
           ${sizeClasses[size]} 
           ${shapeClasses[shape]}
           group
@@ -54,13 +54,12 @@ export const Avatar: React.FC<AvatarProps> = ({
             className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${shape === 'diamond' ? '-rotate-45 scale-[1.45]' : ''}`}
           />
         ) : (
-          <span className={`font-display font-bold text-neutral-400 ${shape === 'diamond' ? '-rotate-45' : ''}`}>
+          <span className={`font-display font-bold text-bone ${shape === 'diamond' ? '-rotate-45' : ''}`}>
             {initials}
           </span>
         )}
         
         {/* Shine effect */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </div>
 
       {status && shape !== 'diamond' && (

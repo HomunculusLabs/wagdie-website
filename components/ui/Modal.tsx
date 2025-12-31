@@ -112,7 +112,7 @@ export const Modal = React.memo<ModalProps>(({
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-abyss/80 backdrop-blur-md"
         onClick={handleBackdropClick}
         aria-hidden="true"
       />
@@ -125,7 +125,7 @@ export const Modal = React.memo<ModalProps>(({
         aria-labelledby={`${modalId.current}-title`}
         aria-describedby={`${modalId.current}-body`}
         className={`
-          relative w-full max-w-lg bg-soul-950 border border-neutral-800 shadow-2xl
+          relative w-full max-w-lg bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl
           transform transition-all duration-300
           ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}
         `}
@@ -137,10 +137,10 @@ export const Modal = React.memo<ModalProps>(({
         <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-soul-accent/50" aria-hidden="true" />
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-900">
+        <div className="flex items-center justify-between p-6 border-b border-midnight-light/30">
           <h3
             id={`${modalId.current}-title`}
-            className="text-xl font-display  tracking-widest text-neutral-200"
+            className="text-xl font-display tracking-widest text-bone"
           >
             {title}
           </h3>
@@ -148,7 +148,7 @@ export const Modal = React.memo<ModalProps>(({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="text-neutral-500 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-soul-accent/50 rounded-sm"
+            className="text-mist hover:text-blood transition-colors focus:outline-none focus:ring-1 focus:ring-soul-accent/50 rounded-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -171,7 +171,7 @@ export const Modal = React.memo<ModalProps>(({
         {/* Body */}
         <div
           id={`${modalId.current}-body`}
-          className="p-6 text-neutral-400 font-eskapade"
+          className="p-6 text-ash font-eskapade leading-relaxed"
         >
           {children}
         </div>
