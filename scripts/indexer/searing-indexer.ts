@@ -215,7 +215,7 @@ async function backfillWithEtherscan(params: {
   // Process searing events
   if (searingLogs.length > 0) {
     const viemLogs = searingLogs.map(etherscanLogToViemLog)
-    const result = await handleSearConcordsLogs(viemLogs)
+    const result = await handleSearConcordsLogs(viemLogs, { source: 'backfill', chainId: params.chainId })
     log(`Processed ${result.processed} searing events`)
   }
 
@@ -279,7 +279,7 @@ function startLiveWatch(params: {
         liveQueue = liveQueue
           .then(async () => {
             if (shuttingDown) return
-            const { highestBlock, processed } = await handleSearConcordsLogs(logs)
+            const { highestBlock, processed } = await handleSearConcordsLogs(logs, { source: 'live', chainId: params.chainId })
             if (processed > 0) {
               log(`Processed ${processed} live searing events`)
             }

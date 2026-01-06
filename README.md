@@ -388,6 +388,119 @@ Three contract interactions via WagdieWorld:
 
 All transactions include proper error handling and user feedback.
 
+## Discord Notifications
+
+The platform includes a Discord notification system that sends real-time updates for blockchain events to Discord channels via webhooks.
+
+### Event Types
+
+| Event | Description | Webhook Env Var |
+|-------|-------------|-----------------|
+| **Transfers** | NFT ownership changes (mints, sales, transfers) | `DISCORD_WEBHOOK_TRANSFERS` |
+| **Burns** | Character burns on the WagdieWorld contract | `DISCORD_WEBHOOK_BURNS` |
+| **Travel** | Characters moving between locations | `DISCORD_WEBHOOK_TRAVEL` |
+| **Searing** | Concords seared onto characters | `DISCORD_WEBHOOK_SEARING` |
+| **Concord Transfers** | ERC1155 Concord token transfers | `DISCORD_WEBHOOK_CONCORD_TRANSFERS` |
+
+### Architecture
+
+The Discord notification system uses an **outbox pattern** for reliability:
+
+1. **Indexers** detect blockchain events and insert them into the `discord_outbox` table
+2. **Discord Notifier** worker polls the outbox and sends to Discord webhooks
+3. Failed notifications are retried with exponential backoff (up to 8 attempts)
+
+This ensures no notifications are lost if Discord is temporarily unavailable.
+
+### Setup
+
+1. **Create Discord Webhooks**
+
+   In your Discord server:
+   - Go to Server Settings > Integrations > Webhooks
+   - Create a webhook for each event type you want to track
+   - Copy the webhook URLs
+
+2. **Configure Environment Variables**
+
+   Add webhook URLs to your `.env` or Docker environment:
+
+   ```env
+   # Discord Webhooks (one per event type)
+   DISCORD_WEBHOOK_TRANSFERS=https://discord.com/api/webhooks/...
+   DISCORD_WEBHOOK_BURNS=https://discord.com/api/webhooks/...
+   DISCORD_WEBHOOK_TRAVEL=https://discord.com/api/webhooks/...
+   DISCORD_WEBHOOK_SEARING=https://discord.com/api/webhooks/...
+   DISCORD_WEBHOOK_CONCORD_TRANSFERS=https://discord.com/api/webhooks/...
+
+   # Optional: Use JSON for all webhooks at once
+   # DISCORD_WEBHOOKS_JSON={"transfer":"https://...","burn":"https://..."}
+
+   # Display Settings
+   DISCORD_WEBHOOK_USERNAME=WAGDIE Events
+   DISCORD_WEBHOOK_AVATAR_URL=https://your-site.com/avatar.png
+   PUBLIC_ASSET_BASE_URL=https://your-site.com
+
+   # Polling Settings (optional)
+   DISCORD_OUTBOX_POLL_MS=2000      # Poll interval (default: 2000ms)
+   DISCORD_OUTBOX_BATCH_SIZE=25     # Batch size (default: 25)
+   DISCORD_OUTBOX_MAX_ATTEMPTS=8    # Max retry attempts (default: 8)
+   ```
+
+3. **Run the Database Migration**
+
+   Apply the discord_outbox migration to create the required table:
+
+   ```bash
+   # If using Supabase CLI
+   supabase db push
+
+   # Or run the migration SQL directly
+   # supabase/migrations/20260105000000_discord_outbox.sql
+   ```
+
+4. **Start the Discord Notifier**
+
+   ```bash
+   # Development (standalone)
+   npx tsx scripts/discord/notifier.ts
+
+   # Docker Compose
+   docker-compose up discord-notifier
+   ```
+
+### Embed Examples
+
+Each event type has a themed Discord embed:
+
+- **Transfers**: Blue embed with "New Owner" fields
+- **Burns**: Red ember with flame styling
+- **Travel**: Teal embed showing from/to locations
+- **Searing**: Orange/gold embed for Concord searing
+- **Concord Transfers**: Green embed for token movements
+
+Embeds include:
+- Character name and token ID
+- Thumbnail image (requires `PUBLIC_ASSET_BASE_URL`)
+- Etherscan transaction link
+- Timestamp of the event
+
+### Monitoring
+
+Check the outbox status:
+
+```sql
+-- Pending notifications
+SELECT event_type, COUNT(*) FROM discord_outbox
+WHERE status = 'pending' GROUP BY event_type;
+
+-- Failed notifications
+SELECT * FROM discord_outbox WHERE status = 'failed' ORDER BY created_at DESC LIMIT 10;
+
+-- Dead letters (max retries exceeded)
+SELECT * FROM discord_outbox WHERE status = 'dead';
+```
+
 ## Database Schema
 
 ### Users Table

@@ -3,11 +3,16 @@
 
 import { decodeEventLog, type Log } from 'viem'
 import { createClient } from '@supabase/supabase-js'
+import { enqueueBurn, enqueueTravel } from '../discord/outbox'
+import type { IndexerContext } from '../discord/types'
 
 export interface StakingHandleResult {
   highestBlock: bigint | null
   processed: number
 }
+
+// Default context for backwards compatibility
+const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
 
 // Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://kong:8000'
@@ -172,7 +177,10 @@ async function insertStakingEvent(params: {
 /**
  * Handle staking events from WagdieWorld contract
  */
-export async function handleStakingLogs(logs: Log[]): Promise<StakingHandleResult> {
+export async function handleStakingLogs(
+  logs: Log[],
+  ctx: IndexerContext = DEFAULT_CONTEXT
+): Promise<StakingHandleResult> {
   if (!Array.isArray(logs) || logs.length === 0) {
     return { highestBlock: null, processed: 0 }
   }
@@ -266,6 +274,14 @@ export async function handleStakingLogs(logs: Log[]): Promise<StakingHandleResul
           })
           if (inserted) {
             log(`Location change: token ${tokenId} from ${args.oldLocationId} to ${args.newLocationId}`)
+            // Enqueue Discord notification for travel
+            if (logEntry.transactionHash) {
+              await enqueueTravel(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
+                oldLocationId: Number(args.oldLocationId),
+                newLocationId: Number(args.newLocationId),
+                ownerAddress: null, // Owner not available in this event
+              })
+            }
           }
         }
       } else if (topic0 === STAKING_TOPICS.WagdieBurned) {
@@ -289,6 +305,13 @@ export async function handleStakingLogs(logs: Log[]): Promise<StakingHandleResul
           })
           if (inserted) {
             log(`Burn: token ${tokenId} at location ${args.locationId}`)
+            // Enqueue Discord notification for burn
+            if (logEntry.transactionHash) {
+              await enqueueBurn(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
+                locationId: Number(args.locationId),
+                ownerAddress: null, // Owner not available in burn event
+              })
+            }
           }
         }
       }

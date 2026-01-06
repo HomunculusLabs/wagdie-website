@@ -49,3 +49,46 @@ export function getCharacterImageFallback(
   // Always use local placeholder to avoid external image loading issues
   return '/images/placeholder-character.svg'
 }
+
+// =============================================================================
+// Public URL Helpers (for external services like Discord)
+// =============================================================================
+
+/**
+ * Get the public (absolute) URL for a character image
+ * Used for external services that need absolute URLs (Discord embeds, etc.)
+ */
+export function getPublicCharacterImageUrl(
+  tokenId: number,
+  publicBaseUrl?: string
+): string | null {
+  const baseUrl =
+    publicBaseUrl ||
+    process.env.PUBLIC_ASSET_BASE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL
+
+  if (!baseUrl) {
+    return null
+  }
+
+  // Remove trailing slash if present
+  const normalizedBase = baseUrl.replace(/\/$/, '')
+  return `${normalizedBase}/images/characters/${tokenId}.png`
+}
+
+/**
+ * Get the public (absolute) URL for a placeholder image
+ */
+export function getPublicPlaceholderImageUrl(publicBaseUrl?: string): string | null {
+  const baseUrl =
+    publicBaseUrl ||
+    process.env.PUBLIC_ASSET_BASE_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL
+
+  if (!baseUrl) {
+    return null
+  }
+
+  const normalizedBase = baseUrl.replace(/\/$/, '')
+  return `${normalizedBase}/images/placeholder-character.svg`
+}

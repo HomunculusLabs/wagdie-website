@@ -1,10 +1,15 @@
 import { decodeEventLog, type Log } from 'viem'
 import { createClient } from '@supabase/supabase-js'
+import { enqueueTransfer } from '../discord/outbox'
+import type { IndexerContext } from '../discord/types'
 
 export interface TransferHandleResult {
   highestBlock: bigint | null
   processed: number
 }
+
+// Default context for backwards compatibility
+const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -95,7 +100,10 @@ async function updateOwnership(tokenId: number, ownerAddress: string | null): Pr
   return true
 }
 
-export async function handleTransferLogs(logs: Log[]): Promise<TransferHandleResult> {
+export async function handleTransferLogs(
+  logs: Log[],
+  ctx: IndexerContext = DEFAULT_CONTEXT
+): Promise<TransferHandleResult> {
   if (!Array.isArray(logs) || logs.length === 0) {
     return { highestBlock: null, processed: 0 }
   }
@@ -135,6 +143,17 @@ export async function handleTransferLogs(logs: Log[]): Promise<TransferHandleRes
     const blockNumber = getBlockNumber(log)
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber
+    }
+
+    // Enqueue Discord notification for transfers (skip burns - handled by staking handler)
+    // Only enqueue if not a burn (to zero address)
+    if (to !== ZERO_ADDRESS && log.transactionHash) {
+      const isMint = from === ZERO_ADDRESS
+      await enqueueTransfer(ctx, tokenId, log.transactionHash, getLogIndex(log), blockNumber, {
+        from,
+        to,
+        isMint,
+      })
     }
   }
 

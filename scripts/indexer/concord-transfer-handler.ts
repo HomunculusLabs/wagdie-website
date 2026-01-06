@@ -3,11 +3,18 @@
 
 import { decodeEventLog, type Log } from 'viem'
 import { createClient } from '@supabase/supabase-js'
+import { enqueueConcordTransfer } from '../discord/outbox'
+import type { IndexerContext } from '../discord/types'
 
 export interface ConcordHandleResult {
   highestBlock: bigint | null
   processed: number
 }
+
+// Default context for backwards compatibility
+const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 // Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://kong:8000'
@@ -144,7 +151,10 @@ async function insertTransfer(params: {
 /**
  * Handle ERC1155 transfer events from TokensOfConcord contract
  */
-export async function handleConcordTransferLogs(logs: Log[]): Promise<ConcordHandleResult> {
+export async function handleConcordTransferLogs(
+  logs: Log[],
+  ctx: IndexerContext = DEFAULT_CONTEXT
+): Promise<ConcordHandleResult> {
   if (!Array.isArray(logs) || logs.length === 0) {
     return { highestBlock: null, processed: 0 }
   }
@@ -188,10 +198,23 @@ export async function handleConcordTransferLogs(logs: Log[]): Promise<ConcordHan
         })
 
         if (inserted) {
-          const action = from === '0x0000000000000000000000000000000000000000' ? 'Mint' :
-                         to === '0x0000000000000000000000000000000000000000' ? 'Burn' : 'Transfer'
+          const isMint = from === ZERO_ADDRESS
+          const isBurn = to === ZERO_ADDRESS
+          const action = isMint ? 'Mint' : isBurn ? 'Burn' : 'Transfer'
           log(`${action}: token ${tokenId} x${amount} ${from.slice(0, 10)}...→${to.slice(0, 10)}...`)
           processed += 1
+
+          // Enqueue Discord notification
+          if (logEntry.transactionHash) {
+            await enqueueConcordTransfer(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
+              from,
+              to,
+              amount,
+              operator,
+              isMint,
+              isBurn,
+            })
+          }
         }
       } else if (topic0 === CONCORD_TOPICS.TransferBatch) {
         const decoded = decodeEventLog({
@@ -204,11 +227,14 @@ export async function handleConcordTransferLogs(logs: Log[]): Promise<ConcordHan
         const from = normalizeAddress(args.from)
         const to = normalizeAddress(args.to)
         const operator = normalizeAddress(args.operator)
+        const isMint = from === ZERO_ADDRESS
+        const isBurn = to === ZERO_ADDRESS
 
         // Process each token in the batch
         for (let i = 0; i < args.ids.length; i++) {
           const tokenId = Number(args.ids[i])
           const amount = Number(args.values[i])
+          const batchLogIndex = logIndex + i // Unique log index per token in batch
 
           const inserted = await insertTransfer({
             tokenId,
@@ -218,15 +244,26 @@ export async function handleConcordTransferLogs(logs: Log[]): Promise<ConcordHan
             operatorAddress: operator,
             transactionHash: logEntry.transactionHash!,
             blockNumber: blockNumber!,
-            logIndex: logIndex + i, // Unique log index per token in batch
+            logIndex: batchLogIndex,
             metadata: { tokenId, amount, from, to, operator, batchIndex: i },
           })
 
           if (inserted) {
-            const action = from === '0x0000000000000000000000000000000000000000' ? 'Mint' :
-                           to === '0x0000000000000000000000000000000000000000' ? 'Burn' : 'Transfer'
+            const action = isMint ? 'Mint' : isBurn ? 'Burn' : 'Transfer'
             log(`${action} (batch): token ${tokenId} x${amount}`)
             processed += 1
+
+            // Enqueue Discord notification for each token in batch
+            if (logEntry.transactionHash) {
+              await enqueueConcordTransfer(ctx, tokenId, logEntry.transactionHash, batchLogIndex, blockNumber, {
+                from,
+                to,
+                amount,
+                operator,
+                isMint,
+                isBurn,
+              })
+            }
           }
         }
       }

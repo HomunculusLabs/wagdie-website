@@ -3,11 +3,16 @@
 
 import { decodeEventLog, type Log } from 'viem'
 import { createClient } from '@supabase/supabase-js'
+import { enqueueSear } from '../discord/outbox'
+import type { IndexerContext } from '../discord/types'
 
 export interface SearingHandleResult {
   highestBlock: bigint | null
   processed: number
 }
+
+// Default context for backwards compatibility
+const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
 
 // Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://kong:8000'
@@ -126,7 +131,10 @@ async function insertSearingEvent(params: {
 /**
  * Handle SearConcords events from the Searing contract
  */
-export async function handleSearConcordsLogs(logs: Log[]): Promise<SearingHandleResult> {
+export async function handleSearConcordsLogs(
+  logs: Log[],
+  ctx: IndexerContext = DEFAULT_CONTEXT
+): Promise<SearingHandleResult> {
   if (!Array.isArray(logs) || logs.length === 0) {
     return { highestBlock: null, processed: 0 }
   }
@@ -178,6 +186,14 @@ export async function handleSearConcordsLogs(logs: Log[]): Promise<SearingHandle
 
     processed += 1
     log(`Sear: token ${tokenId} + concord ${concordId} by ${sender} at block ${blockNumber}`)
+
+    // Enqueue Discord notification for searing
+    if (logEntry.transactionHash) {
+      await enqueueSear(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
+        concordId,
+        owner: sender,
+      })
+    }
 
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber

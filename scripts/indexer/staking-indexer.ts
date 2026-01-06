@@ -229,7 +229,7 @@ async function backfillWithEtherscan(params: {
   if (allLogs.length > 0) {
     const viemLogs = allLogs.map(etherscanLogToViemLog)
     log(`Processing ${viemLogs.length} total staking events...`)
-    const result = await handleStakingLogs(viemLogs)
+    const result = await handleStakingLogs(viemLogs, { source: 'backfill', chainId: params.chainId })
     log(`Processed ${result.processed} staking events`)
   } else {
     log('No staking events found')
@@ -321,7 +321,7 @@ function startLiveWatch(params: {
     liveQueue = liveQueue
       .then(async () => {
         if (shuttingDown) return
-        const { highestBlock, processed } = await handleStakingLogs(logs)
+        const { highestBlock, processed } = await handleStakingLogs(logs, { source: 'live', chainId: params.chainId })
         if (processed > 0) {
           log(`Processed ${processed} live ${eventName} events`)
         }

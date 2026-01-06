@@ -273,6 +273,35 @@ services:
       - default
     restart: unless-stopped
 
+  discord-notifier:
+    build:
+      context: .
+      dockerfile: scripts/discord/Dockerfile
+    depends_on:
+      - kong
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: http://kong:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      # Discord webhook URLs (configure per event type)
+      DISCORD_WEBHOOK_TRANSFERS: ${DISCORD_WEBHOOK_TRANSFERS:-}
+      DISCORD_WEBHOOK_BURNS: ${DISCORD_WEBHOOK_BURNS:-}
+      DISCORD_WEBHOOK_TRAVEL: ${DISCORD_WEBHOOK_TRAVEL:-}
+      DISCORD_WEBHOOK_SEARING: ${DISCORD_WEBHOOK_SEARING:-}
+      DISCORD_WEBHOOK_CONCORD_TRANSFERS: ${DISCORD_WEBHOOK_CONCORD_TRANSFERS:-}
+      # Optional: Use JSON format for all webhooks at once
+      # DISCORD_WEBHOOKS_JSON: ${DISCORD_WEBHOOKS_JSON:-}
+      # Display settings
+      DISCORD_WEBHOOK_USERNAME: ${DISCORD_WEBHOOK_USERNAME:-WAGDIE Events}
+      DISCORD_WEBHOOK_AVATAR_URL: ${DISCORD_WEBHOOK_AVATAR_URL:-}
+      PUBLIC_ASSET_BASE_URL: ${PUBLIC_ASSET_BASE_URL:-}
+      # Polling settings
+      DISCORD_OUTBOX_POLL_MS: ${DISCORD_OUTBOX_POLL_MS:-2000}
+      DISCORD_OUTBOX_BATCH_SIZE: ${DISCORD_OUTBOX_BATCH_SIZE:-25}
+      DISCORD_OUTBOX_MAX_ATTEMPTS: ${DISCORD_OUTBOX_MAX_ATTEMPTS:-8}
+    networks:
+      - default
+    restart: unless-stopped
+
 networks:
   homelab_homelab:
     external: true

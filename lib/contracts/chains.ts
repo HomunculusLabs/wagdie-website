@@ -95,3 +95,50 @@ export function getSupportedChains(): Chain[] {
 export function getPrimaryChain(): Chain {
   return getSupportedChains()[0]
 }
+
+// =============================================================================
+// Explorer URL Helpers
+// =============================================================================
+
+const EXPLORER_URLS: Record<number, string> = {
+  1: 'https://etherscan.io',
+  11155111: 'https://sepolia.etherscan.io',
+}
+
+/**
+ * Get the block explorer base URL for a chain
+ */
+export function getExplorerBaseUrl(chainId: number): string {
+  return EXPLORER_URLS[chainId] || EXPLORER_URLS[1]
+}
+
+/**
+ * Get the block explorer URL for a transaction
+ */
+export function getExplorerTxUrl(chainId: number, txHash: string): string {
+  const baseUrl = getExplorerBaseUrl(chainId)
+  return `${baseUrl}/tx/${txHash}`
+}
+
+/**
+ * Get the block explorer URL for an address
+ */
+export function getExplorerAddressUrl(chainId: number, address: string): string {
+  const baseUrl = getExplorerBaseUrl(chainId)
+  return `${baseUrl}/address/${address}`
+}
+
+/**
+ * Get the block explorer URL for a token
+ */
+export function getExplorerTokenUrl(
+  chainId: number,
+  contractAddress: string,
+  tokenId?: number
+): string {
+  const baseUrl = getExplorerBaseUrl(chainId)
+  if (tokenId !== undefined) {
+    return `${baseUrl}/nft/${contractAddress}/${tokenId}`
+  }
+  return `${baseUrl}/token/${contractAddress}`
+}

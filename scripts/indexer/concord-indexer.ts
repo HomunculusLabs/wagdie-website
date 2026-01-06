@@ -226,7 +226,7 @@ async function backfillWithEtherscan(params: {
   if (allLogs.length > 0) {
     const viemLogs = allLogs.map(etherscanLogToViemLog)
     log(`Processing ${viemLogs.length} total transfer events...`)
-    const result = await handleConcordTransferLogs(viemLogs)
+    const result = await handleConcordTransferLogs(viemLogs, { source: 'backfill', chainId: params.chainId })
     log(`Processed ${result.processed} transfer events`)
   } else {
     log('No transfer events found')
@@ -300,7 +300,7 @@ function startLiveWatch(params: {
     liveQueue = liveQueue
       .then(async () => {
         if (shuttingDown) return
-        const { highestBlock, processed } = await handleConcordTransferLogs(logs)
+        const { highestBlock, processed } = await handleConcordTransferLogs(logs, { source: 'live', chainId: params.chainId })
         if (processed > 0) {
           log(`Processed ${processed} live ${eventName} events`)
         }
