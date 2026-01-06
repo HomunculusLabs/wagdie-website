@@ -9,11 +9,15 @@ import {
   isEtherscanRateLimitResponse,
   getStartupDelay,
 } from './etherscan-rate-limiter'
+import { fetchLogsWithSubdivision, type EtherscanLogResult } from './utils/pagination'
+import { getContractAddresses } from '../../lib/contracts/addresses'
 
 const INDEXER_NAME = 'staking-indexer'
 
-// WagdieWorld contract address on mainnet (proxy)
-const WAGDIE_WORLD_CONTRACT = '0x616D4635ceCf94597690Cab0Fc159c3A8231C904' as const
+// Get contract address from centralized config
+const CHAIN_ID = parseInt(process.env.CHAIN_ID || '1', 10)
+const addresses = getContractAddresses(CHAIN_ID)
+const WAGDIE_WORLD_CONTRACT = addresses.wagdieWorld
 
 const DEFAULT_STATE_FILE = 'scripts/indexer/staking-state.json'
 const BASE_BACKOFF_MS = 1_000
@@ -27,19 +31,6 @@ const ETHERSCAN_CHAIN_ID = '1'
 const ETHERSCAN_RATE_LIMIT_MS = 250
 
 type PublicClient = ReturnType<typeof createPublicClient>
-
-interface EtherscanLogResult {
-  address: string
-  topics: string[]
-  data: string
-  blockNumber: string
-  timeStamp: string
-  gasPrice: string
-  gasUsed: string
-  logIndex: string
-  transactionHash: string
-  transactionIndex: string
-}
 
 interface EtherscanResponse {
   status: string
@@ -102,6 +93,9 @@ async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const parseIntAuto = (val: string): number =>
+  val.startsWith('0x') ? parseInt(val, 16) : parseInt(val, 10)
+
 function etherscanLogToViemLog(ethLog: EtherscanLogResult): Log {
   return {
     address: ethLog.address.toLowerCase() as `0x${string}`,
@@ -109,9 +103,9 @@ function etherscanLogToViemLog(ethLog: EtherscanLogResult): Log {
     data: ethLog.data as `0x${string}`,
     blockNumber: BigInt(ethLog.blockNumber),
     transactionHash: ethLog.transactionHash as `0x${string}`,
-    transactionIndex: parseInt(ethLog.transactionIndex, 16),
+    transactionIndex: parseIntAuto(ethLog.transactionIndex),
     blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-    logIndex: parseInt(ethLog.logIndex, 16),
+    logIndex: parseIntAuto(ethLog.logIndex),
     removed: false,
   }
 }
@@ -135,30 +129,37 @@ async function fetchEtherscanLogs(params: {
   }
 
   const doFetch = async (): Promise<EtherscanLogResult[]> => {
-    const response = await fetch(url.toString())
-    if (!response.ok) {
-      throw new Error(`Etherscan API error: ${response.status}`)
-    }
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-    const data: EtherscanResponse = await response.json()
+    try {
+      const response = await fetch(url.toString(), { signal: controller.signal })
+      if (!response.ok) {
+        throw new Error(`Etherscan API error: ${response.status}`)
+      }
 
-    // Check for rate limit in response
-    if (isEtherscanRateLimitResponse(data)) {
-      throw new Error(`Etherscan rate limit: ${data.result}`)
-    }
+      const data: EtherscanResponse = await response.json()
 
-    if (data.status !== '1') {
-      if (data.message === 'No records found' || data.result === 'No records found') {
+      // Check for rate limit in response
+      if (isEtherscanRateLimitResponse(data)) {
+        throw new Error(`Etherscan rate limit: ${data.result}`)
+      }
+
+      if (data.status !== '1') {
+        if (data.message === 'No records found' || data.result === 'No records found') {
+          return []
+        }
+        throw new Error(`Etherscan API error: ${data.message} - ${data.result}`)
+      }
+
+      if (!Array.isArray(data.result)) {
         return []
       }
-      throw new Error(`Etherscan API error: ${data.message} - ${data.result}`)
-    }
 
-    if (!Array.isArray(data.result)) {
-      return []
+      return data.result
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    return data.result
   }
 
   // Use shared rate limiter with automatic retry on rate limit errors
@@ -198,32 +199,33 @@ async function backfillWithEtherscan(params: {
     if (shuttingDown) break
 
     log(`Fetching ${name} events...`)
-    let cursor = params.fromBlock
-    let eventLogs: EtherscanLogResult[] = []
 
-    while (cursor <= params.toBlock && !shuttingDown) {
-      const logs = await fetchEtherscanLogs({
+    // Use subdivision-based pagination to capture all events
+    const { logs: eventLogs, stats } = await fetchLogsWithSubdivision(
+      async (fetchParams) => {
+        if (shuttingDown) return []
+        return fetchEtherscanLogs({
+          address: WAGDIE_WORLD_CONTRACT,
+          topic0: topic,
+          fromBlock: fetchParams.fromBlock,
+          toBlock: fetchParams.toBlock,
+        })
+      },
+      {
         address: WAGDIE_WORLD_CONTRACT,
         topic0: topic,
-        fromBlock: cursor,
+        fromBlock: params.fromBlock,
         toBlock: params.toBlock,
-      })
-
-      eventLogs = eventLogs.concat(logs)
-      log(`Fetched ${logs.length} ${name} events (total: ${eventLogs.length})`)
-
-      if (logs.length >= ETHERSCAN_MAX_RESULTS) {
-        const lastBlock = BigInt(logs[logs.length - 1].blockNumber)
-        cursor = lastBlock + 1n
-        // Rate limiter handles delays between calls
-      } else {
-        break
-      }
-    }
+      },
+      (msg) => log(msg)
+    )
 
     allLogs = allLogs.concat(eventLogs)
-    log(`Total ${name} events: ${eventLogs.length}`)
-    // Rate limiter handles delays between event types
+    log(`Total ${name} events: ${eventLogs.length} (${stats.apiCalls} API calls, ${stats.subdivisions} subdivisions)`)
+
+    if (stats.singleBlockOverflow) {
+      log(`WARNING: Some ${name} events may have been missed due to single-block overflow`)
+    }
   }
 
   if (allLogs.length > 0) {

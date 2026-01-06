@@ -38,7 +38,8 @@ export async function loadState(filePath: string): Promise<IndexerState | null> 
     if (isErrnoException(error) && error.code === 'ENOENT') {
       return null
     }
-    throw error
+    console.warn(`[block-tracker] Failed to load state file ${filePath}, resetting:`, error)
+    return null
   }
 }
 

@@ -9,11 +9,15 @@ import {
   isEtherscanRateLimitResponse,
   getStartupDelay,
 } from './etherscan-rate-limiter'
+import { fetchLogsWithSubdivision, type EtherscanLogResult } from './utils/pagination'
+import { getContractAddresses } from '../../lib/contracts/addresses'
 
 const INDEXER_NAME = 'searing-indexer'
 
-// Contract address on mainnet
-const SEARING_CONTRACT = '0x5156A7F668E59119db23a264502F40407CDa076F' as const
+// Get contract address from centralized config
+const CHAIN_ID = parseInt(process.env.CHAIN_ID || '1', 10)
+const addresses = getContractAddresses(CHAIN_ID)
+const SEARING_CONTRACT = addresses.searing
 
 // Event topic hash for ConcordSeared(uint16,uint16,address)
 const CONCORD_SEARED_TOPIC = '0x264071db4c9b45acadae999c5940b63d7f4c982f1d0342dac85d0457f69a167f'
@@ -30,19 +34,6 @@ const ETHERSCAN_MAX_RESULTS = 1000
 const ETHERSCAN_CHAIN_ID = '1' // Ethereum mainnet
 
 type PublicClient = ReturnType<typeof createPublicClient>
-
-interface EtherscanLogResult {
-  address: string
-  topics: string[]
-  data: string
-  blockNumber: string
-  timeStamp: string
-  gasPrice: string
-  gasUsed: string
-  logIndex: string
-  transactionHash: string
-  transactionIndex: string
-}
 
 interface EtherscanResponse {
   status: string
@@ -105,6 +96,9 @@ async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const parseIntAuto = (val: string): number =>
+  val.startsWith('0x') ? parseInt(val, 16) : parseInt(val, 10)
+
 function etherscanLogToViemLog(ethLog: EtherscanLogResult): Log {
   return {
     address: ethLog.address.toLowerCase() as `0x${string}`,
@@ -112,9 +106,9 @@ function etherscanLogToViemLog(ethLog: EtherscanLogResult): Log {
     data: ethLog.data as `0x${string}`,
     blockNumber: BigInt(ethLog.blockNumber),
     transactionHash: ethLog.transactionHash as `0x${string}`,
-    transactionIndex: parseInt(ethLog.transactionIndex, 16),
+    transactionIndex: parseIntAuto(ethLog.transactionIndex),
     blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-    logIndex: parseInt(ethLog.logIndex, 16),
+    logIndex: parseIntAuto(ethLog.logIndex),
     removed: false,
   }
 }
@@ -138,29 +132,36 @@ async function fetchEtherscanLogs(params: {
   }
 
   const doFetch = async (): Promise<EtherscanLogResult[]> => {
-    const response = await fetch(url.toString())
-    if (!response.ok) {
-      throw new Error(`Etherscan API error: ${response.status}`)
-    }
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-    const data: EtherscanResponse = await response.json()
+    try {
+      const response = await fetch(url.toString(), { signal: controller.signal })
+      if (!response.ok) {
+        throw new Error(`Etherscan API error: ${response.status}`)
+      }
 
-    if (isEtherscanRateLimitResponse(data)) {
-      throw new Error(`Etherscan rate limit: ${data.result}`)
-    }
+      const data: EtherscanResponse = await response.json()
 
-    if (data.status !== '1') {
-      if (data.message === 'No records found' || data.result === 'No records found') {
+      if (isEtherscanRateLimitResponse(data)) {
+        throw new Error(`Etherscan rate limit: ${data.result}`)
+      }
+
+      if (data.status !== '1') {
+        if (data.message === 'No records found' || data.result === 'No records found') {
+          return []
+        }
+        throw new Error(`Etherscan API error: ${data.message} - ${data.result}`)
+      }
+
+      if (!Array.isArray(data.result)) {
         return []
       }
-      throw new Error(`Etherscan API error: ${data.message} - ${data.result}`)
-    }
 
-    if (!Array.isArray(data.result)) {
-      return []
+      return data.result
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    return data.result
   }
 
   const result = await rateLimitedFetch(INDEXER_NAME, doFetch, (error) => {
@@ -186,30 +187,31 @@ async function backfillWithEtherscan(params: {
 }): Promise<void> {
   log(`Backfilling via Etherscan API from block ${params.fromBlock} to ${params.toBlock}`)
 
-  // Fetch ConcordSeared events
+  // Use subdivision-based pagination to capture all events
   log('Fetching ConcordSeared events...')
-  let searingLogs: EtherscanLogResult[] = []
-  let cursor = params.fromBlock
-
-  while (cursor <= params.toBlock && !shuttingDown) {
-    const logs = await fetchEtherscanLogs({
+  const { logs: searingLogs, stats } = await fetchLogsWithSubdivision(
+    async (fetchParams) => {
+      if (shuttingDown) return []
+      return fetchEtherscanLogs({
+        address: SEARING_CONTRACT,
+        topic0: CONCORD_SEARED_TOPIC,
+        fromBlock: fetchParams.fromBlock,
+        toBlock: fetchParams.toBlock,
+      })
+    },
+    {
       address: SEARING_CONTRACT,
       topic0: CONCORD_SEARED_TOPIC,
-      fromBlock: cursor,
+      fromBlock: params.fromBlock,
       toBlock: params.toBlock,
-    })
+    },
+    (msg) => log(msg)
+  )
 
-    searingLogs = searingLogs.concat(logs)
-    log(`Fetched ${logs.length} ConcordSeared events (total: ${searingLogs.length})`)
+  log(`Total ConcordSeared events: ${searingLogs.length} (${stats.apiCalls} API calls, ${stats.subdivisions} subdivisions)`)
 
-    // If we got max results, paginate from last block + 1
-    if (logs.length >= ETHERSCAN_MAX_RESULTS) {
-      const lastBlock = BigInt(logs[logs.length - 1].blockNumber)
-      cursor = lastBlock + 1n
-      // Rate limiter handles delays between calls
-    } else {
-      break
-    }
+  if (stats.singleBlockOverflow) {
+    log('WARNING: Some ConcordSeared events may have been missed due to single-block overflow')
   }
 
   // Process searing events

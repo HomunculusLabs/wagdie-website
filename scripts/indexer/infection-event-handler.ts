@@ -3,6 +3,7 @@
 
 import { decodeEventLog, parseAbiItem, type Log } from 'viem'
 import { createClient } from '@supabase/supabase-js'
+import { batchUpsert } from './utils/batch-upsert'
 
 export interface InfectionHandleResult {
   highestBlock: bigint | null
@@ -12,9 +13,13 @@ export interface InfectionHandleResult {
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const DEAD_ADDRESS = '0x000000000000000000000000000000000000dead'
 
-// Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wagdie-api.runiverse.ai'
+// Supabase client - still needed for character status updates
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing required env vars: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set')
+}
 
 let adminClient: ReturnType<typeof createClient> | null = null
 
@@ -29,6 +34,19 @@ function getAdminClient(): ReturnType<typeof createClient> {
     })
   }
   return adminClient
+}
+
+// Record type for batch upsert
+interface InfectionRecord extends Record<string, unknown> {
+  token_id: number
+  event_type: 'infection' | 'cure'
+  transaction_hash: string
+  block_number: number
+  log_index: number
+  actor_address: string | null
+  amount: number | null
+  event_timestamp: string | null
+  metadata: Record<string, unknown>
 }
 
 // InfectionSpread event ABI
@@ -118,49 +136,51 @@ function log(message: string): void {
   console.log(`[${new Date().toISOString()}] [infection-handler] ${message}`)
 }
 
-async function insertInfectionEvent(params: {
-  tokenId: number
-  eventType: 'infection' | 'cure'
-  transactionHash: string
-  blockNumber: bigint
-  logIndex: number
-  actorAddress: string | null
-  amount?: bigint
-  eventTimestamp?: Date
-  metadata?: Record<string, unknown>
-}): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getAdminClient() as any
-
-  const { error } = await client.from('infection_events').upsert(
-    {
-      token_id: params.tokenId,
-      event_type: params.eventType,
-      transaction_hash: params.transactionHash,
-      block_number: Number(params.blockNumber),
-      log_index: params.logIndex,
-      actor_address: params.actorAddress,
-      amount: params.amount ? Number(params.amount) : null,
-      event_timestamp: params.eventTimestamp?.toISOString() ?? null,
-      metadata: params.metadata ?? {},
-    },
-    { onConflict: 'transaction_hash,log_index' }
-  )
-
-  if (error) {
-    log(`Failed to insert event: ${JSON.stringify(error)}`)
-    return false
+/**
+ * Batch update character infection status
+ */
+async function batchUpdateCharacterInfectionStatus(
+  updates: Array<{ tokenId: number; status: 'infected' | 'cured' }>
+): Promise<{ success: number; failed: number }> {
+  if (updates.length === 0) {
+    return { success: 0, failed: 0 }
   }
 
-  return true
+  const client = getAdminClient()
+  let success = 0
+  let failed = 0
+
+  // Process updates in batches of 100 using Promise.all
+  const batchSize = 100
+  for (let i = 0; i < updates.length; i += batchSize) {
+    const batch = updates.slice(i, i + batchSize)
+
+    const promises = batch.map(async ({ tokenId, status }) => {
+      const { error } = await client
+        .from('wagdie_characters')
+        .update({ infection_status: status })
+        .eq('token_id', tokenId)
+
+      if (error) {
+        console.error(`Failed to update token ${tokenId} infection status:`, error.message)
+        return false
+      }
+      return true
+    })
+
+    const results = await Promise.all(promises)
+    success += results.filter(Boolean).length
+    failed += results.length - results.filter(Boolean).length
+  }
+
+  return { success, failed }
 }
 
 async function updateCharacterInfectionStatus(
   tokenId: number,
   status: 'infected' | 'cured'
 ): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getAdminClient() as any
+  const client = getAdminClient()
 
   const { error } = await client
     .from('wagdie_characters')
@@ -177,6 +197,7 @@ async function updateCharacterInfectionStatus(
 
 /**
  * Handle InfectionSpread events from the Spread contract
+ * Uses batch upsert for efficient bulk database writes
  */
 export async function handleInfectionSpreadLogs(logs: Log[]): Promise<InfectionHandleResult> {
   if (!Array.isArray(logs) || logs.length === 0) {
@@ -185,7 +206,10 @@ export async function handleInfectionSpreadLogs(logs: Log[]): Promise<InfectionH
 
   const ordered = [...logs].sort(compareLogs)
   let highestBlock: bigint | null = null
-  let processed = 0
+
+  // Collect all records for batch upsert
+  const records: InfectionRecord[] = []
+  const statusUpdates: Array<{ tokenId: number; status: 'infected' | 'cured' }> = []
 
   for (const logEntry of ordered) {
     let decoded: { eventName: string; args: unknown }
@@ -211,17 +235,23 @@ export async function handleInfectionSpreadLogs(logs: Log[]): Promise<InfectionH
     const blockNumber = getBlockNumber(logEntry)
     const logIndex = getLogIndex(logEntry)
 
-    // Calculate event timestamp from the 'time' field (Unix timestamp)
-    const eventTimestamp = time ? new Date(Number(time) * 1000) : undefined
+    if (!logEntry.transactionHash || logEntry.blockNumber === undefined || blockNumber === null) {
+      console.warn('[infection-handler] Skipping log with missing tx data')
+      continue
+    }
 
-    const inserted = await insertInfectionEvent({
-      tokenId,
-      eventType: 'infection',
-      transactionHash: logEntry.transactionHash!,
-      blockNumber: blockNumber!,
-      logIndex,
-      actorAddress: sender,
-      eventTimestamp,
+    // Calculate event timestamp from the 'time' field (Unix timestamp)
+    const eventTimestamp = time ? new Date(Number(time) * 1000).toISOString() : null
+
+    records.push({
+      token_id: tokenId,
+      event_type: 'infection',
+      transaction_hash: logEntry.transactionHash,
+      block_number: Number(blockNumber),
+      log_index: logIndex,
+      actor_address: sender,
+      amount: null,
+      event_timestamp: eventTimestamp,
       metadata: {
         sender,
         infectedToken: tokenId,
@@ -229,16 +259,33 @@ export async function handleInfectionSpreadLogs(logs: Log[]): Promise<InfectionH
       },
     })
 
-    if (!inserted) continue
-
-    // Update character's infection status
-    await updateCharacterInfectionStatus(tokenId, 'infected')
-
-    processed += 1
-    log(`Infection: token ${tokenId} by ${sender} at block ${blockNumber}`)
+    // Queue status update
+    statusUpdates.push({ tokenId, status: 'infected' })
 
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber
+    }
+  }
+
+  // Batch upsert all records
+  let processed = 0
+  if (records.length > 0) {
+    const result = await batchUpsert('infection_events', records, {
+      onConflict: 'transaction_hash,log_index',
+    })
+    processed = result.totalInserted
+
+    // Batch update character infection statuses
+    await batchUpdateCharacterInfectionStatus(statusUpdates)
+
+    // Log summary for backfill
+    if (records.length > 10) {
+      log(`Processed ${processed} infection events in ${result.batchCount} batches`)
+    } else {
+      // Detailed logging for small batches / live events
+      for (const record of records) {
+        log(`Infection: token ${record.token_id} by ${record.actor_address}`)
+      }
     }
   }
 
@@ -250,6 +297,7 @@ export async function handleInfectionSpreadLogs(logs: Log[]): Promise<InfectionH
  * These are treated as cure attempts. We record them but don't auto-update
  * the character status since a burn doesn't guarantee the cure was applied
  * to a specific character.
+ * Uses batch upsert for efficient bulk database writes
  */
 export async function handleMushroomBurnLogs(
   logs: Log[],
@@ -261,7 +309,9 @@ export async function handleMushroomBurnLogs(
 
   const ordered = [...logs].sort(compareLogs)
   let highestBlock: bigint | null = null
-  let processed = 0
+
+  // Collect all records for batch upsert
+  const records: InfectionRecord[] = []
 
   for (const logEntry of ordered) {
     // Try to decode as TransferSingle first
@@ -291,6 +341,11 @@ export async function handleMushroomBurnLogs(
     const blockNumber = getBlockNumber(logEntry)
     const logIndex = getLogIndex(logEntry)
 
+    if (!logEntry.transactionHash || logEntry.blockNumber === undefined || blockNumber === null) {
+      console.warn('[infection-handler] Skipping log with missing tx data')
+      continue
+    }
+
     if (decoded.eventName === 'TransferSingle') {
       const args = decoded.args as TransferSingleArgs
       const to = normalizeAddress(args.to)
@@ -302,14 +357,15 @@ export async function handleMushroomBurnLogs(
       if (!to || !isBurnAddress(to)) continue
       if (id !== mushroomTokenId) continue
 
-      const inserted = await insertInfectionEvent({
-        tokenId: 0, // Cure burns aren't tied to a specific character
-        eventType: 'cure',
-        transactionHash: logEntry.transactionHash!,
-        blockNumber: blockNumber!,
-        logIndex,
-        actorAddress: from,
-        amount: value,
+      records.push({
+        token_id: 0, // Cure burns aren't tied to a specific character
+        event_type: 'cure',
+        transaction_hash: logEntry.transactionHash,
+        block_number: Number(blockNumber),
+        log_index: logIndex,
+        actor_address: from,
+        amount: Number(value),
+        event_timestamp: null,
         metadata: {
           operator: normalizeAddress(args.operator),
           from,
@@ -318,11 +374,6 @@ export async function handleMushroomBurnLogs(
           amount: value.toString(),
         },
       })
-
-      if (!inserted) continue
-
-      processed += 1
-      log(`Cure burn: ${value} mushrooms by ${from} at block ${blockNumber}`)
     } else if (decoded.eventName === 'TransferBatch') {
       const args = decoded.args as TransferBatchArgs
       const to = normalizeAddress(args.to)
@@ -341,14 +392,15 @@ export async function handleMushroomBurnLogs(
 
       if (totalMushroomsBurned === 0n) continue
 
-      const inserted = await insertInfectionEvent({
-        tokenId: 0,
-        eventType: 'cure',
-        transactionHash: logEntry.transactionHash!,
-        blockNumber: blockNumber!,
-        logIndex,
-        actorAddress: from,
-        amount: totalMushroomsBurned,
+      records.push({
+        token_id: 0,
+        event_type: 'cure',
+        transaction_hash: logEntry.transactionHash,
+        block_number: Number(blockNumber),
+        log_index: logIndex,
+        actor_address: from,
+        amount: Number(totalMushroomsBurned),
+        event_timestamp: null,
         metadata: {
           operator: normalizeAddress(args.operator),
           from,
@@ -359,15 +411,29 @@ export async function handleMushroomBurnLogs(
           batchValues: args.values.map((v) => v.toString()),
         },
       })
-
-      if (!inserted) continue
-
-      processed += 1
-      log(`Cure burn (batch): ${totalMushroomsBurned} mushrooms by ${from} at block ${blockNumber}`)
     }
 
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber
+    }
+  }
+
+  // Batch upsert all records
+  let processed = 0
+  if (records.length > 0) {
+    const result = await batchUpsert('infection_events', records, {
+      onConflict: 'transaction_hash,log_index',
+    })
+    processed = result.totalInserted
+
+    // Log summary for backfill
+    if (records.length > 10) {
+      log(`Processed ${processed} cure burn events in ${result.batchCount} batches`)
+    } else {
+      // Detailed logging for small batches / live events
+      for (const record of records) {
+        log(`Cure burn: ${record.amount} mushrooms by ${record.actor_address}`)
+      }
     }
   }
 

@@ -12,13 +12,17 @@ import {
   isEtherscanRateLimitResponse,
   getStartupDelay,
 } from './etherscan-rate-limiter'
+import { fetchLogsWithSubdivision, type EtherscanLogResult } from './utils/pagination'
+import { getContractAddresses, TOKEN_IDS } from '../../lib/contracts/addresses'
 
 const INDEXER_NAME = 'infection-indexer'
 
-// Contract addresses on mainnet
-const SPREAD_CONTRACT = '0xaCA80514986768F88F7d8E644546AB85383ddE7e' as const
-const MUSHROOM_CONTRACT = '0x171a8518A1B75F9E26ea952728d4850BEf9B87d2' as const
-const MUSHROOM_TOKEN_ID = 1n
+// Get contract addresses from centralized config
+const CHAIN_ID = parseInt(process.env.CHAIN_ID || '1', 10)
+const addresses = getContractAddresses(CHAIN_ID)
+const SPREAD_CONTRACT = addresses.spread
+const MUSHROOM_CONTRACT = addresses.mushroom
+const MUSHROOM_TOKEN_ID = TOKEN_IDS.mushroom
 
 // Event topic hashes
 const INFECTION_SPREAD_TOPIC = '0xd7137f8a6563ec0e9c51c992d6758e22562332d1edb4367653058bf857658479'
@@ -37,19 +41,6 @@ const ETHERSCAN_MAX_RESULTS = 1000
 const ETHERSCAN_CHAIN_ID = '1' // Ethereum mainnet
 
 type PublicClient = ReturnType<typeof createPublicClient>
-
-interface EtherscanLogResult {
-  address: string
-  topics: string[]
-  data: string
-  blockNumber: string
-  timeStamp: string
-  gasPrice: string
-  gasUsed: string
-  logIndex: string
-  transactionHash: string
-  transactionIndex: string
-}
 
 interface EtherscanResponse {
   status: string
@@ -113,6 +104,9 @@ async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const parseIntAuto = (val: string): number =>
+  val.startsWith('0x') ? parseInt(val, 16) : parseInt(val, 10)
+
 function etherscanLogToViemLog(ethLog: EtherscanLogResult): Log {
   return {
     address: ethLog.address.toLowerCase() as `0x${string}`,
@@ -120,9 +114,9 @@ function etherscanLogToViemLog(ethLog: EtherscanLogResult): Log {
     data: ethLog.data as `0x${string}`,
     blockNumber: BigInt(ethLog.blockNumber),
     transactionHash: ethLog.transactionHash as `0x${string}`,
-    transactionIndex: parseInt(ethLog.transactionIndex, 16),
+    transactionIndex: parseIntAuto(ethLog.transactionIndex),
     blockHash: '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`,
-    logIndex: parseInt(ethLog.logIndex, 16),
+    logIndex: parseIntAuto(ethLog.logIndex),
     removed: false,
   }
 }
@@ -146,31 +140,38 @@ async function fetchEtherscanLogs(params: {
   }
 
   const doFetch = async (): Promise<EtherscanLogResult[]> => {
-    const response = await fetch(url.toString())
-    if (!response.ok) {
-      throw new Error(`Etherscan API error: ${response.status}`)
-    }
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-    const data: EtherscanResponse = await response.json()
+    try {
+      const response = await fetch(url.toString(), { signal: controller.signal })
+      if (!response.ok) {
+        throw new Error(`Etherscan API error: ${response.status}`)
+      }
 
-    // Check for rate limit in response
-    if (isEtherscanRateLimitResponse(data)) {
-      throw new Error(`Etherscan rate limit: ${data.result}`)
-    }
+      const data: EtherscanResponse = await response.json()
 
-    if (data.status !== '1') {
-      // "No records found" is not an error
-      if (data.message === 'No records found' || data.result === 'No records found') {
+      // Check for rate limit in response
+      if (isEtherscanRateLimitResponse(data)) {
+        throw new Error(`Etherscan rate limit: ${data.result}`)
+      }
+
+      if (data.status !== '1') {
+        // "No records found" is not an error
+        if (data.message === 'No records found' || data.result === 'No records found') {
+          return []
+        }
+        throw new Error(`Etherscan API error: ${data.message} - ${data.result}`)
+      }
+
+      if (!Array.isArray(data.result)) {
         return []
       }
-      throw new Error(`Etherscan API error: ${data.message} - ${data.result}`)
-    }
 
-    if (!Array.isArray(data.result)) {
-      return []
+      return data.result
+    } finally {
+      clearTimeout(timeoutId)
     }
-
-    return data.result
   }
 
   // Use shared rate limiter with automatic retry on rate limit errors
@@ -197,30 +198,31 @@ async function backfillWithEtherscan(params: {
 }): Promise<void> {
   log(`Backfilling via Etherscan API from block ${params.fromBlock} to ${params.toBlock}`)
 
-  // Fetch InfectionSpread events
+  // Use subdivision-based pagination to capture all events
   log('Fetching InfectionSpread events...')
-  let infectionLogs: EtherscanLogResult[] = []
-  let cursor = params.fromBlock
-
-  while (cursor <= params.toBlock && !shuttingDown) {
-    const logs = await fetchEtherscanLogs({
+  const { logs: infectionLogs, stats: infectionStats } = await fetchLogsWithSubdivision(
+    async (fetchParams) => {
+      if (shuttingDown) return []
+      return fetchEtherscanLogs({
+        address: SPREAD_CONTRACT,
+        topic0: INFECTION_SPREAD_TOPIC,
+        fromBlock: fetchParams.fromBlock,
+        toBlock: fetchParams.toBlock,
+      })
+    },
+    {
       address: SPREAD_CONTRACT,
       topic0: INFECTION_SPREAD_TOPIC,
-      fromBlock: cursor,
+      fromBlock: params.fromBlock,
       toBlock: params.toBlock,
-    })
+    },
+    (msg) => log(msg)
+  )
 
-    infectionLogs = infectionLogs.concat(logs)
-    log(`Fetched ${logs.length} InfectionSpread events (total: ${infectionLogs.length})`)
+  log(`Total InfectionSpread events: ${infectionLogs.length} (${infectionStats.apiCalls} API calls, ${infectionStats.subdivisions} subdivisions)`)
 
-    // If we got max results, paginate from last block + 1
-    if (logs.length >= ETHERSCAN_MAX_RESULTS) {
-      const lastBlock = BigInt(logs[logs.length - 1].blockNumber)
-      cursor = lastBlock + 1n
-      // Rate limiter handles delays between calls
-    } else {
-      break
-    }
+  if (infectionStats.singleBlockOverflow) {
+    log('WARNING: Some InfectionSpread events may have been missed due to single-block overflow')
   }
 
   // Process infection events
@@ -230,58 +232,58 @@ async function backfillWithEtherscan(params: {
     log(`Processed ${result.processed} infection events`)
   }
 
-  // Rate limiter handles delays between event types
-
   // Fetch TransferSingle burn events from Mushroom contract
   log('Fetching mushroom TransferSingle events...')
-  let mushroomSingleLogs: EtherscanLogResult[] = []
-  cursor = params.fromBlock
-
-  while (cursor <= params.toBlock && !shuttingDown) {
-    const logs = await fetchEtherscanLogs({
+  const { logs: mushroomSingleLogs, stats: singleStats } = await fetchLogsWithSubdivision(
+    async (fetchParams) => {
+      if (shuttingDown) return []
+      return fetchEtherscanLogs({
+        address: MUSHROOM_CONTRACT,
+        topic0: TRANSFER_SINGLE_TOPIC,
+        fromBlock: fetchParams.fromBlock,
+        toBlock: fetchParams.toBlock,
+      })
+    },
+    {
       address: MUSHROOM_CONTRACT,
       topic0: TRANSFER_SINGLE_TOPIC,
-      fromBlock: cursor,
+      fromBlock: params.fromBlock,
       toBlock: params.toBlock,
-    })
+    },
+    (msg) => log(msg)
+  )
 
-    mushroomSingleLogs = mushroomSingleLogs.concat(logs)
-    log(`Fetched ${logs.length} TransferSingle events (total: ${mushroomSingleLogs.length})`)
+  log(`Total TransferSingle events: ${mushroomSingleLogs.length} (${singleStats.apiCalls} API calls, ${singleStats.subdivisions} subdivisions)`)
 
-    if (logs.length >= ETHERSCAN_MAX_RESULTS) {
-      const lastBlock = BigInt(logs[logs.length - 1].blockNumber)
-      cursor = lastBlock + 1n
-      // Rate limiter handles delays between calls
-    } else {
-      break
-    }
+  if (singleStats.singleBlockOverflow) {
+    log('WARNING: Some TransferSingle events may have been missed due to single-block overflow')
   }
-
-  // Rate limiter handles delays between event types
 
   // Fetch TransferBatch burn events from Mushroom contract
   log('Fetching mushroom TransferBatch events...')
-  let mushroomBatchLogs: EtherscanLogResult[] = []
-  cursor = params.fromBlock
-
-  while (cursor <= params.toBlock && !shuttingDown) {
-    const logs = await fetchEtherscanLogs({
+  const { logs: mushroomBatchLogs, stats: batchStats } = await fetchLogsWithSubdivision(
+    async (fetchParams) => {
+      if (shuttingDown) return []
+      return fetchEtherscanLogs({
+        address: MUSHROOM_CONTRACT,
+        topic0: TRANSFER_BATCH_TOPIC,
+        fromBlock: fetchParams.fromBlock,
+        toBlock: fetchParams.toBlock,
+      })
+    },
+    {
       address: MUSHROOM_CONTRACT,
       topic0: TRANSFER_BATCH_TOPIC,
-      fromBlock: cursor,
+      fromBlock: params.fromBlock,
       toBlock: params.toBlock,
-    })
+    },
+    (msg) => log(msg)
+  )
 
-    mushroomBatchLogs = mushroomBatchLogs.concat(logs)
-    log(`Fetched ${logs.length} TransferBatch events (total: ${mushroomBatchLogs.length})`)
+  log(`Total TransferBatch events: ${mushroomBatchLogs.length} (${batchStats.apiCalls} API calls, ${batchStats.subdivisions} subdivisions)`)
 
-    if (logs.length >= ETHERSCAN_MAX_RESULTS) {
-      const lastBlock = BigInt(logs[logs.length - 1].blockNumber)
-      cursor = lastBlock + 1n
-      // Rate limiter handles delays between calls
-    } else {
-      break
-    }
+  if (batchStats.singleBlockOverflow) {
+    log('WARNING: Some TransferBatch events may have been missed due to single-block overflow')
   }
 
   // Process mushroom burn events
@@ -438,6 +440,7 @@ function startLiveWatch(params: {
       onError: (error) => {
         const message = error instanceof Error ? error.message : String(error)
         log(`Mushroom watch error: ${message}`)
+        scheduleReconnect(restart, message)
       },
     })
 
@@ -445,6 +448,7 @@ function startLiveWatch(params: {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     log(`Failed to start Mushroom watch: ${message}`)
+    scheduleReconnect(restart, message)
   }
 }
 

@@ -2,9 +2,9 @@
 // Processes ERC1155 TransferSingle and TransferBatch events from TokensOfConcord
 
 import { decodeEventLog, type Log } from 'viem'
-import { createClient } from '@supabase/supabase-js'
 import { enqueueConcordTransfer } from '../discord/outbox'
 import type { IndexerContext } from '../discord/types'
+import { batchUpsert } from './utils/batch-upsert'
 
 export interface ConcordHandleResult {
   highestBlock: bigint | null
@@ -16,24 +16,6 @@ const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-// Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://kong:8000'
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-let adminClient: ReturnType<typeof createClient> | null = null
-
-function getAdminClient(): ReturnType<typeof createClient> {
-  if (!adminClient) {
-    if (!serviceRoleKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY is required')
-    }
-    log(`Connecting to Supabase: ${supabaseUrl}`)
-    adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    })
-  }
-  return adminClient
-}
 
 // ERC1155 Event ABIs
 // event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)
@@ -86,9 +68,28 @@ type TransferBatchArgs = {
   values: readonly bigint[]
 }
 
-function normalizeAddress(value: unknown): string {
-  if (typeof value !== 'string') return ''
-  return value.toLowerCase()
+// Record type for batch upsert
+interface TransferRecord extends Record<string, unknown> {
+  token_id: number
+  from_address: string
+  to_address: string
+  amount: number
+  operator_address: string
+  transaction_hash: string
+  block_number: number
+  log_index: number
+  batch_index: number
+  metadata: Record<string, unknown>
+}
+
+function normalizeAddress(address: string | undefined): string | null {
+  if (!address) return null
+  const normalized = address.toLowerCase()
+  if (!/^0x[a-f0-9]{40}$/i.test(normalized)) {
+    console.warn(`[concord-handler] Invalid address format: ${address}`)
+    return null
+  }
+  return normalized
 }
 
 function getBlockNumber(log: Log): bigint | null {
@@ -111,45 +112,23 @@ function log(message: string): void {
   console.log(`[${new Date().toISOString()}] [concord-handler] ${message}`)
 }
 
-async function insertTransfer(params: {
+// Data structure for Discord notification queue
+interface PendingNotification {
   tokenId: number
-  fromAddress: string
-  toAddress: string
-  amount: number
-  operatorAddress: string
   transactionHash: string
-  blockNumber: bigint
   logIndex: number
-  metadata?: Record<string, unknown>
-}): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getAdminClient() as any
-
-  const { error } = await client.from('concord_transfers').upsert(
-    {
-      token_id: params.tokenId,
-      from_address: params.fromAddress,
-      to_address: params.toAddress,
-      amount: params.amount,
-      operator_address: params.operatorAddress,
-      transaction_hash: params.transactionHash,
-      block_number: Number(params.blockNumber),
-      log_index: params.logIndex,
-      metadata: params.metadata ?? {},
-    },
-    { onConflict: 'transaction_hash,log_index,token_id' }
-  )
-
-  if (error) {
-    log(`Failed to insert transfer: ${JSON.stringify(error)}`)
-    return false
-  }
-
-  return true
+  blockNumber: bigint
+  from: string
+  to: string
+  amount: number
+  operator: string
+  isMint: boolean
+  isBurn: boolean
 }
 
 /**
  * Handle ERC1155 transfer events from TokensOfConcord contract
+ * Uses batch upsert for efficient bulk database writes
  */
 export async function handleConcordTransferLogs(
   logs: Log[],
@@ -161,7 +140,10 @@ export async function handleConcordTransferLogs(
 
   const ordered = [...logs].sort(compareLogs)
   let highestBlock: bigint | null = null
-  let processed = 0
+
+  // Collect all records for batch upsert
+  const records: TransferRecord[] = []
+  const notifications: PendingNotification[] = []
 
   for (const logEntry of ordered) {
     const topic0 = logEntry.topics[0]
@@ -169,6 +151,11 @@ export async function handleConcordTransferLogs(
 
     const blockNumber = getBlockNumber(logEntry)
     const logIndex = getLogIndex(logEntry)
+
+    if (!logEntry.transactionHash || logEntry.blockNumber === undefined || blockNumber === null) {
+      console.warn('[concord-handler] Skipping log with missing tx data')
+      continue
+    }
 
     try {
       if (topic0 === CONCORD_TOPICS.TransferSingle) {
@@ -185,37 +172,38 @@ export async function handleConcordTransferLogs(
         const to = normalizeAddress(args.to)
         const operator = normalizeAddress(args.operator)
 
-        const inserted = await insertTransfer({
-          tokenId,
-          fromAddress: from,
-          toAddress: to,
+        if (!from || !to || !operator) {
+          continue
+        }
+
+        const isMint = from === ZERO_ADDRESS
+        const isBurn = to === ZERO_ADDRESS
+
+        records.push({
+          token_id: tokenId,
+          from_address: from,
+          to_address: to,
           amount,
-          operatorAddress: operator,
-          transactionHash: logEntry.transactionHash!,
-          blockNumber: blockNumber!,
-          logIndex,
+          operator_address: operator,
+          transaction_hash: logEntry.transactionHash,
+          block_number: Number(blockNumber),
+          log_index: logIndex,
+          batch_index: 0, // TransferSingle is always batch_index 0
           metadata: { tokenId, amount, from, to, operator },
         })
 
-        if (inserted) {
-          const isMint = from === ZERO_ADDRESS
-          const isBurn = to === ZERO_ADDRESS
-          const action = isMint ? 'Mint' : isBurn ? 'Burn' : 'Transfer'
-          log(`${action}: token ${tokenId} x${amount} ${from.slice(0, 10)}...→${to.slice(0, 10)}...`)
-          processed += 1
-
-          // Enqueue Discord notification
-          if (logEntry.transactionHash) {
-            await enqueueConcordTransfer(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
-              from,
-              to,
-              amount,
-              operator,
-              isMint,
-              isBurn,
-            })
-          }
-        }
+        notifications.push({
+          tokenId,
+          transactionHash: logEntry.transactionHash,
+          logIndex,
+          blockNumber,
+          from,
+          to,
+          amount,
+          operator,
+          isMint,
+          isBurn,
+        })
       } else if (topic0 === CONCORD_TOPICS.TransferBatch) {
         const decoded = decodeEventLog({
           abi: [transferBatchAbi],
@@ -227,6 +215,11 @@ export async function handleConcordTransferLogs(
         const from = normalizeAddress(args.from)
         const to = normalizeAddress(args.to)
         const operator = normalizeAddress(args.operator)
+
+        if (!from || !to || !operator) {
+          continue
+        }
+
         const isMint = from === ZERO_ADDRESS
         const isBurn = to === ZERO_ADDRESS
 
@@ -234,37 +227,33 @@ export async function handleConcordTransferLogs(
         for (let i = 0; i < args.ids.length; i++) {
           const tokenId = Number(args.ids[i])
           const amount = Number(args.values[i])
-          const batchLogIndex = logIndex + i // Unique log index per token in batch
+          const batchIndex = i
 
-          const inserted = await insertTransfer({
-            tokenId,
-            fromAddress: from,
-            toAddress: to,
+          records.push({
+            token_id: tokenId,
+            from_address: from,
+            to_address: to,
             amount,
-            operatorAddress: operator,
-            transactionHash: logEntry.transactionHash!,
-            blockNumber: blockNumber!,
-            logIndex: batchLogIndex,
-            metadata: { tokenId, amount, from, to, operator, batchIndex: i },
+            operator_address: operator,
+            transaction_hash: logEntry.transactionHash,
+            block_number: Number(blockNumber),
+            log_index: logIndex, // Real log_index - same for all items in batch
+            batch_index: batchIndex, // Position within the batch for uniqueness
+            metadata: { tokenId, amount, from, to, operator, batchIndex },
           })
 
-          if (inserted) {
-            const action = isMint ? 'Mint' : isBurn ? 'Burn' : 'Transfer'
-            log(`${action} (batch): token ${tokenId} x${amount}`)
-            processed += 1
-
-            // Enqueue Discord notification for each token in batch
-            if (logEntry.transactionHash) {
-              await enqueueConcordTransfer(ctx, tokenId, logEntry.transactionHash, batchLogIndex, blockNumber, {
-                from,
-                to,
-                amount,
-                operator,
-                isMint,
-                isBurn,
-              })
-            }
-          }
+          notifications.push({
+            tokenId,
+            transactionHash: logEntry.transactionHash,
+            logIndex,
+            blockNumber,
+            from,
+            to,
+            amount,
+            operator,
+            isMint,
+            isBurn,
+          })
         }
       }
     } catch {
@@ -274,6 +263,41 @@ export async function handleConcordTransferLogs(
 
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber
+    }
+  }
+
+  // Batch upsert all records
+  let processed = 0
+  if (records.length > 0) {
+    const result = await batchUpsert('concord_transfers', records, {
+      onConflict: 'transaction_hash,log_index,batch_index,token_id',
+    })
+    processed = result.totalInserted
+
+    // Log summary for backfill
+    if (records.length > 10) {
+      log(`Processed ${processed} transfers in ${result.batchCount} batches`)
+    } else {
+      // Detailed logging for small batches / live events
+      for (const record of records) {
+        const isMint = record.from_address === ZERO_ADDRESS
+        const isBurn = record.to_address === ZERO_ADDRESS
+        const action = isMint ? 'Mint' : isBurn ? 'Burn' : 'Transfer'
+        const batchNote = record.batch_index > 0 ? ' (batch)' : ''
+        log(`${action}${batchNote}: token ${record.token_id} x${record.amount}`)
+      }
+    }
+
+    // Enqueue Discord notifications after successful insert
+    for (const notif of notifications) {
+      await enqueueConcordTransfer(ctx, notif.tokenId, notif.transactionHash, notif.logIndex, notif.blockNumber, {
+        from: notif.from,
+        to: notif.to,
+        amount: notif.amount,
+        operator: notif.operator,
+        isMint: notif.isMint,
+        isBurn: notif.isBurn,
+      })
     }
   }
 

@@ -2,9 +2,9 @@
 // Processes WagdieStaked, WagdieUnstaked, WagdieLocationChanged, WagdieBurned events
 
 import { decodeEventLog, type Log } from 'viem'
-import { createClient } from '@supabase/supabase-js'
 import { enqueueBurn, enqueueTravel } from '../discord/outbox'
 import type { IndexerContext } from '../discord/types'
+import { batchUpsert } from './utils/batch-upsert'
 
 export interface StakingHandleResult {
   highestBlock: bigint | null
@@ -14,23 +14,33 @@ export interface StakingHandleResult {
 // Default context for backwards compatibility
 const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
 
-// Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://kong:8000'
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Record type for batch upsert
+interface StakingRecord extends Record<string, unknown> {
+  token_id: number
+  event_type: 'stake' | 'unstake' | 'location_change' | 'burn'
+  location_id: number | null
+  old_location_id: number | null
+  new_location_id: number | null
+  owner_address: string | null
+  transaction_hash: string
+  block_number: number
+  log_index: number
+  metadata: Record<string, unknown>
+}
 
-let adminClient: ReturnType<typeof createClient> | null = null
-
-function getAdminClient(): ReturnType<typeof createClient> {
-  if (!adminClient) {
-    if (!serviceRoleKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY is required')
-    }
-    log(`Connecting to Supabase: ${supabaseUrl}`)
-    adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    })
+// Pending notification for Discord queue
+interface PendingNotification {
+  type: 'travel' | 'burn'
+  tokenId: number
+  transactionHash: string
+  logIndex: number
+  blockNumber: bigint
+  data: {
+    oldLocationId?: number
+    newLocationId?: number
+    locationId?: number
+    ownerAddress: string | null
   }
-  return adminClient
 }
 
 // Event ABIs
@@ -132,50 +142,9 @@ function log(message: string): void {
   console.log(`[${new Date().toISOString()}] [staking-handler] ${message}`)
 }
 
-async function insertStakingEvent(params: {
-  tokenId: number
-  eventType: 'stake' | 'unstake' | 'location_change' | 'burn'
-  locationId?: bigint | null
-  oldLocationId?: bigint | null
-  newLocationId?: bigint | null
-  ownerAddress?: string | null
-  transactionHash: string
-  blockNumber: bigint
-  logIndex: number
-  metadata?: Record<string, unknown>
-}): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getAdminClient() as any
-
-  const { error } = await client.from('staking_events').upsert(
-    {
-      token_id: params.tokenId,
-      event_type: params.eventType,
-      location_id: params.locationId !== null && params.locationId !== undefined
-        ? Number(params.locationId) : null,
-      old_location_id: params.oldLocationId !== null && params.oldLocationId !== undefined
-        ? Number(params.oldLocationId) : null,
-      new_location_id: params.newLocationId !== null && params.newLocationId !== undefined
-        ? Number(params.newLocationId) : null,
-      owner_address: params.ownerAddress,
-      transaction_hash: params.transactionHash,
-      block_number: Number(params.blockNumber),
-      log_index: params.logIndex,
-      metadata: params.metadata ?? {},
-    },
-    { onConflict: 'transaction_hash,log_index' }
-  )
-
-  if (error) {
-    log(`Failed to insert event: ${JSON.stringify(error)}`)
-    return false
-  }
-
-  return true
-}
-
 /**
  * Handle staking events from WagdieWorld contract
+ * Uses batch upsert for efficient bulk database writes
  */
 export async function handleStakingLogs(
   logs: Log[],
@@ -187,15 +156,22 @@ export async function handleStakingLogs(
 
   const ordered = [...logs].sort(compareLogs)
   let highestBlock: bigint | null = null
-  let processed = 0
+
+  // Collect all records for batch upsert
+  const records: StakingRecord[] = []
+  const notifications: PendingNotification[] = []
 
   for (const logEntry of ordered) {
     const topic0 = logEntry.topics[0]
     if (!topic0) continue
 
-    let inserted = false
     const blockNumber = getBlockNumber(logEntry)
     const logIndex = getLogIndex(logEntry)
+
+    if (!logEntry.transactionHash || logEntry.blockNumber === undefined || blockNumber === null) {
+      console.warn('[staking-handler] Skipping log with missing tx data')
+      continue
+    }
 
     try {
       if (topic0 === STAKING_TOPICS.WagdieStaked) {
@@ -209,19 +185,18 @@ export async function handleStakingLogs(
         const owner = normalizeAddress(args.owner)
 
         if (tokenId !== null) {
-          inserted = await insertStakingEvent({
-            tokenId,
-            eventType: 'stake',
-            locationId: args.locationId,
-            ownerAddress: owner,
-            transactionHash: logEntry.transactionHash!,
-            blockNumber: blockNumber!,
-            logIndex,
+          records.push({
+            token_id: tokenId,
+            event_type: 'stake',
+            location_id: Number(args.locationId),
+            old_location_id: null,
+            new_location_id: null,
+            owner_address: owner,
+            transaction_hash: logEntry.transactionHash,
+            block_number: Number(blockNumber),
+            log_index: logIndex,
             metadata: { wagdieId: tokenId, owner, locationId: Number(args.locationId) },
           })
-          if (inserted) {
-            log(`Stake: token ${tokenId} at location ${args.locationId} by ${owner}`)
-          }
         }
       } else if (topic0 === STAKING_TOPICS.WagdieUnstaked) {
         const decoded = decodeEventLog({
@@ -234,19 +209,18 @@ export async function handleStakingLogs(
         const owner = normalizeAddress(args.owner)
 
         if (tokenId !== null) {
-          inserted = await insertStakingEvent({
-            tokenId,
-            eventType: 'unstake',
-            locationId: args.locationId,
-            ownerAddress: owner,
-            transactionHash: logEntry.transactionHash!,
-            blockNumber: blockNumber!,
-            logIndex,
+          records.push({
+            token_id: tokenId,
+            event_type: 'unstake',
+            location_id: Number(args.locationId),
+            old_location_id: null,
+            new_location_id: null,
+            owner_address: owner,
+            transaction_hash: logEntry.transactionHash,
+            block_number: Number(blockNumber),
+            log_index: logIndex,
             metadata: { wagdieId: tokenId, owner, locationId: Number(args.locationId) },
           })
-          if (inserted) {
-            log(`Unstake: token ${tokenId} from location ${args.locationId} by ${owner}`)
-          }
         }
       } else if (topic0 === STAKING_TOPICS.WagdieLocationChanged) {
         const decoded = decodeEventLog({
@@ -258,31 +232,36 @@ export async function handleStakingLogs(
         const tokenId = normalizeTokenId(args.wagdieId)
 
         if (tokenId !== null) {
-          inserted = await insertStakingEvent({
-            tokenId,
-            eventType: 'location_change',
-            oldLocationId: args.oldLocationId,
-            newLocationId: args.newLocationId,
-            transactionHash: logEntry.transactionHash!,
-            blockNumber: blockNumber!,
-            logIndex,
+          records.push({
+            token_id: tokenId,
+            event_type: 'location_change',
+            location_id: null,
+            old_location_id: Number(args.oldLocationId),
+            new_location_id: Number(args.newLocationId),
+            owner_address: null,
+            transaction_hash: logEntry.transactionHash,
+            block_number: Number(blockNumber),
+            log_index: logIndex,
             metadata: {
               wagdieId: tokenId,
               oldLocationId: Number(args.oldLocationId),
               newLocationId: Number(args.newLocationId),
             },
           })
-          if (inserted) {
-            log(`Location change: token ${tokenId} from ${args.oldLocationId} to ${args.newLocationId}`)
-            // Enqueue Discord notification for travel
-            if (logEntry.transactionHash) {
-              await enqueueTravel(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
-                oldLocationId: Number(args.oldLocationId),
-                newLocationId: Number(args.newLocationId),
-                ownerAddress: null, // Owner not available in this event
-              })
-            }
-          }
+
+          // Queue Discord notification for travel
+          notifications.push({
+            type: 'travel',
+            tokenId,
+            transactionHash: logEntry.transactionHash,
+            logIndex,
+            blockNumber,
+            data: {
+              oldLocationId: Number(args.oldLocationId),
+              newLocationId: Number(args.newLocationId),
+              ownerAddress: null,
+            },
+          })
         }
       } else if (topic0 === STAKING_TOPICS.WagdieBurned) {
         const decoded = decodeEventLog({
@@ -294,25 +273,31 @@ export async function handleStakingLogs(
         const tokenId = normalizeTokenId(args.wagdieId)
 
         if (tokenId !== null) {
-          inserted = await insertStakingEvent({
-            tokenId,
-            eventType: 'burn',
-            locationId: args.locationId,
-            transactionHash: logEntry.transactionHash!,
-            blockNumber: blockNumber!,
-            logIndex,
+          records.push({
+            token_id: tokenId,
+            event_type: 'burn',
+            location_id: Number(args.locationId),
+            old_location_id: null,
+            new_location_id: null,
+            owner_address: null,
+            transaction_hash: logEntry.transactionHash,
+            block_number: Number(blockNumber),
+            log_index: logIndex,
             metadata: { wagdieId: tokenId, locationId: Number(args.locationId) },
           })
-          if (inserted) {
-            log(`Burn: token ${tokenId} at location ${args.locationId}`)
-            // Enqueue Discord notification for burn
-            if (logEntry.transactionHash) {
-              await enqueueBurn(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
-                locationId: Number(args.locationId),
-                ownerAddress: null, // Owner not available in burn event
-              })
-            }
-          }
+
+          // Queue Discord notification for burn
+          notifications.push({
+            type: 'burn',
+            tokenId,
+            transactionHash: logEntry.transactionHash,
+            logIndex,
+            blockNumber,
+            data: {
+              locationId: Number(args.locationId),
+              ownerAddress: null,
+            },
+          })
         }
       }
     } catch {
@@ -320,10 +305,49 @@ export async function handleStakingLogs(
       continue
     }
 
-    if (inserted) {
-      processed += 1
-      if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
-        highestBlock = blockNumber
+    if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
+      highestBlock = blockNumber
+    }
+  }
+
+  // Batch upsert all records
+  let processed = 0
+  if (records.length > 0) {
+    const result = await batchUpsert('staking_events', records, {
+      onConflict: 'transaction_hash,log_index',
+    })
+    processed = result.totalInserted
+
+    // Log summary for backfill
+    if (records.length > 10) {
+      log(`Processed ${processed} staking events in ${result.batchCount} batches`)
+    } else {
+      // Detailed logging for small batches / live events
+      for (const record of records) {
+        const action = record.event_type === 'stake' ? 'Stake' :
+                       record.event_type === 'unstake' ? 'Unstake' :
+                       record.event_type === 'location_change' ? 'Location change' : 'Burn'
+        if (record.event_type === 'location_change') {
+          log(`${action}: token ${record.token_id} from ${record.old_location_id} to ${record.new_location_id}`)
+        } else {
+          log(`${action}: token ${record.token_id} at location ${record.location_id}`)
+        }
+      }
+    }
+
+    // Enqueue Discord notifications after successful insert
+    for (const notif of notifications) {
+      if (notif.type === 'travel') {
+        await enqueueTravel(ctx, notif.tokenId, notif.transactionHash, notif.logIndex, notif.blockNumber, {
+          oldLocationId: notif.data.oldLocationId!,
+          newLocationId: notif.data.newLocationId!,
+          ownerAddress: notif.data.ownerAddress,
+        })
+      } else if (notif.type === 'burn') {
+        await enqueueBurn(ctx, notif.tokenId, notif.transactionHash, notif.logIndex, notif.blockNumber, {
+          locationId: notif.data.locationId!,
+          ownerAddress: notif.data.ownerAddress,
+        })
       }
     }
   }

@@ -2,9 +2,9 @@
 // Processes SearConcords events from the Searing contract
 
 import { decodeEventLog, type Log } from 'viem'
-import { createClient } from '@supabase/supabase-js'
 import { enqueueSear } from '../discord/outbox'
 import type { IndexerContext } from '../discord/types'
+import { batchUpsert } from './utils/batch-upsert'
 
 export interface SearingHandleResult {
   highestBlock: bigint | null
@@ -14,23 +14,27 @@ export interface SearingHandleResult {
 // Default context for backwards compatibility
 const DEFAULT_CONTEXT: IndexerContext = { source: 'backfill', chainId: 1 }
 
-// Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://kong:8000'
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Record type for batch upsert
+interface SearingRecord extends Record<string, unknown> {
+  token_id: number
+  concord_id: number
+  event_type: 'sear' | 'tame'
+  transaction_hash: string
+  block_number: number
+  log_index: number
+  actor_address: string | null
+  event_timestamp: string | null
+  metadata: Record<string, unknown>
+}
 
-let adminClient: ReturnType<typeof createClient> | null = null
-
-function getAdminClient(): ReturnType<typeof createClient> {
-  if (!adminClient) {
-    if (!serviceRoleKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY is required')
-    }
-    log(`Connecting to Supabase: ${supabaseUrl}`)
-    adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    })
-  }
-  return adminClient
+// Pending notification for Discord queue
+interface PendingNotification {
+  tokenId: number
+  transactionHash: string
+  logIndex: number
+  blockNumber: bigint
+  concordId: number
+  owner: string | null
 }
 
 // ConcordSeared event ABI
@@ -91,45 +95,9 @@ function log(message: string): void {
   console.log(`[${new Date().toISOString()}] [searing-handler] ${message}`)
 }
 
-async function insertSearingEvent(params: {
-  tokenId: number
-  concordId: number
-  eventType: 'sear' | 'tame'
-  transactionHash: string
-  blockNumber: bigint
-  logIndex: number
-  actorAddress: string | null
-  eventTimestamp?: Date
-  metadata?: Record<string, unknown>
-}): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getAdminClient() as any
-
-  const { error } = await client.from('searing_events').upsert(
-    {
-      token_id: params.tokenId,
-      concord_id: params.concordId,
-      event_type: params.eventType,
-      transaction_hash: params.transactionHash,
-      block_number: Number(params.blockNumber),
-      log_index: params.logIndex,
-      actor_address: params.actorAddress,
-      event_timestamp: params.eventTimestamp?.toISOString() ?? null,
-      metadata: params.metadata ?? {},
-    },
-    { onConflict: 'transaction_hash,log_index' }
-  )
-
-  if (error) {
-    log(`Failed to insert event: ${JSON.stringify(error)}`)
-    return false
-  }
-
-  return true
-}
-
 /**
  * Handle SearConcords events from the Searing contract
+ * Uses batch upsert for efficient bulk database writes
  */
 export async function handleSearConcordsLogs(
   logs: Log[],
@@ -141,7 +109,10 @@ export async function handleSearConcordsLogs(
 
   const ordered = [...logs].sort(compareLogs)
   let highestBlock: bigint | null = null
-  let processed = 0
+
+  // Collect all records for batch upsert
+  const records: SearingRecord[] = []
+  const notifications: PendingNotification[] = []
 
   for (const logEntry of ordered) {
     let decoded: { eventName: string; args: unknown }
@@ -167,14 +138,20 @@ export async function handleSearConcordsLogs(
     const blockNumber = getBlockNumber(logEntry)
     const logIndex = getLogIndex(logEntry)
 
-    const inserted = await insertSearingEvent({
-      tokenId,
-      concordId,
-      eventType: 'sear',
-      transactionHash: logEntry.transactionHash!,
-      blockNumber: blockNumber!,
-      logIndex,
-      actorAddress: sender,
+    if (!logEntry.transactionHash || logEntry.blockNumber === undefined || blockNumber === null) {
+      console.warn('[searing-handler] Skipping log with missing tx data')
+      continue
+    }
+
+    records.push({
+      token_id: tokenId,
+      concord_id: concordId,
+      event_type: 'sear',
+      transaction_hash: logEntry.transactionHash,
+      block_number: Number(blockNumber),
+      log_index: logIndex,
+      actor_address: sender,
+      event_timestamp: null,
       metadata: {
         sender,
         wagdieId: tokenId,
@@ -182,21 +159,44 @@ export async function handleSearConcordsLogs(
       },
     })
 
-    if (!inserted) continue
-
-    processed += 1
-    log(`Sear: token ${tokenId} + concord ${concordId} by ${sender} at block ${blockNumber}`)
-
-    // Enqueue Discord notification for searing
-    if (logEntry.transactionHash) {
-      await enqueueSear(ctx, tokenId, logEntry.transactionHash, logIndex, blockNumber, {
-        concordId,
-        owner: sender,
-      })
-    }
+    notifications.push({
+      tokenId,
+      transactionHash: logEntry.transactionHash,
+      logIndex,
+      blockNumber,
+      concordId,
+      owner: sender,
+    })
 
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber
+    }
+  }
+
+  // Batch upsert all records
+  let processed = 0
+  if (records.length > 0) {
+    const result = await batchUpsert('searing_events', records, {
+      onConflict: 'transaction_hash,log_index',
+    })
+    processed = result.totalInserted
+
+    // Log summary for backfill
+    if (records.length > 10) {
+      log(`Processed ${processed} searing events in ${result.batchCount} batches`)
+    } else {
+      // Detailed logging for small batches / live events
+      for (const record of records) {
+        log(`Sear: token ${record.token_id} + concord ${record.concord_id} by ${record.actor_address}`)
+      }
+    }
+
+    // Enqueue Discord notifications after successful insert
+    for (const notif of notifications) {
+      await enqueueSear(ctx, notif.tokenId, notif.transactionHash, notif.logIndex, notif.blockNumber, {
+        concordId: notif.concordId,
+        owner: notif.owner,
+      })
     }
   }
 

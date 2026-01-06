@@ -1,5 +1,5 @@
 import { decodeEventLog, type Log } from 'viem'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { enqueueTransfer } from '../discord/outbox'
 import type { IndexerContext } from '../discord/types'
 
@@ -17,9 +17,9 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wagdie-api.runiverse.ai'
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-let adminClient: ReturnType<typeof createClient> | null = null
+let adminClient: SupabaseClient | null = null
 
-function getAdminClient(): ReturnType<typeof createClient> {
+function getAdminClient(): SupabaseClient {
   if (!adminClient) {
     if (!serviceRoleKey) {
       throw new Error('SUPABASE_SERVICE_ROLE_KEY is required')
@@ -29,6 +29,10 @@ function getAdminClient(): ReturnType<typeof createClient> {
     })
   }
   return adminClient
+}
+
+function log(message: string): void {
+  console.log(`[${new Date().toISOString()}] [event-handler] ${message}`)
 }
 
 // Minimal Transfer event ABI for decoding
@@ -83,21 +87,69 @@ function compareLogs(a: Log, b: Log): number {
   return getLogIndex(a) - getLogIndex(b)
 }
 
-async function updateOwnership(tokenId: number, ownerAddress: string | null): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getAdminClient() as any
+// Pending notification for Discord queue
+interface PendingNotification {
+  tokenId: number
+  transactionHash: string
+  logIndex: number
+  blockNumber: bigint | null
+  from: string
+  to: string
+  isMint: boolean
+}
 
-  const { error } = await client
-    .from('wagdie_characters')
-    .update({ owner_address: ownerAddress })
-    .eq('token_id', tokenId)
-
-  if (error) {
-    console.error(`Failed to update token ${tokenId}:`, error.message)
-    return false
+/**
+ * Batch update ownership for multiple tokens
+ * Uses a single query per batch for efficiency
+ */
+async function batchUpdateOwnership(
+  updates: Map<number, string | null>
+): Promise<{ success: number; failed: number }> {
+  if (updates.size === 0) {
+    return { success: 0, failed: 0 }
   }
 
-  return true
+  const client = getAdminClient()
+  let success = 0
+  let failed = 0
+
+  // Process updates in batches of 100
+  const entries = Array.from(updates.entries())
+  const batchSize = 100
+
+  for (let i = 0; i < entries.length; i += batchSize) {
+    const batch = entries.slice(i, i + batchSize)
+    const startTime = Date.now()
+
+    // Use individual updates for now since Supabase doesn't support
+    // batch update with different values per row easily
+    // This is still faster than waiting for each one serially
+    const promises = batch.map(async ([tokenId, ownerAddress]) => {
+      const { error } = await client
+        .from('wagdie_characters')
+        .update({ owner_address: ownerAddress })
+        .eq('token_id', tokenId)
+
+      if (error) {
+        console.error(`Failed to update token ${tokenId}:`, error.message)
+        return false
+      }
+      return true
+    })
+
+    const results = await Promise.all(promises)
+    const batchSuccess = results.filter(Boolean).length
+    const batchFailed = results.length - batchSuccess
+    success += batchSuccess
+    failed += batchFailed
+
+    const duration = Date.now() - startTime
+    const batchNum = Math.floor(i / batchSize) + 1
+    const totalBatches = Math.ceil(entries.length / batchSize)
+    log(`Batch ${batchNum}/${totalBatches}: ${batchSuccess} updates in ${duration}ms`)
+  }
+
+  return { success, failed }
 }
 
 export async function handleTransferLogs(
@@ -110,15 +162,18 @@ export async function handleTransferLogs(
 
   const ordered = [...logs].sort(compareLogs)
   let highestBlock: bigint | null = null
-  let processed = 0
 
-  for (const log of ordered) {
+  // Collect final ownership state per token (last transfer wins)
+  const ownershipUpdates = new Map<number, string | null>()
+  const notifications: PendingNotification[] = []
+
+  for (const logEntry of ordered) {
     let decoded: { eventName: string; args: unknown }
     try {
       decoded = decodeEventLog({
         abi: [transferEventAbi],
-        data: log.data,
-        topics: log.topics,
+        data: logEntry.data,
+        topics: logEntry.topics,
       })
     } catch {
       continue
@@ -134,27 +189,44 @@ export async function handleTransferLogs(
     if (tokenId === null || !from || !to) continue
 
     const ownerAddress = to === ZERO_ADDRESS ? null : to
-    const updated = await updateOwnership(tokenId, ownerAddress)
 
-    if (!updated) continue
+    // Store final ownership (last transfer for each token)
+    ownershipUpdates.set(tokenId, ownerAddress)
 
-    processed += 1
-
-    const blockNumber = getBlockNumber(log)
+    const blockNumber = getBlockNumber(logEntry)
     if (blockNumber !== null && (highestBlock === null || blockNumber > highestBlock)) {
       highestBlock = blockNumber
     }
 
-    // Enqueue Discord notification for transfers (skip burns - handled by staking handler)
-    // Only enqueue if not a burn (to zero address)
-    if (to !== ZERO_ADDRESS && log.transactionHash) {
-      const isMint = from === ZERO_ADDRESS
-      await enqueueTransfer(ctx, tokenId, log.transactionHash, getLogIndex(log), blockNumber, {
+    // Collect notification for non-burn transfers
+    if (to !== ZERO_ADDRESS && logEntry.transactionHash) {
+      notifications.push({
+        tokenId,
+        transactionHash: logEntry.transactionHash,
+        logIndex: getLogIndex(logEntry),
+        blockNumber,
         from,
         to,
-        isMint,
+        isMint: from === ZERO_ADDRESS,
       })
     }
+  }
+
+  // Batch update all ownership changes
+  const { success: processed } = await batchUpdateOwnership(ownershipUpdates)
+
+  // Log summary for backfill
+  if (ownershipUpdates.size > 10) {
+    log(`Processed ${processed} ownership updates`)
+  }
+
+  // Enqueue Discord notifications after successful updates
+  for (const notif of notifications) {
+    await enqueueTransfer(ctx, notif.tokenId, notif.transactionHash, notif.logIndex, notif.blockNumber, {
+      from: notif.from,
+      to: notif.to,
+      isMint: notif.isMint,
+    })
   }
 
   return { highestBlock, processed }
