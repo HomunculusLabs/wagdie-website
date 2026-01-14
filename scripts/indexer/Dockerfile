@@ -17,6 +17,12 @@ RUN npm install -g tsx
 # Copy indexer scripts
 COPY scripts/indexer ./scripts/indexer
 
+# Copy discord scripts for outbox module
+COPY scripts/discord ./scripts/discord
+
+# Copy lib directory for shared modules (contracts, services, etc.)
+COPY lib ./lib
+
 # Copy tsconfig for compilation
 COPY tsconfig.json ./
 
