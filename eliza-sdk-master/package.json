@@ -13,8 +13,18 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.js"
+      },
+      "require": {
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.cjs"
       }
     }
   },
@@ -44,8 +54,22 @@
   "dependencies": {
     "zod": "^3.22.4"
   },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
     "typescript": "^5.3.3",
     "vite": "^5.0.10",
     "vitest": "^1.1.0"

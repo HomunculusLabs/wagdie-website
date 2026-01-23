@@ -19,6 +19,8 @@ interface ConversationsListResponse {
 interface UseConversationsOptions {
   /** Character ID (Eliza) to filter conversations */
   characterId?: string
+  /** WAGDIE token ID (server will translate to Eliza character record ID) */
+  tokenId?: string
   /** Initial page size */
   pageSize?: number
   /** Auto-fetch on mount */
@@ -63,7 +65,7 @@ interface UseConversationsReturn {
 }
 
 export function useConversations(options: UseConversationsOptions = {}): UseConversationsReturn {
-  const { characterId, pageSize = 20, autoFetch = true } = options
+  const { characterId, tokenId, pageSize = 20, autoFetch = true } = options
 
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversation, setActiveConversation] = useState<ConversationDetail | null>(null)
@@ -96,9 +98,13 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
 
       if (characterId) {
         params.set('characterId', characterId)
+      } else if (tokenId) {
+        params.set('tokenId', tokenId)
       }
 
-      const response = await fetch(`/api/eliza/conversations?${params}`)
+      const response = await fetch(`/api/eliza/conversations?${params}`, {
+        credentials: 'include',
+      })
       const data: ConversationsListResponse | ErrorResponse = await response.json()
 
       if (!response.ok) {
@@ -124,7 +130,7 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
       setIsLoading(false)
       setIsLoadingMore(false)
     }
-  }, [characterId, pageSize])
+  }, [characterId, tokenId, pageSize])
 
   // Load more conversations
   const loadMore = useCallback(async () => {
@@ -139,7 +145,9 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
     oldestMessageIdRef.current = null
 
     try {
-      const response = await fetch(`/api/eliza/conversations/${conversationId}`)
+      const response = await fetch(`/api/eliza/conversations/${conversationId}`, {
+        credentials: 'include',
+      })
       const data: ConversationDetail | ErrorResponse = await response.json()
 
       if (!response.ok) {
@@ -176,6 +184,7 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
     try {
       const response = await fetch(`/api/eliza/conversations/${conversationId}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -218,7 +227,8 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
       })
 
       const response = await fetch(
-        `/api/eliza/conversations/${activeConversation.id}?${params}`
+        `/api/eliza/conversations/${activeConversation.id}?${params}`,
+        { credentials: 'include' }
       )
       const data: ConversationDetail | ErrorResponse = await response.json()
 

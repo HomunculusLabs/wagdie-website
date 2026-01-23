@@ -73,3 +73,5 @@ export * from './character.js';
 export * from './chat.js';
 // Re-export conversation types
 export * from './conversation.js';
+
+export * from './nft.js';

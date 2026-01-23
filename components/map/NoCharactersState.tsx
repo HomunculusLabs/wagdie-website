@@ -43,7 +43,7 @@ export function NoCharactersState({ onConnectWallet }: NoCharactersStateProps) {
         {/* Action Buttons (UI font) */}
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => window.open('https://opensea.io/collection/wagdie', '_blank')}
+            onClick={() => window.open('https://opensea.io/collection/we-are-all-going-to-die', '_blank')}
             className="px-6 py-3 bg-gold text-abyss font-bold rounded hover:bg-ember transition-colors font-eskapade tracking-wide"
           >
             Browse Characters on OpenSea

@@ -57,3 +57,4 @@ export interface VerifyCredentialsResponse {
 export * from './character.js';
 export * from './chat.js';
 export * from './conversation.js';
+export * from './nft.js';

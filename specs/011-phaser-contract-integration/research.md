@@ -208,7 +208,7 @@ Given the research findings, recommend a phased implementation:
 
 - [Etherscan: WAGDIE NFT](https://etherscan.io/address/0x659A4BdaAaCc62d2bd9Cb18225D9C89b5B697A5A)
 - [Etherscan: Tokens Of Concord](https://etherscan.io/address/0x1d38150f1Fd989Fb89Ab19518A9C4E93C5554634)
-- [OpenSea: WAGDIE Collection](https://opensea.io/collection/wagdie)
-- [OpenSea: Tokens Of Concord](https://opensea.io/collection/wagdie-tokens-of-concord)
+- [OpenSea: WAGDIE Collection](https://opensea.io/collection/we-are-all-going-to-die)
+- [OpenSea: Tokens Of Concord](https://opensea.io/collection/we-are-all-going-to-die)
 - [WAGDIE Wiki: Strange Mushroom](https://wagdie.wiki/tokens/strange_mushroom)
 - [DappRadar: WAGDIE Analysis](https://dappradar.com/blog/new-dapps-report-we-are-all-going-to-die-embraces-uncertainty)

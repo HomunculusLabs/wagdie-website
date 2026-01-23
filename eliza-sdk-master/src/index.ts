@@ -5,6 +5,7 @@ export { ElizaClient } from './client/ElizaClient.js';
 export { CharactersAPI } from './characters/index.js';
 export { ChatAPI } from './chat/index.js';
 export { ConversationsAPI } from './conversations/index.js';
+export { NftAPI } from './nft/index.js';
 
 // SIWE auth helpers
 export {
@@ -27,11 +28,16 @@ export type {
 } from './types/index.js';
 
 export type {
+  AgentCharacter,
+  AgentMessage,
+  AgentMessageExample,
+  CharacterRecord,
   Character,
   CreateCharacterInput,
   UpdateCharacterInput,
   ExampleMessage,
   CharacterStyle,
+  KnowledgeDocument,
 } from './types/character.js';
 
 export type {
@@ -42,6 +48,10 @@ export type {
   StreamCompleteCallback,
   StreamErrorCallback,
   StreamCallbacks,
+  BuilderChatRole,
+  BuilderChatInputMessage,
+  BuilderChatInput,
+  BuilderChatResponse,
 } from './types/chat.js';
 
 export type {
@@ -50,12 +60,29 @@ export type {
   ConversationMessage,
 } from './types/conversation.js';
 
+export type {
+  NftCollection,
+  NftAttribute,
+  NftTokenMetadata,
+  UpsertNftCollectionInput,
+  UpdateNftCollectionInput,
+  ProvisionNftCharacterInput,
+  ProvisionNftCharacterResponse,
+  TokenStandard,
+  NftToken,
+  ListCollectionTokensInput,
+  ListCollectionTokensResponse,
+} from './types/nft.js';
+
 // Validation schema exports (for custom validation)
 export {
+  AgentCharacterSchema,
+  validateAgentCharacter,
   CreateCharacterInputSchema,
   UpdateCharacterInputSchema,
   validateCreateCharacter,
   validateUpdateCharacter,
+  FIELD_LIMITS,
 } from './characters/validation.js';
 
 // Error exports

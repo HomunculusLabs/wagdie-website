@@ -2,36 +2,14 @@
  * Eliza Character Resolver
  *
  * Centralized helpers to resolve a WAGDIE tokenId to an Eliza CharacterRecord.
+ * - getCharacterRecordByExternalId(): canonical lookup by external ID
  * - getCharacterByTokenId(): simple lookup (no side effects)
  * - resolveCharacterByTokenId(): lookup + auto-create default character if missing
  */
 
-import type { ElizaClient, Character as SDKCharacter } from '@eliza/sdk'
+import type { ElizaClient } from '@eliza/sdk'
 import type { CharacterRecord, AgentCharacter } from '@/lib/eliza/sdkAdapter'
 import { toAgentCharacterFromAICharacter } from '@/lib/eliza/sdkAdapter'
-
-/**
- * Convert SDK Character response to our CharacterRecord format.
- * The SDK returns a flat Character, we wrap it in CharacterRecord shape.
- */
-function sdkCharacterToRecord(sdkChar: SDKCharacter, externalId?: string): CharacterRecord {
-  return {
-    id: sdkChar.id,
-    externalId,
-    character: {
-      name: sdkChar.name,
-      bio: sdkChar.personality ? [sdkChar.personality] : [],
-      backstory: sdkChar.backstory ?? null,
-      system: sdkChar.systemPrompt,
-      messageExamples: sdkChar.exampleMessages?.map((msg) => [
-        { name: '{{user1}}', content: { text: msg.role === 'user' ? msg.content : '' } },
-        { name: '{{char}}', content: { text: msg.role === 'assistant' ? msg.content : '' } },
-      ]) ?? [],
-    },
-    createdAt: sdkChar.createdAt,
-    updatedAt: sdkChar.updatedAt,
-  }
-}
 
 export type WagdieCharacterDefaults = {
   name: string | null
@@ -76,21 +54,47 @@ function buildDefaultCharacter(params: {
 }
 
 /**
+ * Canonical lookup helper to resolve records by external ID.
+ * Uses SDK's getRecordByExternalId to get the CharacterRecord directly.
+ *
+ * This centralizes ID translation and avoids passing WAGDIE token IDs
+ * into SDK methods that expect record IDs.
+ *
+ * @param elizaClient - The Eliza SDK client
+ * @param externalId - The external ID (e.g., WAGDIE tokenId)
+ * @returns CharacterRecord or null if not found
+ */
+export async function getCharacterRecordByExternalId(
+  elizaClient: ElizaClient,
+  externalId: string
+): Promise<CharacterRecord | null> {
+  const trimmedId = externalId.trim()
+  if (trimmedId.length === 0) {
+    return null
+  }
+
+  // Use SDK's canonical method to get the full CharacterRecord by external ID
+  return elizaClient.characters.getRecordByExternalId(trimmedId)
+}
+
+/**
  * Get Eliza character by WAGDIE tokenId.
  * No auto-create; returns null if missing.
+ *
+ * Uses canonical getCharacterRecordByExternalId internally.
  */
 export async function getCharacterByTokenId(params: {
   elizaClient: ElizaClient
   tokenId: string
 }): Promise<CharacterRecord | null> {
   const tokenId = assertValidTokenId(params.tokenId)
-  const sdkChar = await params.elizaClient.characters.getByExternalId(tokenId)
-  if (!sdkChar) return null
-  return sdkCharacterToRecord(sdkChar, tokenId)
+  return getCharacterRecordByExternalId(params.elizaClient, tokenId)
 }
 
 /**
  * Resolve Eliza character by WAGDIE tokenId, auto-creating a default character if missing.
+ *
+ * Uses canonical createRecord to preserve unknown keys and ensure data round-trip.
  */
 export async function resolveCharacterByTokenId(params: {
   elizaClient: ElizaClient
@@ -99,18 +103,37 @@ export async function resolveCharacterByTokenId(params: {
 }): Promise<CharacterRecord> {
   const tokenId = assertValidTokenId(params.tokenId)
 
-  const existing = await params.elizaClient.characters.getByExternalId(tokenId)
-  if (existing) return sdkCharacterToRecord(existing, tokenId)
+  // Try to get existing character using canonical record lookup
+  const existing = await getCharacterRecordByExternalId(params.elizaClient, tokenId)
+  if (existing) {
+    return existing
+  }
 
+  // Build and create a new character
   const character = buildDefaultCharacter({ tokenId, wagdieDefaults: params.wagdieDefaults })
 
-  // The create method signature may differ from SDK types at runtime
-  const createApi = params.elizaClient.characters.create as unknown as (
-    input: { externalId: string; character: AgentCharacter }
-  ) => Promise<SDKCharacter>
-  const created = await createApi({
+  // Use canonical createRecord to get back a CharacterRecord
+  const created = await params.elizaClient.characters.createRecord({
     externalId: tokenId,
     character,
   })
-  return sdkCharacterToRecord(created, tokenId)
+
+  return created
 }
+
+/**
+ * Get the canonical record ID from a WAGDIE tokenId.
+ * Returns null if no character exists for this tokenId.
+ *
+ * Use this when you need the Eliza record ID for operations like
+ * replaceRecord, conversations.listForCharacter, etc.
+ */
+export async function getRecordIdByTokenId(
+  elizaClient: ElizaClient,
+  tokenId: string
+): Promise<string | null> {
+  const record = await getCharacterRecordByExternalId(elizaClient, tokenId)
+  return record?.id ?? null
+}
+
+export { normalizeExpiresAt } from './sessionAuth'

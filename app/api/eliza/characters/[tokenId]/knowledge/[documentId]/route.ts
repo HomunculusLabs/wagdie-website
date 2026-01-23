@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
+import { getCharacterRecordByExternalId } from '@/lib/eliza/characterResolver'
 
 interface RouteParams {
   params: Promise<{ tokenId: string; documentId: string }>
@@ -30,19 +31,21 @@ export async function GET(
     }
 
     const client = getElizaClient()
-    // Note: SDK Character type doesn't include all Eliza character fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const character = await client.characters.get(tokenId) as any
 
-    if (!character) {
+    // Use canonical record lookup by external ID (tokenId)
+    const record = await getCharacterRecordByExternalId(client, tokenId)
+
+    if (!record) {
       return NextResponse.json(
         { error: 'Character not found' },
         { status: 404 }
       )
     }
 
+    const character = record.character as Record<string, unknown>
+    const knowledge = Array.isArray(character.knowledge) ? character.knowledge : []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const document = (character.knowledge || []).find((doc: any) => doc.id === documentId)
+    const document = knowledge.find((doc: any) => doc.id === documentId)
 
     if (!document) {
       return NextResponse.json(
@@ -89,18 +92,19 @@ export async function DELETE(
     }
 
     const client = getElizaClient()
-    // Note: SDK Character type doesn't include all Eliza character fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const character = await client.characters.get(tokenId) as any
 
-    if (!character) {
+    // Use canonical record lookup by external ID (tokenId)
+    const record = await getCharacterRecordByExternalId(client, tokenId)
+
+    if (!record) {
       return NextResponse.json(
         { error: 'Character not found' },
         { status: 404 }
       )
     }
 
-    const currentKnowledge = character.knowledge || []
+    const character = record.character as Record<string, unknown>
+    const currentKnowledge = Array.isArray(character.knowledge) ? character.knowledge : []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const documentIndex = currentKnowledge.findIndex((doc: any) => doc.id === documentId)
 
@@ -115,9 +119,13 @@ export async function DELETE(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedKnowledge = currentKnowledge.filter((doc: any) => doc.id !== documentId)
 
-    // Update character
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await client.characters.update(tokenId, { knowledge: updatedKnowledge } as any)
+    // Update character using canonical replaceRecord
+    const updatedCharacter = {
+      ...record.character,
+      knowledge: updatedKnowledge,
+    }
+
+    await client.characters.replaceRecord(record.id, { character: updatedCharacter })
 
     return NextResponse.json(
       { success: true, message: 'Document deleted' },

@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { getElizaClient } from '@/lib/eliza/client'
+import { normalizeExpiresAt } from '@/lib/eliza/sessionAuth'
 import type { TokenResponse, ErrorResponse } from '@/types/eliza'
 
 type VerifyRequestBody = {
@@ -68,13 +69,17 @@ export async function POST(
     attemptedVerify = true
     const tokens = await elizaClient.auth.verify(message, signature, sessionId)
 
-    const expiresAt = tokens.expiresAt || Date.now() + 3600000 // Default 1 hour if API omits
+    // Normalize expiresAt to ms epoch
+    const expiresAtMs = normalizeExpiresAt(tokens.expiresAt)
+
     session.eliza = {
       ...(session.eliza || {}),
       siwe: session.eliza.siwe,
       tokens: {
         accessToken: tokens.accessToken,
-        expiresAt,
+        expiresAt: expiresAtMs,
+        // Persist refreshToken when present for future refresh support
+        ...(tokens.refreshToken ? { refreshToken: tokens.refreshToken } : {}),
       },
     }
 
@@ -82,7 +87,7 @@ export async function POST(
 
     return NextResponse.json({
       accessToken: tokens.accessToken,
-      expiresAt: new Date(expiresAt).toISOString(),
+      expiresAt: new Date(expiresAtMs).toISOString(),
     })
   } catch (error) {
     console.error('[Eliza Auth] Verify step failed:', error)

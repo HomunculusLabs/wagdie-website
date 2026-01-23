@@ -15,7 +15,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@eliza/sdk": "file:./eliza-sdk-master",
+    "@eliza/sdk": "file:eliza-sdk-master",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/supabase-js": "^2.39.0",

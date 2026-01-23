@@ -89,7 +89,10 @@ export interface UserSession {
     }
     tokens?: {
       accessToken: string
-      expiresAt: number // Unix timestamp in ms
+      /** Token expiration time (Unix timestamp in milliseconds) */
+      expiresAt: number
+      /** Optional refresh token for future token refresh support */
+      refreshToken?: string
     }
   }
 

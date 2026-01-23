@@ -1,184 +1,149 @@
-import { z as c } from "zod";
-class E extends Error {
-  isRetryable;
-  details;
-  constructor(e, t = !1, s) {
-    super(e), this.name = this.constructor.name, this.isRetryable = t, this.details = s, Error.captureStackTrace && Error.captureStackTrace(this, this.constructor);
-  }
-  toJSON() {
-    return {
-      name: this.name,
-      code: this.code,
-      statusCode: this.statusCode,
-      message: this.message,
-      isRetryable: this.isRetryable,
-      ...this.details && { details: this.details }
-    };
-  }
-}
-class w extends E {
-  code = "API_ERROR";
-  statusCode;
-  constructor(e, t = 500, s) {
-    const r = t >= 500 && t < 600;
-    super(e, r, s), this.statusCode = t;
-  }
-  static fromResponse(e, t) {
-    const s = t?.message || t?.error || `API error (${e})`;
-    return new w(s, e, t?.details);
-  }
-}
-class N extends E {
+import { E as T, a as u, b as g, v as I, c as M, d as P } from "./siwe-CtBgbbYz.js";
+import { A as et, C as st, h as rt, F as at, U as ot, e as nt, g as it, f as ct } from "./siwe-CtBgbbYz.js";
+class $ extends T {
   code = "AUTH_ERROR";
   statusCode = 401;
-  constructor(e = "Authentication failed") {
-    super(e, !1);
+  constructor(t = "Authentication failed") {
+    super(t, !1);
   }
 }
-class x extends E {
+class A extends T {
   code = "RATE_LIMIT";
   statusCode = 429;
   retryAfter;
-  constructor(e = "Rate limit exceeded", t) {
-    super(e, !0, t ? { retryAfter: t } : void 0), this.retryAfter = t;
+  constructor(t = "Rate limit exceeded", e) {
+    super(t, !0, e ? { retryAfter: e } : void 0), this.retryAfter = e;
   }
-  static fromHeaders(e) {
-    const t = e.get("Retry-After"), s = t ? parseInt(t, 10) : void 0;
-    return new x("Rate limit exceeded", s);
-  }
-}
-class A extends E {
-  code = "NETWORK_ERROR";
-  statusCode = 0;
-  constructor(e = "Network request failed", t) {
-    super(e, !0, t ? { cause: t.message } : void 0), t && (this.cause = t);
+  static fromHeaders(t) {
+    const e = t.get("Retry-After"), s = e ? parseInt(e, 10) : void 0;
+    return new A("Rate limit exceeded", s);
   }
 }
-const D = 3e4, O = {
+const _ = 3e4, H = {
   maxRetries: 3,
   baseDelay: 1e3,
   retryServerErrors: !0
 };
-class H {
+class U {
   baseUrl;
   timeout;
   retryConfig;
   getAuthHeader;
-  constructor(e) {
-    this.baseUrl = e.baseUrl.replace(/\/$/, ""), this.timeout = e.timeout ?? D, this.retryConfig = { ...O, ...e.retry }, this.getAuthHeader = e.getAuthHeader ?? (() => null);
+  constructor(t) {
+    this.baseUrl = t.baseUrl.replace(/\/$/, ""), this.timeout = t.timeout ?? _, this.retryConfig = { ...H, ...t.retry }, this.getAuthHeader = t.getAuthHeader ?? (() => null);
   }
-  setAuthHeaderProvider(e) {
-    this.getAuthHeader = e;
+  setAuthHeaderProvider(t) {
+    this.getAuthHeader = t;
   }
-  async request(e, t = {}) {
-    const { method: s = "GET", headers: r = {}, body: a, timeout: o, skipRetry: h = !1 } = t, n = `${this.baseUrl}${e.startsWith("/") ? e : `/${e}`}`, l = {
+  async request(t, e = {}) {
+    const { method: s = "GET", headers: r = {}, body: a, timeout: n, skipRetry: h = !1 } = e, c = `${this.baseUrl}${t.startsWith("/") ? t : `/${t}`}`, i = {
       "Content-Type": "application/json",
       Accept: "application/json",
       ...r
     }, f = this.getAuthHeader();
-    f && (l.Authorization = f);
-    const g = {
+    f && (i.Authorization = f);
+    const l = {
       method: s,
-      headers: l,
+      headers: i,
       ...a !== void 0 && { body: JSON.stringify(a) }
-    }, u = o ?? this.timeout;
-    let p;
-    const I = h ? 1 : this.retryConfig.maxRetries + 1;
-    for (let y = 0; y < I; y++)
+    }, v = n ?? this.timeout;
+    let w;
+    const y = h ? 1 : this.retryConfig.maxRetries + 1;
+    for (let d = 0; d < y; d++)
       try {
-        const m = await this.fetchWithTimeout(n, g, u);
-        return await this.handleResponse(m);
-      } catch (m) {
-        if (p = m, !this.shouldRetry(m, y))
-          throw m;
-        const C = this.calculateDelay(y);
+        const p = await this.fetchWithTimeout(c, l, v);
+        return await this.handleResponse(p);
+      } catch (p) {
+        if (w = p, !this.shouldRetry(p, d))
+          throw p;
+        const C = this.calculateDelay(d);
         await this.sleep(C);
       }
-    throw p;
+    throw w;
   }
-  async fetchWithTimeout(e, t, s) {
+  async fetchWithTimeout(t, e, s) {
     const r = new AbortController(), a = setTimeout(() => r.abort(), s);
     try {
-      return await fetch(e, {
-        ...t,
+      return await fetch(t, {
+        ...e,
         signal: r.signal
       });
-    } catch (o) {
-      throw o instanceof DOMException && o.name === "AbortError" ? new A("Request timed out") : new A(
+    } catch (n) {
+      throw n instanceof DOMException && n.name === "AbortError" ? new u("Request timed out") : new u(
         "Network request failed",
-        o instanceof Error ? o : void 0
+        n instanceof Error ? n : void 0
       );
     } finally {
       clearTimeout(a);
     }
   }
-  async handleResponse(e) {
-    if (e.status === 429)
-      throw x.fromHeaders(e.headers);
-    if (e.status === 401) {
-      const s = await this.safeParseJSON(e);
-      throw new N(s?.message || "Authentication failed");
+  async handleResponse(t) {
+    if (t.status === 429)
+      throw A.fromHeaders(t.headers);
+    if (t.status === 401) {
+      const s = await this.safeParseJSON(t);
+      throw new $(s?.message || "Authentication failed");
     }
-    if (!e.ok) {
-      const s = await this.safeParseJSON(e);
-      throw w.fromResponse(e.status, s ?? void 0);
+    if (!t.ok) {
+      const s = await this.safeParseJSON(t);
+      throw g.fromResponse(t.status, s ?? void 0);
     }
-    const t = e.headers.get("Content-Type");
-    if (e.status === 204 || !t?.includes("application/json"))
+    const e = t.headers.get("Content-Type");
+    if (t.status === 204 || !e?.includes("application/json"))
       return {};
     try {
-      return await e.json();
+      return await t.json();
     } catch {
-      throw new w("Invalid JSON response", e.status);
+      throw new g("Invalid JSON response", t.status);
     }
   }
-  async safeParseJSON(e) {
+  async safeParseJSON(t) {
     try {
-      return await e.json();
+      return await t.json();
     } catch {
       return null;
     }
   }
-  shouldRetry(e, t) {
-    return t >= this.retryConfig.maxRetries ? !1 : "isRetryable" in e && typeof e.isRetryable == "boolean" ? e instanceof x && e.retryAfter ? !0 : e instanceof w && e.statusCode >= 500 ? this.retryConfig.retryServerErrors : e.isRetryable : e instanceof A;
+  shouldRetry(t, e) {
+    return e >= this.retryConfig.maxRetries ? !1 : "isRetryable" in t && typeof t.isRetryable == "boolean" ? t instanceof A && t.retryAfter ? !0 : t instanceof g && t.statusCode >= 500 ? this.retryConfig.retryServerErrors : t.isRetryable : t instanceof u;
   }
-  calculateDelay(e) {
-    const t = this.retryConfig.baseDelay * Math.pow(2, e), s = Math.random() * 0.3 * t;
-    return Math.min(t + s, 3e4);
+  calculateDelay(t) {
+    const e = this.retryConfig.baseDelay * Math.pow(2, t), s = Math.random() * 0.3 * e;
+    return Math.min(e + s, 3e4);
   }
-  sleep(e) {
-    return new Promise((t) => setTimeout(t, e));
+  sleep(t) {
+    return new Promise((e) => setTimeout(e, t));
   }
   // Convenience methods
-  async get(e, t) {
-    return this.request(e, { ...t, method: "GET" });
+  async get(t, e) {
+    return this.request(t, { ...e, method: "GET" });
   }
-  async post(e, t, s) {
-    return this.request(e, { ...s, method: "POST", body: t });
+  async post(t, e, s) {
+    return this.request(t, { ...s, method: "POST", body: e });
   }
-  async put(e, t, s) {
-    return this.request(e, { ...s, method: "PUT", body: t });
+  async put(t, e, s) {
+    return this.request(t, { ...s, method: "PUT", body: e });
   }
-  async patch(e, t, s) {
-    return this.request(e, { ...s, method: "PATCH", body: t });
+  async patch(t, e, s) {
+    return this.request(t, { ...s, method: "PATCH", body: e });
   }
-  async delete(e, t) {
-    return this.request(e, { ...t, method: "DELETE" });
+  async delete(t, e) {
+    return this.request(t, { ...e, method: "DELETE" });
   }
 }
-const v = "eliza_auth_tokens", P = 5 * 60 * 1e3;
-class q {
+const k = "eliza_auth_tokens", z = 5 * 60 * 1e3;
+class N {
   apiKey;
   tokens;
   httpClient;
   refreshPromise;
   onTokenRefresh;
   onAuthRequired;
-  constructor(e) {
-    this.apiKey = e.apiKey, this.onTokenRefresh = e.onTokenRefresh, this.onAuthRequired = e.onAuthRequired, e.accessToken ? this.tokens = { accessToken: e.accessToken } : typeof window < "u" && this.loadFromStorage();
+  constructor(t) {
+    this.apiKey = t.apiKey, this.onTokenRefresh = t.onTokenRefresh, this.onAuthRequired = t.onAuthRequired, t.accessToken ? this.tokens = { accessToken: t.accessToken } : typeof window < "u" && this.loadFromStorage();
   }
-  setHttpClient(e) {
-    this.httpClient = e;
+  setHttpClient(t) {
+    this.httpClient = t;
   }
   /**
    * Get the authorization header value
@@ -196,13 +161,13 @@ class q {
    * Check if token needs refresh
    */
   needsRefresh() {
-    return this.apiKey || !this.tokens?.refreshToken || !this.tokens.expiresAt ? !1 : Date.now() >= this.tokens.expiresAt - P;
+    return this.apiKey || !this.tokens?.refreshToken || !this.tokens.expiresAt ? !1 : Date.now() >= this.tokens.expiresAt - z;
   }
   /**
    * Set tokens after successful authentication
    */
-  setTokens(e) {
-    this.tokens = e, this.saveToStorage(), this.onTokenRefresh?.(e);
+  setTokens(t) {
+    this.tokens = t, this.saveToStorage(), this.onTokenRefresh?.(t);
   }
   /**
    * Clear all auth state
@@ -227,14 +192,14 @@ class q {
   }
   async doRefresh() {
     try {
-      const e = await this.httpClient.post("/auth/refresh", {
+      const t = await this.httpClient.post("/auth/refresh", {
         refreshToken: this.tokens.refreshToken
-      }), t = {
-        accessToken: e.accessToken,
-        refreshToken: e.refreshToken || this.tokens.refreshToken,
-        expiresAt: e.expiresIn ? Date.now() + e.expiresIn * 1e3 : this.tokens.expiresAt
+      }), e = {
+        accessToken: t.accessToken,
+        refreshToken: t.refreshToken || this.tokens.refreshToken,
+        expiresAt: t.expiresIn ? Date.now() + t.expiresIn * 1e3 : this.tokens.expiresAt
       };
-      this.setTokens(t);
+      this.setTokens(e);
     } catch {
       throw this.clearAuth(), this.onAuthRequired?.(), new Error("Token refresh failed");
     }
@@ -251,10 +216,10 @@ class q {
   /**
    * Verify SIWE message and signature
    */
-  async verify(e, t, s) {
+  async verify(t, e, s) {
     if (!this.httpClient)
       throw new Error("HTTP client not initialized");
-    const r = await this.httpClient.post("/auth/verify", { message: e, signature: t, sessionId: s }), a = {
+    const r = await this.httpClient.post("/auth/verify", { message: t, signature: e, sessionId: s }), a = {
       accessToken: r.token,
       refreshToken: r.refreshToken,
       expiresAt: r.expiresIn ? Date.now() + r.expiresIn * 1e3 : void 0
@@ -264,283 +229,325 @@ class q {
   // Storage Methods
   loadFromStorage() {
     try {
-      const e = localStorage.getItem(v);
-      e && (this.tokens = JSON.parse(e));
+      const t = localStorage.getItem(k);
+      t && (this.tokens = JSON.parse(t));
     } catch {
     }
   }
   saveToStorage() {
     if (!(typeof window > "u" || !this.tokens))
       try {
-        localStorage.setItem(v, JSON.stringify(this.tokens));
+        localStorage.setItem(k, JSON.stringify(this.tokens));
       } catch {
       }
   }
   clearStorage() {
     if (!(typeof window > "u"))
       try {
-        localStorage.removeItem(v);
+        localStorage.removeItem(k);
       } catch {
       }
   }
 }
-async function U(i, e, t) {
-  const { url: s, getAuthHeader: r, timeout: a = 6e4 } = i, o = new AbortController(), h = setTimeout(() => o.abort(), a);
+function O() {
+  return {
+    fullContent: "",
+    messageId: "",
+    conversationId: "",
+    aborted: !1,
+    completed: !1
+  };
+}
+function x(o, t) {
+  return {
+    id: t ?? o.messageId,
+    role: "assistant",
+    content: o.fullContent,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function R(o) {
+  o && clearTimeout(o);
+}
+function D(o, t, e) {
+  return R(o), setTimeout(e, t);
+}
+function S(o, t, e) {
+  o.fullContent += e, t.onChunk(e);
+}
+function j(o, t, e) {
+  if (!t.startsWith("data: "))
+    return;
+  const s = t.slice(6);
+  if (s !== "[DONE]")
+    try {
+      const r = JSON.parse(s);
+      if (r.token || r.content) {
+        const a = r.token || r.content;
+        S(o, e, a);
+      }
+      if (r.conversationId && (o.conversationId = r.conversationId), (r.messageId || r.id) && (o.messageId = r.messageId || r.id), r.done || r.type === "complete") {
+        const a = x(o);
+        e.onComplete(a, o.conversationId);
+      }
+    } catch {
+      s.trim() && S(o, e, s);
+    }
+}
+async function q(o, t, e) {
+  const { url: s, getAuthHeader: r, timeout: a = 6e4 } = o, n = O(), h = new AbortController();
+  let c;
+  c = D(c, a, () => h.abort());
   try {
-    const n = {
+    const i = {
       "Content-Type": "application/json",
       Accept: "text/event-stream"
-    }, l = r();
-    l && (n.Authorization = l);
-    const f = await fetch(s, {
+    }, f = r();
+    f && (i.Authorization = f);
+    const l = await fetch(s, {
       method: "POST",
-      headers: n,
-      body: JSON.stringify(e),
-      signal: o.signal
+      headers: i,
+      body: JSON.stringify(t),
+      signal: h.signal
     });
-    if (!f.ok)
-      throw w.fromResponse(f.status);
-    if (!f.body)
-      throw new A("No response body");
-    const g = f.body.getReader(), u = new TextDecoder();
-    let p = "", I = "", y = "";
+    if (!l.ok)
+      throw g.fromResponse(l.status);
+    if (!l.body)
+      throw new u("No response body");
+    const v = l.body.getReader(), w = new TextDecoder();
     for (; ; ) {
-      const { done: m, value: C } = await g.read();
-      if (m)
+      const { done: y, value: d } = await v.read();
+      if (y)
         break;
-      const $ = u.decode(C, { stream: !0 }).split(`
+      const C = w.decode(d, { stream: !0 }).split(`
 `);
-      for (const S of $)
-        if (S.startsWith("data: ")) {
-          const T = S.slice(6);
-          if (T === "[DONE]")
-            continue;
-          try {
-            const d = JSON.parse(T);
-            if (d.token || d.content) {
-              const k = d.token || d.content;
-              p += k, t.onChunk(k);
-            }
-            if (d.conversationId && (y = d.conversationId), (d.messageId || d.id) && (I = d.messageId || d.id), d.done || d.type === "complete") {
-              const k = {
-                id: I,
-                role: "assistant",
-                content: p,
-                createdAt: (/* @__PURE__ */ new Date()).toISOString()
-              };
-              t.onComplete(k, y);
-            }
-          } catch {
-            T.trim() && (p += T, t.onChunk(T));
-          }
-        }
+      for (const b of C)
+        j(n, b, e);
     }
-    if (p && !I) {
-      const m = {
-        id: crypto.randomUUID?.() || Date.now().toString(),
-        role: "assistant",
-        content: p,
-        createdAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      t.onComplete(m, y);
+    if (n.fullContent && !n.messageId) {
+      const y = x(
+        n,
+        crypto.randomUUID?.() || Date.now().toString()
+      );
+      e.onComplete(y, n.conversationId);
     }
-  } catch (n) {
-    n instanceof DOMException && n.name === "AbortError" ? t.onError(new A("Stream timed out")) : n instanceof w ? t.onError(n) : t.onError(
-      new A(
-        "Stream failed",
-        n instanceof Error ? n : void 0
-      )
+  } catch (i) {
+    i instanceof DOMException && i.name === "AbortError" ? e.onError(new u("Stream timed out")) : i instanceof g ? e.onError(i) : e.onError(
+      new u("Stream failed", i instanceof Error ? i : void 0)
     );
   } finally {
-    clearTimeout(h);
+    R(c);
   }
 }
-class _ {
-  constructor(e, t) {
-    this.http = e, this.getAuthHeader = t;
+class F {
+  constructor(t, e) {
+    this.http = t, this.getAuthHeader = e;
   }
   /**
    * Send a message and get the complete response
    */
-  async sendMessage(e) {
-    const { characterId: t, message: s, conversationId: r } = e, a = r ? `/characters/${t}/chat/${r}` : `/characters/${t}/chat`;
+  async sendMessage(t) {
+    const { characterId: e, message: s, conversationId: r } = t, a = r ? `/characters/${e}/chat/${r}` : `/characters/${e}/chat`;
     return this.http.post(a, { message: s });
   }
   /**
    * Send a message and stream the response
    */
-  async sendMessageStream(e, t) {
-    const { characterId: s, message: r, conversationId: a } = e, o = this.http.baseUrl || "", h = a ? `/characters/${s}/chat/${a}/stream` : `/characters/${s}/chat/stream`, n = `${o}${h}`;
-    await U(
+  async sendMessageStream(t, e) {
+    const { characterId: s, message: r, conversationId: a } = t, n = this.http.baseUrl || "", h = a ? `/characters/${s}/chat/${a}/stream` : `/characters/${s}/chat/stream`, c = `${n}${h}`;
+    await q(
       {
-        url: n,
+        url: c,
         getAuthHeader: this.getAuthHeader,
         timeout: 6e4
       },
       { message: r },
-      t
+      e
     );
   }
-}
-class R extends E {
-  code = "VALIDATION_ERROR";
-  statusCode = 400;
-  fieldErrors;
-  constructor(e = "Validation failed", t = {}) {
-    super(e, !1, { fieldErrors: t }), this.fieldErrors = t;
-  }
-  static fromFields(e) {
-    const t = Object.keys(e), s = t.length > 0 ? `Validation failed for: ${t.join(", ")}` : "Validation failed";
-    return new R(s, e);
+  /**
+   * Send a message to the builder chat (no character required).
+   * Used for the character builder assistant.
+   */
+  async sendBuilderMessage(t) {
+    return this.http.post("/chat/builder", t);
   }
 }
-const b = c.object({
-  role: c.enum(["user", "assistant"]),
-  content: c.string().max(1e3)
-}), M = c.object({
-  all: c.array(c.string()).optional(),
-  chat: c.array(c.string()).optional(),
-  post: c.array(c.string()).optional()
-}), j = c.object({
-  name: c.string().min(1, "Name is required").max(100, "Name too long").trim(),
-  personality: c.string().min(10, "Personality must be at least 10 characters").max(5e3),
-  backstory: c.string().min(10, "Backstory must be at least 10 characters").max(1e4),
-  systemPrompt: c.string().max(5e3).optional(),
-  exampleMessages: c.array(b).max(20).optional(),
-  style: M.optional(),
-  externalId: c.string().max(255).optional()
-}), W = c.object({
-  name: c.string().min(1).max(100).trim().optional(),
-  personality: c.string().min(10).max(5e3).optional(),
-  backstory: c.string().min(10).max(1e4).optional(),
-  systemPrompt: c.string().max(5e3).optional(),
-  exampleMessages: c.array(b).max(20).optional(),
-  style: M.optional()
-});
-function z(i) {
-  const e = j.safeParse(i);
-  if (!e.success) {
-    const t = {};
-    for (const s of e.error.issues) {
-      const r = s.path.join(".");
-      t[r] || (t[r] = []), t[r].push(s.message);
-    }
-    throw R.fromFields(t);
-  }
-  return e.data;
+function m(o) {
+  const t = o.character, e = typeof t.backstory == "string" ? t.backstory : "", s = typeof t.personality == "string" ? t.personality : void 0, r = typeof t.systemPrompt == "string" ? t.systemPrompt : typeof t.system == "string" ? t.system : void 0, a = Array.isArray(t.exampleMessages) ? t.exampleMessages : void 0, n = Array.isArray(t.lore) ? t.lore : void 0, h = Array.isArray(t.adjectives) ? t.adjectives : void 0, c = Array.isArray(t.postExamples) ? t.postExamples : void 0, i = Array.isArray(t.knowledge) ? t.knowledge : void 0;
+  return {
+    id: o.id,
+    name: t.name,
+    externalId: o.externalId ?? void 0,
+    personality: s,
+    backstory: e,
+    systemPrompt: r,
+    exampleMessages: a,
+    bio: t.bio,
+    lore: n,
+    topics: t.topics,
+    adjectives: h,
+    style: t.style,
+    postExamples: c,
+    knowledge: i,
+    createdAt: o.createdAt,
+    updatedAt: o.updatedAt
+  };
 }
-function F(i) {
-  const e = W.safeParse(i);
-  if (!e.success) {
-    const t = {};
-    for (const s of e.error.issues) {
-      const r = s.path.join(".");
-      t[r] || (t[r] = []), t[r].push(s.message);
-    }
-    throw R.fromFields(t);
-  }
-  return e.data;
+function E(o) {
+  return o.map((t) => [{ name: t.role, content: { text: t.content } }]);
 }
-class B {
-  constructor(e) {
-    this.http = e;
+class K {
+  constructor(t) {
+    this.http = t;
+  }
+  async listRecords(t = {}) {
+    const { page: e = 1, pageSize: s = 20 } = t, r = typeof t.nftCollectionId == "string" ? t.nftCollectionId : void 0, a = new URLSearchParams();
+    a.set("page", String(e)), a.set("pageSize", String(s)), r && a.set("nftCollectionId", r);
+    const n = await this.http.get(`/characters?${a.toString()}`);
+    return {
+      items: n.characters,
+      total: n.total,
+      page: e,
+      pageSize: s,
+      hasMore: e * s < n.total
+    };
+  }
+  async getRecord(t) {
+    return this.http.get(`/characters/${t}`);
+  }
+  async createRecord(t) {
+    const e = I(t.character), s = {
+      externalId: t.externalId,
+      character: e
+    };
+    return this.http.post("/characters", s);
+  }
+  async replaceRecord(t, e) {
+    const r = {
+      character: I(e.character)
+    };
+    return this.http.put(`/characters/${t}`, r);
+  }
+  async parseSummary(t) {
+    return (await this.http.post(
+      "/characters/parse-summary",
+      t
+    )).parsed;
   }
   /**
    * List all characters (with pagination)
    */
-  async list(e = {}) {
-    const { page: t = 1, pageSize: s = 20 } = e, r = await this.http.get(`/characters?page=${t}&pageSize=${s}`);
+  async list(t = {}) {
+    const { page: e = 1, pageSize: s = 20 } = t, r = await this.listRecords({ page: e, pageSize: s });
     return {
-      items: r.characters,
+      items: r.items.map(m),
       total: r.total,
-      page: t,
-      pageSize: s,
-      hasMore: t * s < r.total
+      page: r.page,
+      pageSize: r.pageSize,
+      hasMore: r.hasMore
     };
   }
   /**
    * Get a character by ID
    */
-  async get(e) {
-    return this.http.get(`/characters/${e}`);
+  async get(t) {
+    const e = await this.getRecord(t);
+    return m(e);
   }
   /**
    * Create a new character
    * If externalId is provided and a character with that externalId exists,
    * it will be updated instead (upsert behavior)
    */
-  async create(e) {
-    const t = z(e), s = {
-      name: t.name,
-      config: {
-        bio: t.backstory,
-        personality: t.personality,
-        style: t.style,
-        messageExamples: t.exampleMessages?.map((r) => [
-          { user: r.role, content: { text: r.content } }
-        ])
-      },
-      externalId: t.externalId
+  async create(t) {
+    const e = M(t), s = {
+      name: e.name,
+      system: e.systemPrompt,
+      bio: e.bio ?? (e.personality ? [e.personality] : void 0),
+      topics: e.topics,
+      style: e.style,
+      knowledge: e.knowledge,
+      messageExamples: e.exampleMessages ? E(e.exampleMessages) : void 0
     };
-    return this.http.post("/characters", s);
+    s.backstory = e.backstory, e.personality !== void 0 && (s.personality = e.personality), e.systemPrompt !== void 0 && (s.systemPrompt = e.systemPrompt), e.exampleMessages !== void 0 && (s.exampleMessages = e.exampleMessages), e.lore !== void 0 && (s.lore = e.lore), e.adjectives !== void 0 && (s.adjectives = e.adjectives), e.postExamples !== void 0 && (s.postExamples = e.postExamples);
+    const r = await this.createRecord({
+      externalId: e.externalId,
+      character: s
+    });
+    return m(r);
   }
   /**
    * Update an existing character
    */
-  async update(e, t) {
-    const s = F(t), r = {};
-    s.name !== void 0 && (r.name = s.name);
-    const a = {};
-    return s.backstory !== void 0 && (a.bio = s.backstory), s.personality !== void 0 && (a.personality = s.personality), s.style !== void 0 && (a.style = s.style), s.exampleMessages !== void 0 && (a.messageExamples = s.exampleMessages.map((o) => [
-      { user: o.role, content: { text: o.content } }
-    ])), Object.keys(a).length > 0 && (r.config = a), this.http.put(`/characters/${e}`, r);
+  async update(t, e) {
+    const s = P(e), a = { ...(await this.getRecord(t)).character };
+    s.name !== void 0 && (a.name = s.name), s.backstory !== void 0 && (a.backstory = s.backstory), s.systemPrompt !== void 0 && (a.system = s.systemPrompt, a.systemPrompt = s.systemPrompt), s.personality !== void 0 && (a.personality = s.personality, s.bio === void 0 && (a.bio = [s.personality])), s.exampleMessages !== void 0 && (a.exampleMessages = s.exampleMessages, a.messageExamples = E(s.exampleMessages)), s.style !== void 0 && (a.style = s.style), s.bio !== void 0 && (a.bio = s.bio), s.lore !== void 0 && (a.lore = s.lore), s.topics !== void 0 && (a.topics = s.topics), s.adjectives !== void 0 && (a.adjectives = s.adjectives), s.postExamples !== void 0 && (a.postExamples = s.postExamples), s.knowledge !== void 0 && (a.knowledge = s.knowledge);
+    const n = await this.replaceRecord(t, { character: a });
+    return m(n);
   }
   /**
    * Delete a character
    */
-  async delete(e) {
-    await this.http.delete(`/characters/${e}`);
+  async delete(t) {
+    await this.http.delete(`/characters/${t}`);
   }
   /**
    * Get a character by external ID
    * Useful for integrations that track characters by their own IDs
    */
-  async getByExternalId(e) {
+  async getByExternalId(t) {
+    try {
+      const e = await this.http.get(
+        `/characters/external/${encodeURIComponent(t)}`
+      );
+      return m(e);
+    } catch (e) {
+      if (e && typeof e == "object" && "statusCode" in e && e.statusCode === 404)
+        return null;
+      throw e;
+    }
+  }
+  /**
+   * Get a CharacterRecord by external ID
+   * Returns the full record with AgentCharacter payload (canonical format)
+   */
+  async getRecordByExternalId(t) {
     try {
       return await this.http.get(
-        `/characters/external/${encodeURIComponent(e)}`
+        `/characters/external/${encodeURIComponent(t)}`
       );
-    } catch (t) {
-      if (t && typeof t == "object" && "statusCode" in t && t.statusCode === 404)
+    } catch (e) {
+      if (e && typeof e == "object" && "statusCode" in e && e.statusCode === 404)
         return null;
-      throw t;
+      throw e;
     }
   }
 }
-class K {
-  constructor(e) {
-    this.http = e;
+class L {
+  constructor(t) {
+    this.http = t;
   }
   /**
    * List all conversations for the authenticated user
    */
-  async list(e = {}) {
-    const { page: t = 1, pageSize: s = 20 } = e, r = await this.http.get(`/conversations?page=${t}&pageSize=${s}`);
+  async list(t = {}) {
+    const { page: e = 1, pageSize: s = 20 } = t, r = await this.http.get(`/conversations?page=${e}&pageSize=${s}`);
     return {
       items: r.conversations.map((a) => this.mapConversation(a)),
       total: r.total,
-      page: t,
+      page: e,
       pageSize: s,
-      hasMore: t * s < r.total
+      hasMore: e * s < r.total
     };
   }
   /**
    * List conversations for a specific character
    */
-  async listForCharacter(e, t = {}) {
-    const { page: s = 1, pageSize: r = 20 } = t, a = await this.http.get(`/characters/${e}/conversations?page=${s}&pageSize=${r}`);
+  async listForCharacter(t, e = {}) {
+    const { page: s = 1, pageSize: r = 20 } = e, a = await this.http.get(`/characters/${t}/conversations?page=${s}&pageSize=${r}`);
     return {
-      items: a.conversations.map((o) => this.mapConversation(o)),
+      items: a.conversations.map((n) => this.mapConversation(n)),
       total: a.total,
       page: s,
       pageSize: r,
@@ -550,37 +557,98 @@ class K {
   /**
    * Get a conversation with its message history
    */
-  async get(e) {
-    const t = await this.http.get(`/conversations/${e}`);
+  async get(t) {
+    const e = await this.http.get(`/conversations/${t}`);
     return {
-      id: t.id,
-      characterId: t.characterId,
+      id: e.id,
+      characterId: e.characterId,
       characterName: "",
       // May not be available from this endpoint
-      messageCount: t.messages.length,
-      lastMessageAt: t.updatedAt,
-      createdAt: t.createdAt,
-      messages: t.messages
+      messageCount: e.messages.length,
+      lastMessageAt: e.updatedAt,
+      createdAt: e.createdAt,
+      messages: e.messages
     };
   }
   /**
    * Delete a conversation and all its messages
    */
-  async delete(e) {
-    await this.http.delete(`/conversations/${e}`);
+  async delete(t) {
+    await this.http.delete(`/conversations/${t}`);
   }
   /**
    * Map API response to Conversation type
    */
-  mapConversation(e) {
+  mapConversation(t) {
     return {
-      id: e.id,
-      characterId: e.characterId,
+      id: t.id,
+      characterId: t.characterId,
       characterName: "",
       // May need to be fetched separately
-      messageCount: e.messageCount ?? 0,
-      lastMessageAt: e.updatedAt,
-      createdAt: e.createdAt
+      messageCount: t.messageCount ?? 0,
+      lastMessageAt: t.updatedAt,
+      createdAt: t.createdAt
+    };
+  }
+}
+function J(o) {
+  return o === "erc721" || o === "erc1155" || o === "unknown" ? o : "unknown";
+}
+function W(o) {
+  return typeof o == "object" && o !== null && !Array.isArray(o);
+}
+class B {
+  constructor(t) {
+    this.http = t;
+  }
+  // Collections
+  async listCollections(t = {}) {
+    const { page: e = 1, pageSize: s = 20 } = t, r = await this.http.get(`/nft/collections?page=${e}&pageSize=${s}`), a = r.pagination?.total ?? 0;
+    return {
+      items: (r.collections ?? []).map((n) => this.mapCollection(n)),
+      total: a,
+      page: r.pagination?.page ?? e,
+      pageSize: r.pagination?.pageSize ?? s,
+      hasMore: e * s < a
+    };
+  }
+  async getCollection(t) {
+    const e = await this.http.get(`/nft/collections/${t}`);
+    return this.mapCollection(e);
+  }
+  async upsertCollection(t) {
+    const e = await this.http.post("/nft/collections", t);
+    return this.mapCollection(e);
+  }
+  async updateCollection(t, e) {
+    const s = await this.http.put(`/nft/collections/${t}`, e);
+    return this.mapCollection(s);
+  }
+  async deleteCollection(t) {
+    await this.http.delete(`/nft/collections/${t}`);
+  }
+  // Provisioning
+  async provisionCharacter(t) {
+    return this.http.post("/nft/provision", t);
+  }
+  // Token listing
+  async listCollectionTokens(t) {
+    const { collectionId: e, limit: s = 10, cursor: r, ownerAddress: a } = t, n = new URLSearchParams();
+    return n.set("limit", String(s)), r && n.set("cursor", r), a && n.set("owner", a), this.http.get(
+      `/nft/collections/${encodeURIComponent(e)}/tokens?${n.toString()}`
+    );
+  }
+  mapCollection(t) {
+    const e = W(t.config) ? t.config : void 0;
+    return {
+      id: t.id,
+      chainId: t.chainId,
+      contractAddress: t.contractAddress,
+      name: t.name,
+      tokenStandard: J(t.tokenStandard),
+      ...e ? { config: e } : {},
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt
     };
   }
 }
@@ -593,14 +661,15 @@ class Y {
   _chat;
   _conversations;
   _auth;
-  constructor(e) {
-    this.baseUrl = e.baseUrl.replace(/\/$/, ""), this.authManager = new q({
-      apiKey: e.apiKey,
-      accessToken: e.accessToken
-    }), this.http = new H({
+  _nft;
+  constructor(t) {
+    this.baseUrl = t.baseUrl.replace(/\/$/, ""), this.authManager = new N({
+      apiKey: t.apiKey,
+      accessToken: t.accessToken
+    }), this.http = new U({
       baseUrl: this.baseUrl,
-      timeout: e.timeout,
-      retry: e.retry,
+      timeout: t.timeout,
+      retry: t.retry,
       getAuthHeader: () => this.authManager.getAuthHeader()
     }), this.authManager.setHttpClient(this.http);
   }
@@ -620,25 +689,31 @@ class Y {
    * Access auth methods
    */
   get auth() {
-    return this._auth || (this._auth = new J(this.authManager)), this._auth;
+    return this._auth || (this._auth = new G(this.authManager)), this._auth;
   }
   /**
    * Access characters API
    */
   get characters() {
-    return this._characters || (this._characters = new B(this.http)), this._characters;
+    return this._characters || (this._characters = new K(this.http)), this._characters;
   }
   /**
    * Access chat API
    */
   get chat() {
-    return this._chat || (this._chat = new _(this.http, () => this.authManager.getAuthHeader())), this._chat;
+    return this._chat || (this._chat = new F(this.http, () => this.authManager.getAuthHeader())), this._chat;
   }
   /**
    * Access conversations API
    */
   get conversations() {
-    return this._conversations || (this._conversations = new K(this.http)), this._conversations;
+    return this._conversations || (this._conversations = new L(this.http)), this._conversations;
+  }
+  /**
+   * Access NFT API (collections + provisioning)
+   */
+  get nft() {
+    return this._nft || (this._nft = new B(this.http)), this._nft;
   }
   /**
    * Get the underlying HTTP client (for advanced usage)
@@ -647,9 +722,9 @@ class Y {
     return this.http;
   }
 }
-class J {
-  constructor(e) {
-    this.authManager = e;
+class G {
+  constructor(t) {
+    this.authManager = t;
   }
   /**
    * Get a nonce for SIWE authentication
@@ -660,8 +735,8 @@ class J {
   /**
    * Verify SIWE message and signature
    */
-  async verify(e, t, s) {
-    return this.authManager.verify(e, t, s);
+  async verify(t, e, s) {
+    return this.authManager.verify(t, e, s);
   }
   /**
    * Refresh the access token
@@ -682,152 +757,33 @@ class J {
     return this.authManager.isAuthenticated();
   }
 }
-function Q(i) {
-  const {
-    domain: e,
-    address: t,
-    statement: s,
-    uri: r,
-    chainId: a,
-    nonce: o,
-    issuedAt: h = (/* @__PURE__ */ new Date()).toISOString(),
-    expirationTime: n,
-    notBefore: l,
-    requestId: f,
-    resources: g
-  } = i;
-  if (!e) throw new Error("domain is required");
-  if (!t) throw new Error("address is required");
-  if (!r) throw new Error("uri is required");
-  if (!a) throw new Error("chainId is required");
-  if (!o) throw new Error("nonce is required");
-  if (!/^0x[a-fA-F0-9]{40}$/.test(t))
-    throw new Error("Invalid Ethereum address format");
-  const u = [
-    `${e} wants you to sign in with your Ethereum account:`,
-    t,
-    ""
-  ];
-  if (s && u.push(s, ""), u.push(`URI: ${r}`), u.push("Version: 1"), u.push(`Chain ID: ${a}`), u.push(`Nonce: ${o}`), u.push(`Issued At: ${h}`), n && u.push(`Expiration Time: ${n}`), l && u.push(`Not Before: ${l}`), f && u.push(`Request ID: ${f}`), g && g.length > 0) {
-    u.push("Resources:");
-    for (const p of g)
-      u.push(`- ${p}`);
-  }
-  return u.join(`
-`);
+function Q(o) {
+  return o instanceof T;
 }
-function X(i, e) {
-  try {
-    const t = V(i);
-    return e?.domain && t.domain !== e.domain ? {
-      success: !1,
-      error: `Domain mismatch: expected ${e.domain}, got ${t.domain}`
-    } : e?.nonce && t.nonce !== e.nonce ? {
-      success: !1,
-      error: "Nonce mismatch"
-    } : e?.checkExpiration && t.expirationTime && new Date(t.expirationTime) < /* @__PURE__ */ new Date() ? {
-      success: !1,
-      error: "Message has expired"
-    } : t.notBefore && new Date(t.notBefore) > /* @__PURE__ */ new Date() ? {
-      success: !1,
-      error: "Message is not yet valid"
-    } : {
-      success: !0,
-      address: t.address,
-      fields: t
-    };
-  } catch (t) {
-    return {
-      success: !1,
-      error: t instanceof Error ? t.message : "Failed to parse message"
-    };
-  }
-}
-function V(i) {
-  const e = i.split(`
-`);
-  if (e.length < 7)
-    throw new Error("Invalid SIWE message format");
-  const t = e[0].match(/^(.+) wants you to sign in with your Ethereum account:$/);
-  if (!t)
-    throw new Error("Invalid SIWE header");
-  const s = t[1], r = e[1];
-  if (!/^0x[a-fA-F0-9]{40}$/.test(r))
-    throw new Error("Invalid Ethereum address");
-  const a = {
-    domain: s,
-    address: r,
-    uri: "",
-    chainId: 0,
-    nonce: ""
-  };
-  let o = [], h = 3;
-  for (; h < e.length && !e[h].startsWith("URI:"); )
-    e[h] && o.push(e[h]), h++;
-  for (o.length > 0 && (a.statement = o.join(`
-`)); h < e.length; h++) {
-    const n = e[h];
-    if (n.startsWith("URI: "))
-      a.uri = n.slice(5);
-    else if (n.startsWith("Chain ID: "))
-      a.chainId = parseInt(n.slice(10), 10);
-    else if (n.startsWith("Nonce: "))
-      a.nonce = n.slice(7);
-    else if (n.startsWith("Issued At: "))
-      a.issuedAt = n.slice(11);
-    else if (n.startsWith("Expiration Time: "))
-      a.expirationTime = n.slice(17);
-    else if (n.startsWith("Not Before: "))
-      a.notBefore = n.slice(12);
-    else if (n.startsWith("Request ID: "))
-      a.requestId = n.slice(12);
-    else if (n === "Resources:") {
-      a.resources = [];
-      for (let l = h + 1; l < e.length && e[l].startsWith("- "); l++)
-        a.resources.push(e[l].slice(2));
-    }
-  }
-  if (!a.uri) throw new Error("Missing URI field");
-  if (!a.chainId) throw new Error("Missing Chain ID field");
-  if (!a.nonce) throw new Error("Missing Nonce field");
-  return a;
-}
-function Z(i = 16) {
-  const e = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let t = "";
-  if (typeof crypto < "u" && crypto.getRandomValues) {
-    const s = new Uint8Array(i);
-    crypto.getRandomValues(s);
-    for (let r = 0; r < i; r++)
-      t += e[s[r] % e.length];
-  } else
-    for (let s = 0; s < i; s++)
-      t += e[Math.floor(Math.random() * e.length)];
-  return t;
-}
-function ee(i) {
-  return i instanceof E;
-}
-const te = "0.1.0";
+const X = "0.1.0";
 export {
-  B as CharactersAPI,
-  _ as ChatAPI,
-  K as ConversationsAPI,
-  j as CreateCharacterInputSchema,
-  w as ElizaAPIError,
-  N as ElizaAuthError,
+  et as AgentCharacterSchema,
+  K as CharactersAPI,
+  F as ChatAPI,
+  L as ConversationsAPI,
+  st as CreateCharacterInputSchema,
+  g as ElizaAPIError,
+  $ as ElizaAuthError,
   Y as ElizaClient,
-  E as ElizaError,
-  A as ElizaNetworkError,
-  x as ElizaRateLimitError,
-  R as ElizaValidationError,
-  W as UpdateCharacterInputSchema,
-  te as VERSION,
-  Q as createSIWEMessage,
-  Z as generateNonce,
-  ee as isElizaError,
-  z as validateCreateCharacter,
-  F as validateUpdateCharacter,
-  X as verifySIWEMessage
+  T as ElizaError,
+  u as ElizaNetworkError,
+  A as ElizaRateLimitError,
+  rt as ElizaValidationError,
+  at as FIELD_LIMITS,
+  B as NftAPI,
+  ot as UpdateCharacterInputSchema,
+  X as VERSION,
+  nt as createSIWEMessage,
+  it as generateNonce,
+  Q as isElizaError,
+  I as validateAgentCharacter,
+  M as validateCreateCharacter,
+  P as validateUpdateCharacter,
+  ct as verifySIWEMessage
 };
 //# sourceMappingURL=index.js.map

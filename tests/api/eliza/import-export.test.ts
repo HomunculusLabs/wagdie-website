@@ -20,15 +20,15 @@ import { NextRequest } from 'next/server'
 import { GET as exportHandler } from '@/app/api/eliza/characters/[tokenId]/export/route'
 import { POST as importHandler } from '@/app/api/eliza/characters/[tokenId]/import/route'
 
-// Mock the Eliza client
-const mockGetCharacter = jest.fn()
-const mockUpdateCharacter = jest.fn()
+// Mock the Eliza client (canonical record APIs)
+const mockGetRecordByExternalId = jest.fn()
+const mockReplaceRecord = jest.fn()
 
 jest.mock('@/lib/eliza/client', () => ({
   getElizaClient: () => ({
     characters: {
-      get: mockGetCharacter,
-      update: mockUpdateCharacter,
+      getRecordByExternalId: mockGetRecordByExternalId,
+      replaceRecord: mockReplaceRecord,
     },
   }),
 }))
@@ -64,15 +64,18 @@ describe('Export API Route', () => {
 
   describe('successful export', () => {
     it('should return character data as JSON with download headers', async () => {
-      mockGetCharacter.mockResolvedValueOnce({
-        name: 'Test Character',
-        bio: ['A brave warrior'],
-        lore: ['Born in darkness'],
-        topics: ['combat', 'honor'],
-        adjectives: ['brave', 'strong'],
-        style: { all: ['Be concise'], chat: [], post: [] },
-        postExamples: ['Just another day...'],
-        knowledge: [],
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {
+          name: 'Test Character',
+          bio: ['A brave warrior'],
+          lore: ['Born in darkness'],
+          topics: ['combat', 'honor'],
+          adjectives: ['brave', 'strong'],
+          style: { all: ['Be concise'], chat: [], post: [] },
+          postExamples: ['Just another day...'],
+          knowledge: [],
+        },
       })
 
       const response = await exportHandler(createRequest(), createParams('123'))
@@ -88,15 +91,22 @@ describe('Export API Route', () => {
     })
 
     it('should convert SDK message examples to Eliza format', async () => {
-      mockGetCharacter.mockResolvedValueOnce({
-        name: 'Test',
-        bio: ['Bio'],
-        exampleMessages: [
-          { role: 'user', content: 'Hello there' },
-          { role: 'assistant', content: 'Greetings, traveler' },
-          { role: 'user', content: 'What do you do?' },
-          { role: 'assistant', content: 'I guard the realm' },
-        ],
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {
+          name: 'Test',
+          bio: ['Bio'],
+          messageExamples: [
+            [
+              { name: '{{user1}}', content: { text: 'Hello there' } },
+              { name: '{{char}}', content: { text: 'Greetings, traveler' } },
+            ],
+            [
+              { name: '{{user1}}', content: { text: 'What do you do?' } },
+              { name: '{{char}}', content: { text: 'I guard the realm' } },
+            ],
+          ],
+        },
       })
 
       const response = await exportHandler(createRequest(), createParams('123'))
@@ -104,7 +114,7 @@ describe('Export API Route', () => {
 
       // Should be converted to Eliza format (arrays of conversations)
       expect(data.messageExamples).toBeDefined()
-      expect(data.messageExamples.length).toBe(2) // 2 user/assistant pairs
+      expect(data.messageExamples.length).toBe(2) // 2 conversations
 
       // First conversation
       expect(data.messageExamples[0][0].user).toBe('{{user1}}')
@@ -114,13 +124,16 @@ describe('Export API Route', () => {
     })
 
     it('should export knowledge documents with path and content', async () => {
-      mockGetCharacter.mockResolvedValueOnce({
-        name: 'Test',
-        bio: ['Bio'],
-        knowledge: [
-          { id: 'doc-1', path: 'lore.txt', content: 'Some lore content' },
-          { id: 'doc-2', path: 'rules.md', content: 'Game rules here' },
-        ],
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {
+          name: 'Test',
+          bio: ['Bio'],
+          knowledge: [
+            { id: 'doc-1', path: 'lore.txt', content: 'Some lore content' },
+            { id: 'doc-2', path: 'rules.md', content: 'Game rules here' },
+          ],
+        },
       })
 
       const response = await exportHandler(createRequest(), createParams('123'))
@@ -143,7 +156,7 @@ describe('Export API Route', () => {
     })
 
     it('should return 404 if character not found', async () => {
-      mockGetCharacter.mockResolvedValueOnce(null)
+      mockGetRecordByExternalId.mockResolvedValueOnce(null)
 
       const response = await exportHandler(createRequest(), createParams('nonexistent'))
 
@@ -153,7 +166,7 @@ describe('Export API Route', () => {
     })
 
     it('should return 500 on internal error', async () => {
-      mockGetCharacter.mockRejectedValueOnce(new Error('Database error'))
+      mockGetRecordByExternalId.mockRejectedValueOnce(new Error('Database error'))
 
       const response = await exportHandler(createRequest(), createParams('123'))
 
@@ -183,7 +196,11 @@ describe('Import API Route', () => {
 
   describe('successful import', () => {
     it('should import valid character data', async () => {
-      mockUpdateCharacter.mockResolvedValueOnce({})
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: { existingKey: 'keep-me' },
+      })
+      mockReplaceRecord.mockResolvedValueOnce({})
 
       const importData = {
         name: 'Imported Character',
@@ -204,10 +221,31 @@ describe('Import API Route', () => {
       expect(data.imported).toContain('lore')
       expect(data.imported).toContain('topics')
       expect(data.imported).toContain('adjectives')
+      expect(data.imported).toContain('style')
+      expect(data.imported).toContain('postExamples')
+
+      expect(mockReplaceRecord).toHaveBeenCalledTimes(1)
+      expect(mockReplaceRecord).toHaveBeenCalledWith(
+        'record-123',
+        expect.objectContaining({
+          character: expect.objectContaining({
+            existingKey: 'keep-me',
+            bio: ['A mysterious figure'],
+            lore: ['From ancient times'],
+            topics: ['mystery', 'magic'],
+            adjectives: ['mysterious', 'powerful'],
+            postExamples: ['The shadows whisper...'],
+          }),
+        })
+      )
     })
 
     it('should convert Eliza message format to SDK format', async () => {
-      mockUpdateCharacter.mockResolvedValueOnce({})
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {},
+      })
+      mockReplaceRecord.mockResolvedValueOnce({})
 
       const importData = {
         bio: ['Bio'],
@@ -222,19 +260,27 @@ describe('Import API Route', () => {
       const response = await importHandler(createRequest(importData), createParams('123'))
 
       expect(response.status).toBe(200)
-      expect(mockUpdateCharacter).toHaveBeenCalledWith(
-        '123',
-        expect.objectContaining({
-          exampleMessages: expect.arrayContaining([
-            expect.objectContaining({ role: 'user', content: 'Hello' }),
-            expect.objectContaining({ role: 'assistant', content: 'Hi there' }),
-          ]),
-        })
-      )
+      expect(mockReplaceRecord).toHaveBeenCalledTimes(1)
+
+      const replaceArgs = mockReplaceRecord.mock.calls[0]
+      expect(replaceArgs[0]).toBe('record-123')
+
+      const updatedCharacter = (replaceArgs[1] as any).character
+      expect(updatedCharacter).toBeDefined()
+      expect(updatedCharacter.messageExamples).toBeDefined()
+      expect(Array.isArray(updatedCharacter.messageExamples)).toBe(true)
+
+      // Ensure conversion preserved the message contents in canonical structure
+      expect(updatedCharacter.messageExamples[0][0].content.text).toBe('Hello')
+      expect(updatedCharacter.messageExamples[0][1].content.text).toBe('Hi there')
     })
 
     it('should skip knowledge with warning', async () => {
-      mockUpdateCharacter.mockResolvedValueOnce({})
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {},
+      })
+      mockReplaceRecord.mockResolvedValueOnce({})
 
       const importData = {
         bio: ['Bio'],
@@ -250,7 +296,11 @@ describe('Import API Route', () => {
     })
 
     it('should warn about ignored name', async () => {
-      mockUpdateCharacter.mockResolvedValueOnce({})
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {},
+      })
+      mockReplaceRecord.mockResolvedValueOnce({})
 
       const importData = {
         name: 'Different Name',
@@ -289,7 +339,11 @@ describe('Import API Route', () => {
     })
 
     it('should return 500 on update failure', async () => {
-      mockUpdateCharacter.mockRejectedValueOnce(new Error('Update failed'))
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {},
+      })
+      mockReplaceRecord.mockRejectedValueOnce(new Error('Update failed'))
 
       const response = await importHandler(createRequest({ bio: ['Bio'] }), createParams('123'))
 
@@ -301,7 +355,11 @@ describe('Import API Route', () => {
 
   describe('selective import', () => {
     it('should only import provided fields', async () => {
-      mockUpdateCharacter.mockResolvedValueOnce({})
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: { existingKey: 'keep-me' },
+      })
+      mockReplaceRecord.mockResolvedValueOnce({})
 
       const importData = {
         bio: ['New bio'],
@@ -317,10 +375,25 @@ describe('Import API Route', () => {
       expect(data.imported).toContain('topics')
       expect(data.imported).not.toContain('lore')
       expect(data.imported).not.toContain('adjectives')
+
+      expect(mockReplaceRecord).toHaveBeenCalledWith(
+        'record-123',
+        expect.objectContaining({
+          character: expect.objectContaining({
+            existingKey: 'keep-me',
+            bio: ['New bio'],
+            topics: ['topic1', 'topic2'],
+          }),
+        })
+      )
     })
 
     it('should skip empty arrays', async () => {
-      mockUpdateCharacter.mockResolvedValueOnce({})
+      mockGetRecordByExternalId.mockResolvedValueOnce({
+        id: 'record-123',
+        character: {},
+      })
+      mockReplaceRecord.mockResolvedValueOnce({})
 
       const importData = {
         bio: ['Bio'],

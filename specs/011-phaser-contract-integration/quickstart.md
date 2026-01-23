@@ -221,5 +221,5 @@ npm test -- --testPathPattern="map"
 - [wagmi Documentation](https://wagmi.sh/)
 - [viem Documentation](https://viem.sh/)
 - [RainbowKit Documentation](https://www.rainbowkit.com/docs/introduction)
-- [WAGDIE OpenSea](https://opensea.io/collection/wagdie)
-- [Tokens Of Concord OpenSea](https://opensea.io/collection/wagdie-tokens-of-concord)
+- [WAGDIE OpenSea](https://opensea.io/collection/we-are-all-going-to-die)
+- [Tokens Of Concord OpenSea](https://opensea.io/collection/we-are-all-going-to-die)

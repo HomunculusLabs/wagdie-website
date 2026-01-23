@@ -1,5 +1,6 @@
 import type { HttpClient } from '../client/http.js';
-import type { ChatResponse, StreamCallbacks } from '../types/chat.js';
+import type { ChatResponse, StreamCallbacks, BuilderChatInput, BuilderChatResponse } from '../types/chat.js';
+export type { BuilderChatInput, BuilderChatResponse } from '../types/chat.js';
 /**
  * Input for sending a chat message
  */
@@ -20,4 +21,9 @@ export declare class ChatAPI {
      * Send a message and stream the response
      */
     sendMessageStream(input: ChatMessageInput, callbacks: StreamCallbacks): Promise<void>;
+    /**
+     * Send a message to the builder chat (no character required).
+     * Used for the character builder assistant.
+     */
+    sendBuilderMessage(input: BuilderChatInput): Promise<BuilderChatResponse>;
 }

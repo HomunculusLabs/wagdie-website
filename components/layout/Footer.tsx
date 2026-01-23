@@ -13,7 +13,7 @@ export function Footer() {
     },
     {
       label: 'OpenSea',
-      url: process.env.NEXT_PUBLIC_OPENSEA_URL || 'https://opensea.io/collection/wagdie',
+      url: process.env.NEXT_PUBLIC_OPENSEA_URL || 'https://opensea.io/collection/we-are-all-going-to-die',
     },
     {
       label: 'Twitter',

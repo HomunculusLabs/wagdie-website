@@ -200,7 +200,7 @@ export function Header() {
                 </svg>
               </a>
               <a
-                href="https://opensea.io/collection/wagdie"
+                href="https://opensea.io/collection/we-are-all-going-to-die"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between px-4 py-3 text-neutral-500 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"

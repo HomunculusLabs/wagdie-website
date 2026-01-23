@@ -1,6 +1,14 @@
 import type { HttpClient } from '../client/http.js';
-import type { ChatResponse, StreamCallbacks } from '../types/chat.js';
+import type {
+  ChatResponse,
+  StreamCallbacks,
+  BuilderChatInput,
+  BuilderChatResponse,
+} from '../types/chat.js';
 import { fetchChatStream } from './stream.js';
+
+// Re-export builder chat types for backwards compatibility
+export type { BuilderChatInput, BuilderChatResponse } from '../types/chat.js';
 
 /**
  * Input for sending a chat message
@@ -50,5 +58,13 @@ export class ChatAPI {
       { message },
       callbacks
     );
+  }
+
+  /**
+   * Send a message to the builder chat (no character required).
+   * Used for the character builder assistant.
+   */
+  async sendBuilderMessage(input: BuilderChatInput): Promise<BuilderChatResponse> {
+    return this.http.post<BuilderChatResponse>('/chat/builder', input);
   }
 }

@@ -319,7 +319,7 @@ interface ExternalLinksConfig {
 ```typescript
 const EXTERNAL_LINKS: ExternalLinksConfig = {
   discord: process.env.NEXT_PUBLIC_DISCORD_URL || 'https://discord.gg/wagdie',
-  opensea: process.env.NEXT_PUBLIC_OPENSEA_URL || 'https://opensea.io/collection/wagdie',
+  opensea: process.env.NEXT_PUBLIC_OPENSEA_URL || 'https://opensea.io/collection/we-are-all-going-to-die',
   twitter: process.env.NEXT_PUBLIC_TWITTER_URL || 'https://twitter.com/WAGDIE_ETH',
 };
 ```

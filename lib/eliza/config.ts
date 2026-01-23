@@ -3,11 +3,17 @@
  * Environment-based configuration for the Eliza API client
  */
 
+const DEFAULT_ELIZA_BASE_URL = 'https://eliza-api.runiverse.ai' as const
+
 export const elizaConfig = {
   /**
-   * Base URL for Eliza API (client-side accessible)
+   * Base URL for Eliza API.
+   * Prefer server-only ELIZA_API_URL; NEXT_PUBLIC_ELIZA_API_URL is a fallback.
    */
-  baseUrl: process.env.NEXT_PUBLIC_ELIZA_API_URL || 'https://eliza.runiverse.ai',
+  baseUrl:
+    process.env.ELIZA_API_URL ||
+    process.env.NEXT_PUBLIC_ELIZA_API_URL ||
+    DEFAULT_ELIZA_BASE_URL,
 
   /**
    * API key for server-side authentication

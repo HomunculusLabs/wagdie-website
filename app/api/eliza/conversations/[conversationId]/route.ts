@@ -6,7 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { getElizaClient } from '@/lib/eliza/client'
+import { createUserClient } from '@/lib/eliza/client'
+import { requireWalletSession, requireElizaUserToken } from '@/lib/eliza/sessionAuth'
 import type { ConversationDetail, ChatMessage, ErrorResponse } from '@/types/eliza'
 
 interface RouteParams {
@@ -25,22 +26,25 @@ export async function GET(
     // Get user session
     const session = await getSession()
 
-    if (!session.address) {
-      return NextResponse.json(
-        { error: 'UNAUTHORIZED', message: 'Wallet not connected' },
-        { status: 401 }
-      )
+    const walletResult = requireWalletSession(session)
+    if (walletResult instanceof NextResponse) {
+      return walletResult
     }
 
-    const userAddress = session.address.toLowerCase()
+    const tokenResult = requireElizaUserToken(session)
+    if (tokenResult instanceof NextResponse) {
+      return tokenResult
+    }
+
+    const userAddress = walletResult.address
     const { conversationId } = await params
 
-    // Get Eliza client
-    const elizaClient = getElizaClient()
+    // Get user-scoped Eliza client
+    const userClient = createUserClient(tokenResult.accessToken)
 
-    // Fetch conversation details
+    // Fetch conversation details (user-scoped)
     // SDK returns ConversationDetail with { id, characterId, characterName, messageCount, lastMessageAt, createdAt, messages }
-    const sdkConversation = await elizaClient.conversations.get(conversationId)
+    const sdkConversation = await userClient.conversations.get(conversationId)
 
     // Map SDK messages to our types
     const messages: ChatMessage[] = sdkConversation.messages.map((msg: { id: string; role: 'user' | 'assistant'; content: string; createdAt: string }) => ({
@@ -102,21 +106,23 @@ export async function DELETE(
     // Get user session
     const session = await getSession()
 
-    if (!session.address) {
-      return NextResponse.json(
-        { error: 'UNAUTHORIZED', message: 'Wallet not connected' },
-        { status: 401 }
-      )
+    const walletResult = requireWalletSession(session)
+    if (walletResult instanceof NextResponse) {
+      return walletResult
+    }
+
+    const tokenResult = requireElizaUserToken(session)
+    if (tokenResult instanceof NextResponse) {
+      return tokenResult
     }
 
     const { conversationId } = await params
 
-    // Get Eliza client
-    const elizaClient = getElizaClient()
+    // Get user-scoped Eliza client
+    const userClient = createUserClient(tokenResult.accessToken)
 
-    // Delete the conversation
-    // SDK automatically scopes to authenticated user - can only delete own conversations
-    await elizaClient.conversations.delete(conversationId)
+    // Delete the conversation (user-scoped)
+    await userClient.conversations.delete(conversationId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

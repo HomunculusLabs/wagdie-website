@@ -37,3 +37,28 @@ export interface StreamCallbacks {
   onComplete: StreamCompleteCallback;
   onError: StreamErrorCallback;
 }
+
+/**
+ * Builder Chat Types
+ * Used for the character builder assistant chat
+ */
+
+/** Role for builder chat messages */
+export type BuilderChatRole = 'user' | 'assistant';
+
+/** Input message format for builder chat */
+export interface BuilderChatInputMessage {
+  role: BuilderChatRole;
+  content: string;
+}
+
+/** Input for the builder chat endpoint */
+export interface BuilderChatInput {
+  systemPrompt: string;
+  messages: BuilderChatInputMessage[];
+}
+
+/** Response from the builder chat endpoint */
+export interface BuilderChatResponse {
+  message: ChatMessage;
+}

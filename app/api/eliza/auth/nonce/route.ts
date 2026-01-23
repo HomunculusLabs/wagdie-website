@@ -86,15 +86,15 @@ export async function POST(
     })
 
     // Step 3: persist SIWE state in the Wagdie session for the verify step
+    // Clear any stale tokens when generating a new nonce to ensure SIWE flow is authoritative
     session.eliza = {
-      ...(session.eliza || {}),
       siwe: {
         nonce,
         sessionId,
         message,
         issuedAt,
       },
-      tokens: session.eliza?.tokens,
+      tokens: undefined, // Clear stale tokens - user must complete SIWE flow
     }
 
     await session.save()

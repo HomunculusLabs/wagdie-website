@@ -13,6 +13,7 @@ import { ChatInput } from './ChatInput'
 import { ConversationList } from './ConversationList'
 import { useCharacterChat } from '@/hooks/useCharacterChat'
 import { useConversations } from '@/hooks/useConversations'
+import { useElizaAuth } from '@/hooks/useElizaAuth'
 import { Button, Spinner } from '@/components/ui'
 
 interface ChatSidebarProps {
@@ -36,6 +37,8 @@ function ChatSidebarComponent({
 }: ChatSidebarProps) {
   const { isConnected, address } = useAccount()
   const [showHistory, setShowHistory] = useState(false)
+
+  const { getToken, isAuthenticated, isAuthenticating, error: authError, clearAuth } = useElizaAuth()
 
   const panelRef = useRef<HTMLDivElement | null>(null)
   const [visible, setVisible] = useState(false)
@@ -76,15 +79,18 @@ function ChatSidebarComponent({
     clearError: clearConversationsError,
   } = useConversations({
     characterId,
-    autoFetch: isOpen && isConnected,
+    tokenId,
+    autoFetch: isOpen && isConnected && isAuthenticated,
+    pageSize: 20,
   })
 
   // Combined error
-  const error = chatError || conversationsError
+  const error = chatError || conversationsError || authError
   const clearError = useCallback(() => {
     clearChatError()
     clearConversationsError()
-  }, [clearChatError, clearConversationsError])
+    clearAuth()
+  }, [clearChatError, clearConversationsError, clearAuth])
 
   // Persist conversation ID on change
   useEffect(() => {
@@ -102,6 +108,8 @@ function ChatSidebarComponent({
 
   // Restore conversation on open
   useEffect(() => {
+    if (!isAuthenticated) return
+
     if (isOpen && isConnected && address && !conversationId && !isLoadingConversations) {
       const savedId = localStorage.getItem(getStorageKey(tokenId, address))
       if (savedId) {
@@ -116,7 +124,7 @@ function ChatSidebarComponent({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isConnected, address, isLoadingConversations, conversations])
+  }, [isOpen, isConnected, address, isLoadingConversations, conversations, isAuthenticated])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -167,11 +175,27 @@ function ChatSidebarComponent({
     }
   }, [deleteConversation, conversationId, newConversation, tokenId, address])
 
+  const handleLoadHistory = useCallback(() => {
+    void (async () => {
+      const token = await getToken()
+      if (!token) {
+        return
+      }
+      setShowHistory(true)
+    })()
+  }, [getToken])
+
   const handleSend = useCallback(
     (content: string) => {
-      sendMessage(content)
+      void (async () => {
+        const token = await getToken()
+        if (!token) {
+          return
+        }
+        await sendMessage(content)
+      })()
     },
-    [sendMessage]
+    [getToken, sendMessage]
   )
 
   const toggleHistory = useCallback(() => {
@@ -203,7 +227,7 @@ function ChatSidebarComponent({
           onClose={onClose}
           onToggleHistory={toggleHistory}
           onNewConversation={handleNewConversation}
-          showHistoryToggle={isConnected && conversations.length > 0}
+          showHistoryToggle={isConnected && (showHistory || conversations.length > 0)}
           isHistoryOpen={showHistory}
         />
 
@@ -276,6 +300,29 @@ function ChatSidebarComponent({
               </div>
             )}
 
+            {isConnected && !isAuthenticated && (
+              <div className="px-4 py-3 border-b border-neutral-800 bg-neutral-900/50">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-neutral-300">
+                      Sign in to load conversation history.
+                    </p>
+                    <p className="text-xs text-neutral-500">
+                      This will request a wallet signature.
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleLoadHistory}
+                    disabled={isAuthenticating}
+                  >
+                    Load history
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Messages area */}
             <ChatMessages
               messages={messages}
@@ -287,7 +334,7 @@ function ChatSidebarComponent({
             {/* Input */}
             <ChatInput
               onSend={handleSend}
-              disabled={isStreaming}
+              disabled={(isLoadingConversations || isLoadingConversation) || isStreaming || isAuthenticating}
               placeholder={`Message ${characterName}...`}
             />
           </>

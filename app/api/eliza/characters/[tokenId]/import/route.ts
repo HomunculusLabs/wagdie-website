@@ -6,13 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
+import { getCharacterRecordByExternalId } from '@/lib/eliza/characterResolver'
+import { fromElizaExportMessageExamples } from '@/lib/eliza/sdkAdapter'
 import { elizaCharacterExportSchema } from '@/lib/eliza/validation'
-
-// Local type definition since @eliza/sdk types are not bundled in dist
-interface SDKExampleMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
 
 interface RouteParams {
   params: Promise<{ tokenId: string }>
@@ -118,23 +114,12 @@ export async function POST(
       }
     }
 
-    // Import message examples - convert Eliza format to SDK format (role/content)
+    // Import message examples - use SDK adapter to convert Eliza format to canonical format
     if (importData.messageExamples && importData.messageExamples.length > 0) {
-      const sdkMessages: SDKExampleMessage[] = []
+      const canonicalMessageExamples = fromElizaExportMessageExamples(importData.messageExamples)
 
-      for (const conversation of importData.messageExamples) {
-        for (const msg of conversation) {
-          const role: 'user' | 'assistant' =
-            msg.user === '{{user1}}' || !msg.user.startsWith('{{char') ? 'user' : 'assistant'
-          sdkMessages.push({
-            role,
-            content: msg.content?.text || '',
-          })
-        }
-      }
-
-      if (sdkMessages.length > 0) {
-        updateData.exampleMessages = sdkMessages
+      if (canonicalMessageExamples && canonicalMessageExamples.length > 0) {
+        updateData.messageExamples = canonicalMessageExamples
         result.imported.push('messageExamples')
       }
     }
@@ -166,9 +151,25 @@ export async function POST(
       )
     }
 
-    // Update character via Eliza API
+    // Get current character using canonical record lookup
     const client = getElizaClient()
-    await client.characters.update(tokenId, updateData)
+    const record = await getCharacterRecordByExternalId(client, tokenId)
+
+    if (!record) {
+      return NextResponse.json(
+        { error: 'Character not found' },
+        { status: 404 }
+      )
+    }
+
+    // Merge update data with existing character
+    const updatedCharacter = {
+      ...record.character,
+      ...updateData,
+    }
+
+    // Update character using canonical replaceRecord
+    await client.characters.replaceRecord(record.id, { character: updatedCharacter })
 
     return NextResponse.json(result, { status: 200 })
   } catch (error) {

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
+import { getCharacterRecordByExternalId } from '@/lib/eliza/characterResolver'
 import { FIELD_LIMITS } from '@/types/eliza'
 import { randomUUID } from 'crypto'
 
@@ -45,11 +46,11 @@ export async function GET(
     }
 
     const client = getElizaClient()
-    // Note: SDK Character type doesn't include all Eliza character fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const character = await client.characters.get(tokenId) as any
 
-    if (!character) {
+    // Use canonical record lookup by external ID (tokenId)
+    const record = await getCharacterRecordByExternalId(client, tokenId)
+
+    if (!record) {
       return NextResponse.json(
         { error: 'Character not found' },
         { status: 404 }
@@ -57,8 +58,10 @@ export async function GET(
     }
 
     // Return knowledge documents (without full content to reduce payload)
+    const character = record.character as Record<string, unknown>
+    const knowledge = Array.isArray(character.knowledge) ? character.knowledge : []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const documents = (character.knowledge || []).map((doc: any) => ({
+    const documents = knowledge.map((doc: any) => ({
       id: doc.id,
       path: doc.path,
       // Include content preview (first 200 chars)
@@ -128,20 +131,19 @@ export async function POST(
     // Read file content
     const content = await file.text()
 
-    // Get current character to check knowledge limit
+    // Get current character using canonical record lookup
     const client = getElizaClient()
-    // Note: SDK Character type doesn't include all Eliza character fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const character = await client.characters.get(tokenId) as any
+    const record = await getCharacterRecordByExternalId(client, tokenId)
 
-    if (!character) {
+    if (!record) {
       return NextResponse.json(
         { error: 'Character not found' },
         { status: 404 }
       )
     }
 
-    const currentKnowledge = character.knowledge || []
+    const character = record.character as Record<string, unknown>
+    const currentKnowledge = Array.isArray(character.knowledge) ? character.knowledge : []
 
     // Check document limit
     if (currentKnowledge.length >= FIELD_LIMITS.maxKnowledgeDocs) {
@@ -158,11 +160,13 @@ export async function POST(
       content,
     }
 
-    // Update character with new knowledge
-    const updatedKnowledge = [...currentKnowledge, newDocument]
+    // Update character with new knowledge using canonical replaceRecord
+    const updatedCharacter = {
+      ...record.character,
+      knowledge: [...currentKnowledge, newDocument],
+    }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await client.characters.update(tokenId, { knowledge: updatedKnowledge } as any)
+    await client.characters.replaceRecord(record.id, { character: updatedCharacter })
 
     // Return the new document (without full content)
     return NextResponse.json(

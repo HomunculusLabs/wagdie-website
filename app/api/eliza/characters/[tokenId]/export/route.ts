@@ -6,6 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
+import { getCharacterRecordByExternalId } from '@/lib/eliza/characterResolver'
+import { toElizaExportMessageExamples } from '@/lib/eliza/sdkAdapter'
 import type { ElizaCharacterExport } from '@/types/eliza'
 
 interface RouteParams {
@@ -26,62 +28,45 @@ export async function GET(
       )
     }
 
-    // Get character from Eliza API
+    // Get character using canonical record lookup
     const client = getElizaClient()
-    // Note: The SDK Character type doesn't include all Eliza character fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const character = await client.characters.get(tokenId) as any
+    const record = await getCharacterRecordByExternalId(client, tokenId)
 
-    if (!character) {
+    if (!record) {
       return NextResponse.json(
         { error: 'Character not found' },
         { status: 404 }
       )
     }
 
-    // Convert example messages to Eliza export format
-    // SDK stores messages in role/content format, need to pair them into conversations
-    let convertedMessageExamples: Array<Array<{ user: string; content: { text: string } }>> | undefined
+    const character = record.character as Record<string, unknown>
 
-    if (character.exampleMessages && character.exampleMessages.length > 0) {
-      const messages = character.exampleMessages as Array<{ role: 'user' | 'assistant'; content: string }>
+    // Use SDK adapter to convert messageExamples to Eliza export format
+    const messageExamples = toElizaExportMessageExamples(
+      character.messageExamples as Array<Array<{ name: string; content: { text: string } }>> | undefined
+    )
 
-      // Group consecutive user/assistant pairs into conversations
-      const conversations: Array<Array<{ user: string; content: { text: string } }>> = []
-
-      for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i]
-        if (msg.role === 'user' && i + 1 < messages.length && messages[i + 1].role === 'assistant') {
-          // Found a user/assistant pair
-          conversations.push([
-            { user: '{{user1}}', content: { text: msg.content } },
-            { user: '{{char}}', content: { text: messages[i + 1].content } },
-          ])
-          i++ // Skip the assistant message as we've already processed it
-        } else {
-          // Single message (shouldn't happen with proper data, but handle gracefully)
-          conversations.push([
-            { user: msg.role === 'user' ? '{{user1}}' : '{{char}}', content: { text: msg.content } },
-          ])
-        }
-      }
-
-      convertedMessageExamples = conversations.length > 0 ? conversations : undefined
-    }
+    // Extract arrays safely
+    const bio = Array.isArray(character.bio) ? character.bio : []
+    const lore = Array.isArray(character.lore) ? character.lore : []
+    const topics = Array.isArray(character.topics) ? character.topics : undefined
+    const adjectives = Array.isArray(character.adjectives) ? character.adjectives : undefined
+    const postExamples = Array.isArray(character.postExamples) ? character.postExamples : undefined
+    const knowledge = Array.isArray(character.knowledge) ? character.knowledge : undefined
 
     // Convert to standard Eliza export format
     const exportData: ElizaCharacterExport = {
-      name: character.name,
-      bio: character.bio || [],
-      lore: character.lore || [],
-      topics: character.topics,
-      adjectives: character.adjectives,
-      style: character.style,
-      messageExamples: convertedMessageExamples,
-      postExamples: character.postExamples,
-      systemPrompt: character.systemPrompt || undefined,
+      name: character.name as string,
+      bio: bio as string[],
+      lore: lore as string[],
+      topics: topics as string[] | undefined,
+      adjectives: adjectives as string[] | undefined,
+      style: character.style as ElizaCharacterExport['style'],
+      messageExamples,
+      postExamples: postExamples as string[] | undefined,
+      systemPrompt: (character.system as string) || (character.systemPrompt as string) || undefined,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      knowledge: character.knowledge?.map((doc: any) => ({
+      knowledge: knowledge?.map((doc: any) => ({
         id: doc.id,
         path: doc.path,
         content: doc.content || '',
@@ -89,7 +74,8 @@ export async function GET(
     }
 
     // Generate filename
-    const sanitizedName = character.name
+    const name = (character.name as string) || 'character'
+    const sanitizedName = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')

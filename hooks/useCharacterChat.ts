@@ -134,13 +134,13 @@ export function useCharacterChat(tokenId: string): UseCharacterChatReturn {
                 break
 
               case 'complete':
-                // Add assistant message
+                // Add assistant message (use server createdAt when available)
                 const assistantMessage: ChatMessage = {
                   id: data.id,
                   conversationId: data.conversationId,
                   role: 'assistant',
                   content: data.content,
-                  createdAt: new Date().toISOString(),
+                  createdAt: data.createdAt ?? new Date().toISOString(),
                 }
                 setMessages(prev => [...prev, assistantMessage])
                 setConversationId(data.conversationId)

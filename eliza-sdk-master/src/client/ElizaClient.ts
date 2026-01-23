@@ -4,6 +4,7 @@ import { AuthManager } from './auth.js';
 import { ChatAPI } from '../chat/index.js';
 import { CharactersAPI } from '../characters/index.js';
 import { ConversationsAPI } from '../conversations/index.js';
+import { NftAPI } from '../nft/index.js';
 
 export class ElizaClient {
   private readonly http: HttpClient;
@@ -15,6 +16,7 @@ export class ElizaClient {
   private _chat?: ChatAPI;
   private _conversations?: ConversationsAPI;
   private _auth?: AuthAPI;
+  private _nft?: NftAPI;
 
   constructor(config: ElizaClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
@@ -89,6 +91,16 @@ export class ElizaClient {
   }
 
   /**
+   * Access NFT API (collections + provisioning)
+   */
+  get nft(): NftAPI {
+    if (!this._nft) {
+      this._nft = new NftAPI(this.http);
+    }
+    return this._nft;
+  }
+
+  /**
    * Get the underlying HTTP client (for advanced usage)
    */
   getHttpClient(): HttpClient {
@@ -137,4 +149,3 @@ class AuthAPI {
     return this.authManager.isAuthenticated();
   }
 }
-

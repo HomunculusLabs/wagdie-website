@@ -1,23 +1,18 @@
 /**
- * Eliza Auth Token Proxy
- * POST /api/eliza/auth/token
+ * Eliza Auth Token Status
+ * GET /api/eliza/auth
  *
- * Exchanges WAGDIE session for Eliza access token.
- * Backend manages SIWE flow with Eliza API on behalf of user.
+ * Read-only endpoint that returns the current session token or 401 when missing/expired.
+ * Removes insecure use of session.siwe.signature for Eliza auth - forces explicit Eliza SIWE flow.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { getElizaClient } from '@/lib/eliza/client'
-import { createSIWEMessage } from '@eliza/sdk'
+import { normalizeExpiresAt } from '@/lib/eliza/sessionAuth'
 import type { TokenResponse, ErrorResponse } from '@/types/eliza'
 
-// In-memory token cache (in production, use Redis)
-const tokenCache = new Map<string, { token: string; expiresAt: number }>()
-
-export async function POST(request: NextRequest): Promise<NextResponse<TokenResponse | ErrorResponse>> {
+export async function GET(): Promise<NextResponse<TokenResponse | ErrorResponse>> {
   try {
-    // Get user session
     const session = await getSession()
 
     if (!session.address) {
@@ -27,67 +22,34 @@ export async function POST(request: NextRequest): Promise<NextResponse<TokenResp
       )
     }
 
-    const userAddress = session.address.toLowerCase()
-
-    // Check cache for valid token
-    const cached = tokenCache.get(userAddress)
-    if (cached && cached.expiresAt > Date.now() + 60000) {
-      // Token still valid with 1 minute buffer
-      return NextResponse.json({
-        accessToken: cached.token,
-        expiresAt: new Date(cached.expiresAt).toISOString(),
-      })
+    const tokens = session.eliza?.tokens
+    if (!tokens?.accessToken) {
+      return NextResponse.json(
+        { error: 'NO_TOKEN', message: 'No Eliza token found. Please authenticate with Eliza.' },
+        { status: 401 }
+      )
     }
 
-    // Get Eliza client
-    const elizaClient = getElizaClient()
+    // Normalize expiry to ms and check if expired
+    const expiresAtMs = normalizeExpiresAt(tokens.expiresAt)
+    const bufferMs = 60000 // 1 minute buffer
 
-    // Get nonce from Eliza
-    const { nonce, sessionId } = await elizaClient.auth.getNonce()
-
-    // Create SIWE message for Eliza
-    const message = createSIWEMessage({
-      domain: new URL(request.url).host,
-      address: session.address,
-      statement: 'Sign in to WAGDIE Chat with Eliza',
-      uri: request.url,
-      chainId: 1, // Mainnet
-      nonce,
-    })
-
-    // Use existing SIWE signature from session to verify with Eliza
-    // In production, you might want to re-sign specifically for Eliza
-    const tokens = await elizaClient.auth.verify(
-      message,
-      session.siwe.signature,
-      sessionId
-    )
-
-    // Cache the token
-    const expiresAt = tokens.expiresAt || Date.now() + 3600000 // Default 1 hour
-    tokenCache.set(userAddress, {
-      token: tokens.accessToken,
-      expiresAt,
-    })
+    if (expiresAtMs <= Date.now() + bufferMs) {
+      return NextResponse.json(
+        { error: 'TOKEN_EXPIRED', message: 'Eliza token expired. Please re-authenticate.' },
+        { status: 401 }
+      )
+    }
 
     return NextResponse.json({
       accessToken: tokens.accessToken,
-      expiresAt: new Date(expiresAt).toISOString(),
+      expiresAt: new Date(expiresAtMs).toISOString(),
     })
   } catch (error) {
-    console.error('[Eliza Auth] Token exchange failed:', error)
-
-    if (error instanceof Error) {
-      if (error.message.includes('401') || error.message.includes('unauthorized')) {
-        return NextResponse.json(
-          { error: 'AUTH_FAILED', message: 'Authentication with Eliza failed' },
-          { status: 401 }
-        )
-      }
-    }
+    console.error('[Eliza Auth] Token status check failed:', error)
 
     return NextResponse.json(
-      { error: 'INTERNAL_ERROR', message: 'Failed to get access token' },
+      { error: 'INTERNAL_ERROR', message: 'Failed to check token status' },
       { status: 500 }
     )
   }

@@ -1,11 +1,24 @@
 import type { HttpClient } from '../client/http.js';
-import type { Character, CreateCharacterInput, UpdateCharacterInput } from '../types/character.js';
+import type { AgentCharacter, CharacterRecord, Character, CreateCharacterInput, UpdateCharacterInput } from '../types/character.js';
 import type { PaginatedResponse, PaginationParams } from '../types/index.js';
 interface CharacterListParams extends PaginationParams {
+    nftCollectionId?: string;
 }
 export declare class CharactersAPI {
     private http;
     constructor(http: HttpClient);
+    listRecords(params?: CharacterListParams): Promise<PaginatedResponse<CharacterRecord>>;
+    getRecord(id: string): Promise<CharacterRecord>;
+    createRecord(input: {
+        externalId?: string;
+        character: AgentCharacter;
+    }): Promise<CharacterRecord>;
+    replaceRecord(id: string, input: {
+        character: AgentCharacter;
+    }): Promise<CharacterRecord>;
+    parseSummary(input: {
+        summary: string;
+    }): Promise<CreateCharacterInput>;
     /**
      * List all characters (with pagination)
      */
@@ -33,5 +46,10 @@ export declare class CharactersAPI {
      * Useful for integrations that track characters by their own IDs
      */
     getByExternalId(externalId: string): Promise<Character | null>;
+    /**
+     * Get a CharacterRecord by external ID
+     * Returns the full record with AgentCharacter payload (canonical format)
+     */
+    getRecordByExternalId(externalId: string): Promise<CharacterRecord | null>;
 }
 export {};

@@ -3,7 +3,7 @@
  * Based on data-model.md specification
  */
 
-// Re-export types from our SDK adapter (these are defined locally since the SDK doesn't export them)
+// Re-export types from SDK adapter (types defined locally due to TS resolution issues)
 export type {
   AgentCharacter,
   AgentMessage,
@@ -14,7 +14,7 @@ export type {
   ChatResponse as SDKChatResponse,
 } from '@/lib/eliza/sdkAdapter'
 
-// Re-export SDK errors (these are actually exported by the SDK)
+// Re-export SDK errors (runtime import works correctly)
 export { ElizaError } from '@eliza/sdk'
 
 // Define SDK types that aren't exported but we use locally
@@ -273,6 +273,8 @@ export interface StreamCompleteEvent {
     id: string
     content: string
     conversationId: string
+    /** ISO 8601 timestamp when the message was created */
+    createdAt?: string
   }
 }
 

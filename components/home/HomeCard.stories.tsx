@@ -53,7 +53,7 @@ export const ExternalLink: Story = {
     title: 'Visit OpenSea',
     description: 'View and trade WAGDIE NFTs on the marketplace',
     imageSrc: mockImage,
-    href: 'https://opensea.io/collection/wagdie',
+    href: 'https://opensea.io/collection/we-are-all-going-to-die',
     isExternal: true,
   },
 };

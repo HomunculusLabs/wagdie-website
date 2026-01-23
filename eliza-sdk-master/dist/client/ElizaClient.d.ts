@@ -4,6 +4,7 @@ import { AuthManager } from './auth.js';
 import { ChatAPI } from '../chat/index.js';
 import { CharactersAPI } from '../characters/index.js';
 import { ConversationsAPI } from '../conversations/index.js';
+import { NftAPI } from '../nft/index.js';
 export declare class ElizaClient {
     private readonly http;
     private readonly authManager;
@@ -12,6 +13,7 @@ export declare class ElizaClient {
     private _chat?;
     private _conversations?;
     private _auth?;
+    private _nft?;
     constructor(config: ElizaClientConfig);
     /**
      * Verify the current credentials are valid
@@ -37,6 +39,10 @@ export declare class ElizaClient {
      * Access conversations API
      */
     get conversations(): ConversationsAPI;
+    /**
+     * Access NFT API (collections + provisioning)
+     */
+    get nft(): NftAPI;
     /**
      * Get the underlying HTTP client (for advanced usage)
      */

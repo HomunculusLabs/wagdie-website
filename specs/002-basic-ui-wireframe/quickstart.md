@@ -378,7 +378,7 @@ Create `components/layout/Footer.tsx`:
 export function Footer() {
   const externalLinks = [
     { label: 'Discord', url: 'https://discord.gg/wagdie' },
-    { label: 'OpenSea', url: 'https://opensea.io/collection/wagdie' },
+    { label: 'OpenSea', url: 'https://opensea.io/collection/we-are-all-going-to-die' },
     { label: 'Twitter', url: 'https://twitter.com/WAGDIE_ETH' },
   ];
 

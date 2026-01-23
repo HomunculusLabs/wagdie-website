@@ -3,80 +3,150 @@
  *
  * Goal: isolate all @eliza/sdk imports + data-shape mappings so the rest of the app
  * can remain stable while we migrate SDK versions.
+ *
+ * Note: Types are defined locally to work around TypeScript module resolution issues
+ * with the symlinked SDK package. These types match the SDK's exported types.
  */
 
-import type {
-  AuthTokens,
-  ChatResponse,
-  StreamCallbacks,
-  CharacterStyle,
-} from '@eliza/sdk'
 import { ElizaError } from '@eliza/sdk'
 
 import type { AICharacter, ExampleMessage, StyleConfig, UpdateAICharacterInput } from '@/types/eliza'
 
-// ============================================================================
-// Local Type Definitions (bridging SDK types to wagdie-simplified expectations)
-// ============================================================================
-
-/**
- * AgentCharacter - the internal character representation used by wagdie-simplified.
- * This is a superset of the SDK's Character type to support additional fields.
- */
-export interface AgentCharacter {
-  name: string
-  system?: string
-  bio?: string[]
-  topics?: string[]
-  messageExamples?: AgentMessageExample[]
-  style?: CharacterStyle
-  settings?: Record<string, unknown>
-  // Custom/extended fields
-  backstory?: string | null
-  lore?: string[]
-  adjectives?: string[]
-  postExamples?: string[]
-}
-
-/**
- * AgentMessage - represents a single message in a conversation.
- */
-export interface AgentMessage {
-  name: string
-  content: { text: string }
-}
-
-/**
- * AgentMessageExample - array of AgentMessage representing a conversation example.
- */
-export type AgentMessageExample = AgentMessage[]
-
-/**
- * CharacterRecord - the response from character API operations.
- */
-export interface CharacterRecord {
-  id: string
-  externalId?: string
-  character: AgentCharacter
-  createdAt?: string
-  updatedAt?: string
-}
 import {
   convertFromElizaMessageExamples,
   convertToElizaMessageExamples,
   migratePersonalityToBio,
 } from '@/lib/eliza/migration'
 
+// ============================================================================
+// SDK Types - Defined locally due to TypeScript module resolution issues
+// These types match @eliza/sdk exported types
+// ============================================================================
+
 /**
- * Re-export the minimal SDK surface area needed by wagdie-simplified.
- * Local types (AgentCharacter, AgentMessage, AgentMessageExample, CharacterRecord)
- * are already exported above via their interfaces.
+ * Message within a conversation example
  */
-export type {
-  AuthTokens,
-  ChatResponse,
-  StreamCallbacks,
+export type AgentMessage = {
+  name: string
+  content: {
+    text: string
+  }
+  [key: string]: unknown
 }
+
+/**
+ * Array of messages forming a conversation example
+ */
+export type AgentMessageExample = AgentMessage[]
+
+/**
+ * Canonical ElizaOS agent character payload
+ */
+export type AgentCharacter = {
+  name: string
+  username?: string
+  plugins?: string[]
+  system?: string
+  bio?: string[]
+  topics?: string[]
+  messageExamples?: AgentMessageExample[]
+  style?: {
+    all?: string[]
+    chat?: string[]
+    post?: string[]
+    [key: string]: unknown
+  }
+  settings?: {
+    secrets?: Record<string, string>
+    avatar?: string
+    [key: string]: unknown
+  }
+  knowledge?: unknown
+  templates?: unknown
+  [key: string]: unknown
+}
+
+/**
+ * Character permissions
+ */
+export type CharacterPermissions = {
+  canEdit: boolean
+}
+
+/**
+ * Canonical persisted character record
+ */
+export type CharacterRecord = {
+  id: string
+  externalId: string | null
+  character: AgentCharacter
+  permissions?: CharacterPermissions
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Authentication tokens from SDK
+ */
+export type AuthTokens = {
+  accessToken: string
+  expiresAt: number
+  refreshToken?: string
+}
+
+/**
+ * Chat message type
+ */
+export type ChatMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt?: string
+}
+
+/**
+ * Chat response from SDK
+ */
+export type ChatResponse = {
+  id: string
+  conversationId: string
+  content: string
+  createdAt?: string
+}
+
+/**
+ * Character style configuration
+ */
+export type CharacterStyle = {
+  all?: string[]
+  chat?: string[]
+  post?: string[]
+}
+
+/**
+ * Stream callback for receiving chunks
+ */
+export type StreamCallback = (chunk: string) => void
+
+/**
+ * Stream complete callback - receives the full message and conversation ID
+ */
+export type StreamCompleteCallback = (message: ChatMessage, conversationId: string) => void
+
+/**
+ * Stream error callback
+ */
+export type StreamErrorCallback = (error: Error) => void
+
+/**
+ * Stream callbacks object for chat streaming
+ */
+export type StreamCallbacks = {
+  onChunk?: StreamCallback
+  onComplete?: StreamCompleteCallback
+  onError?: StreamErrorCallback
+}
+
 export { ElizaError }
 
 /**
@@ -123,11 +193,11 @@ function mergeObjectsPreservingUndefined<T extends Record<string, unknown>>(
  * wagdie format:
  *   [{ userMessage: string, assistantMessage: string }, ...]
  *
- * canonical SDK format:
+ * canonical SDK format (messageExamples):
  *   [
  *     [
- *       { name: '...', content: { text: '...' } },
- *       { name: '...', content: { text: '...' } }
+ *       { name: '{{user1}}', content: { text: '...' } },
+ *       { name: '{{char}}', content: { text: '...' } }
  *     ],
  *     ...
  *   ]
@@ -151,7 +221,7 @@ export function toAgentMessageExamples(
 /**
  * Convert canonical AgentMessageExample[] back into wagdie ExampleMessage[].
  *
- * This is used when returning an API response shaped like wagdie’s AICharacter DTO.
+ * This is used when returning an API response shaped like wagdie's AICharacter DTO.
  */
 export function fromAgentMessageExamples(
   messageExamples: AgentMessageExample[] | null | undefined
@@ -222,13 +292,13 @@ export function agentMessageExamplesToRoleContentPairs(
 }
 
 /**
- * Create an AgentCharacter payload from wagdie’s AICharacter DTO.
+ * Create an AgentCharacter payload from wagdie's AICharacter DTO.
  *
  * Key mappings:
  * - systemPrompt -> system
  * - personality -> bio[] (via migratePersonalityToBio)
  * - backstory -> preserved as custom key AND also mirrored into `lore[]` for editor compatibility
- * - exampleMessages -> messageExamples (canonical)
+ * - exampleMessages -> messageExamples (canonical SDK format)
  */
 export function toAgentCharacterFromAICharacter(input: Partial<AICharacter>): AgentCharacter {
   const name = isNonEmptyString(input.name) ? input.name.trim() : 'Unnamed Character'
@@ -247,6 +317,7 @@ export function toAgentCharacterFromAICharacter(input: Partial<AICharacter>): Ag
         ? [input.backstory]
         : []
 
+  // Convert to canonical messageExamples format
   const messageExamples = toAgentMessageExamples(input.exampleMessages)
 
   const character: AgentCharacter = {
@@ -258,7 +329,7 @@ export function toAgentCharacterFromAICharacter(input: Partial<AICharacter>): Ag
     // StyleConfig is compatible with the SDK `style` shape (all/chat/post arrays).
     style: (input.style as unknown as AgentCharacter['style']) ?? undefined,
 
-    // Custom/back-compat keys (AgentCharacter is permissive by design)
+    // Custom/back-compat keys (AgentCharacter is permissive by design with [key: string]: unknown)
     backstory: input.backstory ?? null,
     lore: loreFromInput,
     adjectives: asStringArray((input as unknown as Record<string, unknown>).adjectives) ?? [],
@@ -269,10 +340,10 @@ export function toAgentCharacterFromAICharacter(input: Partial<AICharacter>): Ag
 }
 
 /**
- * Create a *partial* AgentCharacter patch from wagdie’s UpdateAICharacterInput.
+ * Create a *partial* AgentCharacter patch from wagdie's UpdateAICharacterInput.
  *
  * This is intended to be merged into an existing AgentCharacter before calling
- * `characters.replace(id, { character })` (full replace).
+ * `characters.replaceRecord(id, { character })` (full replace).
  */
 export function toAgentCharacterPatchFromUpdate(
   update: UpdateAICharacterInput
@@ -302,6 +373,7 @@ export function toAgentCharacterPatchFromUpdate(
     patch.style = update.style as unknown as AgentCharacter['style']
   }
 
+  // Convert to canonical messageExamples format
   if (update.exampleMessages !== undefined) {
     patch.messageExamples = toAgentMessageExamples(update.exampleMessages)
   }
@@ -332,7 +404,7 @@ export function toAgentCharacterPatchFromUpdate(
 }
 
 /**
- * Merge helper for safe `characters.replace()` usage.
+ * Merge helper for safe `characters.replaceRecord()` usage.
  *
  * Rules:
  * - Undefined patch values do NOT overwrite existing values.
@@ -406,9 +478,10 @@ export function extractBackstory(character: AgentCharacter): string | null {
 }
 
 /**
- * Map an SDK CharacterRecord into wagdie’s AICharacter DTO.
+ * Map an SDK CharacterRecord into wagdie's AICharacter DTO.
  *
- * This keeps wagdie’s existing DTO stable while we migrate internals to v0.2.
+ * This keeps wagdie's existing DTO stable while we migrate internals to v0.2.
+ * Uses canonical `messageExamples` (AgentMessageExample) rather than legacy `exampleMessages`.
  */
 export function toAICharacterFromRecord(tokenId: string, record: CharacterRecord): AICharacter {
   const c = record.character
@@ -422,6 +495,9 @@ export function toAICharacterFromRecord(tokenId: string, record: CharacterRecord
 
   const backstory = extractBackstory(c)
 
+  // Convert from canonical messageExamples to wagdie's exampleMessages format
+  const exampleMessages = fromAgentMessageExamples(c.messageExamples)
+
   return {
     id: record.id,
     externalId: record.externalId ?? tokenId,
@@ -430,7 +506,7 @@ export function toAICharacterFromRecord(tokenId: string, record: CharacterRecord
     personality: bio.length > 0 ? bio.join('\n\n') : null,
     backstory,
     systemPrompt: c.system ?? null,
-    exampleMessages: fromAgentMessageExamples(c.messageExamples),
+    exampleMessages,
 
     bio,
     lore,
@@ -443,4 +519,37 @@ export function toAICharacterFromRecord(tokenId: string, record: CharacterRecord
     createdAt: record.createdAt ?? '',
     updatedAt: record.updatedAt ?? '',
   }
+}
+
+/**
+ * Convert Eliza export format messageExamples to canonical AgentMessageExample[].
+ * Eliza export uses: [{ user: string, content: { text: string } }][]
+ */
+export function toElizaExportMessageExamples(
+  examples?: AgentMessageExample[]
+): Array<Array<{ user: string; content: { text: string } }>> | undefined {
+  if (!examples || examples.length === 0) return undefined
+
+  return examples.map((conversation) =>
+    conversation.map((msg) => ({
+      user: msg.name,
+      content: { text: msg.content?.text ?? '' },
+    }))
+  )
+}
+
+/**
+ * Convert Eliza export format back to canonical AgentMessageExample[].
+ */
+export function fromElizaExportMessageExamples(
+  examples?: Array<Array<{ user: string; content: { text: string } }>>
+): AgentMessageExample[] | undefined {
+  if (!examples || examples.length === 0) return undefined
+
+  return examples.map((conversation) =>
+    conversation.map((entry) => ({
+      name: entry.user,
+      content: { text: entry.content?.text ?? '' },
+    }))
+  )
 }
