@@ -14,7 +14,7 @@ interface Props {
 
 export const ArtifactCard: React.FC<Props> = ({ data }) => {
   return (
-    <div className="w-full bg-soul-950/60 backdrop-blur-md border border-midnight-light/50 p-6 shadow-2xl animate-fade-in relative overflow-hidden group rounded-sm">
+    <div className="w-full bg-soul-950/60 backdrop-blur-md border border-midnight-light/50 p-6 animate-fade-in relative overflow-hidden group rounded-sm">
         {/* Decorative inner border */}
       <div className="absolute inset-1 border border-midnight-light/20 pointer-events-none" />
       
@@ -42,7 +42,7 @@ export const ArtifactCard: React.FC<Props> = ({ data }) => {
             <div className="col-span-1 space-y-4">
                 <div className="p-4 bg-midnight/40 border border-midnight-light/30 h-full flex flex-col justify-center">
                     <h4 className="text-mist text-[10px] font-display tracking-widest mb-2 text-center uppercase">Attribute Scaling</h4>
-                    <div className="text-center text-xl font-display text-soul-accent tracking-widest drop-shadow-glow">
+                    <div className="text-center text-xl font-display text-soul-accent tracking-widest">
                         {data.scaling}
                     </div>
                 </div>

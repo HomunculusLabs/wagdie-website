@@ -172,7 +172,7 @@ export const SidebarItem = React.memo<SidebarItemProps>(({
       {!isOpen && (
         <div
           role="tooltip"
-          className="absolute left-full ml-2 px-2 py-1 bg-midnight border border-midnight-light/50 text-xs text-bone rounded-sm opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-2xl"
+          className="absolute left-full ml-2 px-2 py-1 bg-midnight border border-midnight-light/50 text-xs text-bone rounded-sm opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           aria-hidden="true"
         >
           {label}

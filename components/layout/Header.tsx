@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Navigation } from './Navigation'
 import { WalletButton } from '@/components/wallet/WalletButton'
+import { HeaderSearch, SearchButton } from './HeaderSearch'
 import { lockBodyScroll, unlockBodyScroll } from '@/lib/utils/bodyScrollLock'
 
 /**
@@ -15,6 +16,7 @@ import { lockBodyScroll, unlockBodyScroll } from '@/lib/utils/bodyScrollLock'
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -31,6 +33,26 @@ export function Header() {
   const closeDrawer = () => {
     setIsDrawerOpen(false)
   }
+
+  const openSearch = () => {
+    setIsSearchOpen(true)
+  }
+
+  const closeSearch = () => {
+    setIsSearchOpen(false)
+  }
+
+  // Keyboard shortcut for search (Ctrl+K or Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setIsSearchOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Ensure dark mode is always active
   useEffect(() => {
@@ -97,6 +119,9 @@ export function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-2">
+            {/* Search button */}
+            <SearchButton onClick={openSearch} />
+
             {/* MORE button */}
             <button
               onClick={toggleDrawer}
@@ -116,6 +141,19 @@ export function Header() {
           <div className="md:hidden py-4 border-t border-neutral-800">
             <Navigation isMobile onNavClick={closeMobileMenu} />
             <div className="mt-4 flex flex-col gap-2 px-2">
+              {/* Mobile Search Button */}
+              <button
+                onClick={() => {
+                  closeMobileMenu()
+                  openSearch()
+                }}
+                className="flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-soul-accent transition-colors font-eskapade text-xl"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search Characters
+              </button>
               <button
                 onClick={() => {
                   closeMobileMenu()
@@ -220,6 +258,9 @@ export function Header() {
           </div>
         </div>
       )}
+
+      {/* Search Modal */}
+      <HeaderSearch isOpen={isSearchOpen} onClose={closeSearch} />
     </header>
   )
 }

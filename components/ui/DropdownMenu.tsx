@@ -180,7 +180,7 @@ export const DropdownMenu = React.memo<DropdownMenuProps>(({ trigger, children, 
             role="menu"
             aria-labelledby={`${idRef.current}-trigger`}
             tabIndex={-1}
-            className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} mt-2 w-56 origin-top-${align} bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl z-50 animate-fade-in focus:outline-none rounded-sm overflow-hidden`}
+            className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} mt-2 w-56 origin-top-${align} bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 z-50 animate-fade-in focus:outline-none rounded-sm overflow-hidden`}
           >
             <div className="py-1">
               {children}
@@ -254,7 +254,7 @@ export const DropdownItem = React.memo<DropdownItemProps>(({
       className={`
         block w-full text-left px-4 py-2 text-sm font-eskapade text-ash
         transition-all duration-200 focus:outline-none
-        ${isHighlighted ? 'bg-soul-accent/10 text-soul-accent border-l-2 border-soul-accent shadow-glow-sm' : 'hover:bg-midnight/50 hover:text-bone'}
+        ${isHighlighted ? 'bg-soul-accent/10 text-soul-accent border-l-2 border-soul-accent' : 'hover:bg-midnight/50 hover:text-bone'}
         ${disabled ? 'opacity-30 cursor-not-allowed' : ''}
         ${className}
       `}

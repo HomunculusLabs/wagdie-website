@@ -3,6 +3,7 @@ import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { SkipLink } from '@/components/ui'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -42,8 +43,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="flex flex-col min-h-screen bg-soul-950 text-neutral-300 selection:bg-soul-blood selection:text-white">
         <Providers>
+          <SkipLink />
           <Header />
-          <main className="flex-1">{children}</main>
+          <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
           <Footer />
         </Providers>
       </body>

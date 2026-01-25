@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 export const Menubar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="flex items-center border border-midnight-light/50 bg-soul-950/80 backdrop-blur-md p-1 rounded-sm shadow-2xl w-fit">
+    <div className="flex items-center border border-midnight-light/50 bg-soul-950/80 backdrop-blur-md p-1 rounded-sm w-fit">
       {children}
     </div>
   );
@@ -33,7 +33,7 @@ export const MenubarMenu: React.FC<{ trigger: string; children: React.ReactNode 
         {trigger}
       </button>
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-48 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl py-1 z-50 animate-fade-in rounded-sm overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 w-48 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 py-1 z-50 animate-fade-in rounded-sm overflow-hidden">
           {children}
         </div>
       )}

@@ -52,7 +52,7 @@ export const Combobox: React.FC<ComboboxProps> = ({ options, placeholder = "Sele
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 z-50 w-full mt-1 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl p-1 animate-fade-in rounded-sm">
+          <div className="absolute top-full left-0 z-50 w-full mt-1 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 p-1 animate-fade-in rounded-sm">
              <input
                 className="w-full bg-midnight/50 border border-midnight-light/30 p-2 text-body-sm text-bone mb-1 outline-none focus:border-soul-accent font-eskapade uppercase tracking-widest text-xs"
                 placeholder="Search..."

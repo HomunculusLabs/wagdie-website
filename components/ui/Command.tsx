@@ -13,7 +13,7 @@ export const Command: React.FC<CommandProps> = ({ items, placeholder = "Type a c
   const filtered = items.filter(item => item.label.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div className="w-full max-w-md bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl overflow-hidden rounded-sm">
+    <div className="w-full max-w-md bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 overflow-hidden rounded-sm">
       <div className="flex items-center border-b border-midnight-light/30 px-3">
         <svg className="w-4 h-4 text-mist mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input 

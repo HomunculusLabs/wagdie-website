@@ -234,7 +234,7 @@ export const CustomSelectContent = React.memo<{ children: React.ReactNode; class
       role="listbox"
       aria-labelledby={`${context.id}-label`}
       tabIndex={-1}
-      className={`absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-sm border border-midnight-light/50 bg-soul-950/95 backdrop-blur-xl text-bone shadow-2xl animate-fade-in ${className}`}
+      className={`absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-sm border border-midnight-light/50 bg-soul-950/95 backdrop-blur-xl text-bone animate-fade-in ${className}`}
     >
       <div className="p-1">{children}</div>
     </div>

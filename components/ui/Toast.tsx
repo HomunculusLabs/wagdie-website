@@ -33,9 +33,9 @@ export const Toast: React.FC<ToastProps> = ({
   }, [isVisible, duration, onClose]);
 
   const variants = {
-    default: "border-midnight-light/50 bg-soul-950/95 text-bone shadow-2xl",
-    success: "border-soul-accent/50 bg-soul-950/95 text-soul-accent shadow-soul-glow",
-    error: "border-blood/50 bg-soul-950/95 text-blood shadow-blood-glow",
+    default: "border-midnight-light/50 bg-soul-950/95 text-bone",
+    success: "border-soul-accent/50 bg-soul-950/95 text-soul-accent",
+    error: "border-blood/50 bg-soul-950/95 text-blood",
     warning: "border-ember/50 bg-soul-950/95 text-ember",
   };
 

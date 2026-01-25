@@ -29,7 +29,7 @@ export const HoverCard: React.FC<HoverCardProps> = ({ trigger, children }) => {
       
       {isHovered && (
         <div className="absolute left-0 bottom-full mb-2 w-64 z-50 animate-fade-in">
-          <div className="bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl p-4 rounded-sm relative">
+          <div className="bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 p-4 rounded-sm relative">
              {children}
              {/* Arrow */}
              <div className="absolute -bottom-2 left-4 w-4 h-4 bg-soul-950/95 backdrop-blur-xl border-b border-r border-midnight-light/50 rotate-45"></div>

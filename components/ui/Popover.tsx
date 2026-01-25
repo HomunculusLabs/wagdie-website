@@ -25,7 +25,7 @@ export const Popover: React.FC<PopoverProps> = ({ trigger, content }) => {
     <div className="relative inline-block" ref={containerRef}>
       <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">{trigger}</div>
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-72 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl p-4 animate-fade-in rounded-sm">
+        <div className="absolute z-50 mt-2 w-72 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 p-4 animate-fade-in rounded-sm">
           <div className="text-ash font-eskapade text-sm leading-relaxed">
             {content}
           </div>

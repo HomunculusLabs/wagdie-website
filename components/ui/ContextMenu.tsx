@@ -34,7 +34,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ trigger, children }) =
       {visible && (
         <div 
             ref={menuRef}
-            className="fixed z-50 w-48 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 shadow-2xl py-1 animate-fade-in rounded-sm overflow-hidden"
+            className="fixed z-50 w-48 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 py-1 animate-fade-in rounded-sm overflow-hidden"
             style={{ top: position.y, left: position.x }}
         >
           {children}

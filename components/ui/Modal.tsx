@@ -125,7 +125,7 @@ export const Modal = React.memo<ModalProps>(({
         aria-labelledby={`${modalId.current}-title`}
         aria-describedby={`${modalId.current}-body`}
         className={`
-          relative w-full max-w-lg bg-soul-950/95 backdrop-blur-xl border border-soul-900/50 shadow-2xl
+          relative w-full max-w-lg bg-soul-950/95 backdrop-blur-xl border border-soul-900/50
           transform transition-all duration-300
           ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}
         `}

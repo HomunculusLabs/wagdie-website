@@ -13,7 +13,7 @@ export const VisionCard: React.FC<Props> = ({ data }) => {
   return (
     <div className="w-full animate-fade-in group relative">
         <div className="absolute -inset-0.5 border border-soul-accent/10 opacity-0 group-hover:opacity-100 transition duration-1000 blur-sm"></div>
-        <div className="relative bg-soul-950 border border-midnight-light/50 p-1.5 shadow-2xl">
+        <div className="relative bg-soul-950 border border-midnight-light/50 p-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
                 src={data.imageUrl}

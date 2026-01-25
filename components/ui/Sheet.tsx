@@ -38,7 +38,7 @@ export const Sheet: React.FC<SheetProps> = ({ isOpen, onClose, side = 'right', c
       />
       <div 
         className={`
-            absolute top-0 bottom-0 w-3/4 max-w-sm bg-soul-950/95 backdrop-blur-xl border-midnight-light/50 shadow-2xl p-6
+            absolute top-0 bottom-0 w-3/4 max-w-sm bg-soul-950/95 backdrop-blur-xl border-midnight-light/50 p-6
             transition-transform duration-500 ease-out
             ${sideClass} ${translateClass}
         `}

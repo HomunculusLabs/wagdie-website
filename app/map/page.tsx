@@ -17,6 +17,7 @@ import { EventBus, MapEvents, type MapCharacterData, type MarkerPayload, type Ma
 import { isBurnedOwner } from '@/lib/utils/blockchain';
 import { Spinner } from '@/components/ui';
 import MapStakingSidebar from '@/components/map/MapStakingSidebar';
+import { MapOnboarding } from '@/components/map/MapOnboarding';
 import type { IRefPhaserGame } from '@/game/PhaserGame';
 import type { Location } from '@/lib/types/map';
 import { parseChainLocationId } from '@/lib/utils/chainIds';
@@ -435,6 +436,9 @@ export default function MapPage() {
             </p>
           </div>
         )}
+
+        {/* Onboarding tooltip for first-time users */}
+        {mapReady && !isSidebarOpen && <MapOnboarding />}
 
         {/* Staking sidebar toggle button */}
         {mapReady && !isSidebarOpen && (

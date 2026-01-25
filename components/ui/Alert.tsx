@@ -50,9 +50,9 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({ isOpen, onClose, onCon
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-soul-950/90 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-soul-950 border border-soul-900 shadow-2xl p-8 animate-fade-in rounded-sm">
+      <div className="relative w-full max-w-md bg-soul-950 border border-soul-900 p-8 animate-fade-in rounded-sm">
         <div className="flex flex-col gap-2 text-center mb-8">
-            <div className="mx-auto text-blood mb-4 shadow-blood-glow">
+            <div className="mx-auto text-blood mb-4">
                 <AlertCircle size={48} strokeWidth={1.5} />
             </div>
             <h2 className="text-2xl font-display text-bone tracking-widest uppercase">{title}</h2>

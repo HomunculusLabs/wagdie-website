@@ -4,6 +4,9 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 export { Divider } from './Divider'
 export { Separator } from './Separator'
 
+// Accessibility
+export { SkipLink } from './SkipLink'
+
 // Navigation
 export { NavigationMenu, NavigationMenuItem } from './NavigationMenu'
 export { Breadcrumb } from './Breadcrumb'

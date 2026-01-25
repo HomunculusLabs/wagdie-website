@@ -7,9 +7,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary: "bg-soul-900 border-soul-accent/40 text-soul-accent hover:bg-soul-accent/10 hover:border-soul-accent hover:shadow-soul-glow",
+  primary: "bg-soul-900 border-soul-accent/40 text-soul-accent hover:bg-soul-accent/10 hover:border-soul-accent",
   secondary: "bg-transparent border-midnight-light text-ash hover:border-mist hover:text-bone",
-  danger: "bg-soul-900 border-blood/50 text-blood hover:bg-blood/10 hover:border-blood hover:text-ember hover:shadow-blood-glow",
+  danger: "bg-soul-900 border-blood/50 text-blood hover:bg-blood/10 hover:border-blood hover:text-ember",
 } as const;
 
 const sizes = {
@@ -57,7 +57,7 @@ export const Button = React.memo<ButtonProps>(({
       )}
 
       {/* Shine effect on hover */}
-      <div className="absolute inset-0 h-full w-full scale-0 rounded-md transition-all duration-300 group-hover:scale-100 group-hover:bg-white/5" aria-hidden="true" />
+      <div className="absolute inset-0 h-full w-full scale-0 rounded-md transition-all duration-300 group-hover:scale-100 group-hover:bg-white/5 pointer-events-none" aria-hidden="true" />
     </button>
   );
 });

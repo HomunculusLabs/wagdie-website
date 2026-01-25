@@ -11,11 +11,11 @@ interface Props {
 
 export const LoreCard: React.FC<Props> = ({ data }) => {
   return (
-    <div className="w-full max-w-2xl mx-auto bg-soul-950/40 backdrop-blur-sm border-x border-transparent hover:border-soul-accent/20 transition-all duration-700 p-8 md:p-12 animate-fade-in text-center relative rounded-sm shadow-2xl">
+    <div className="w-full max-w-2xl mx-auto bg-soul-950/40 backdrop-blur-sm border-x border-transparent hover:border-soul-accent/20 transition-all duration-700 p-8 md:p-12 animate-fade-in text-center relative rounded-sm">
        {/* Top decoration */}
        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[1px] bg-soul-accent/30"></div>
 
-      <h2 className="text-3xl md:text-4xl text-bone font-display tracking-widest mb-8 drop-shadow-2xl">
+      <h2 className="text-3xl md:text-4xl text-bone font-display tracking-widest mb-8">
         {data.title}
       </h2>
       
