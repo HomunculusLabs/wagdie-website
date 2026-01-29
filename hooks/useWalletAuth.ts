@@ -2,7 +2,7 @@
 
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { SiweMessage } from 'siwe'
 import type { Address, WalletAuthError } from '@/types/wallet'
 
@@ -50,12 +50,8 @@ export function useWalletAuth() {
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const [error, setError] = useState<WalletAuthError | null>(null)
 
-  // Auto-authenticate when wallet connects
-  useEffect(() => {
-    if (address && !isAuthenticated && !isAuthenticating) {
-      authenticateWithSIWE()
-    }
-  }, [address])
+  // Use ref to track if auth has been attempted for current address
+  const authAttemptedRef = useRef<string | null>(null)
 
   /**
    * Authenticate with SIWE (Sign-In with Ethereum)
@@ -66,7 +62,7 @@ export function useWalletAuth() {
    * 3. Verify signature with backend
    * 4. Set authenticated state on success
    */
-  const authenticateWithSIWE = async () => {
+  const authenticateWithSIWE = useCallback(async () => {
     if (!address) {
       setError({ message: 'No wallet address found', step: 'wallet' })
       return
@@ -127,27 +123,43 @@ export function useWalletAuth() {
       } else {
         throw new Error('Authentication failed')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('SIWE authentication error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      const errorCode = (err as { code?: string })?.code
 
       // User rejected signature request
-      if (err.message?.includes('User rejected') || err.code === 'ACTION_REJECTED') {
+      if (errorMessage.includes('User rejected') || errorCode === 'ACTION_REJECTED') {
         setError({ message: 'Signature rejected', step: 'signing' })
       } else {
         setError({
-          message: err.message || 'Authentication failed. Please try again.',
+          message: errorMessage || 'Authentication failed. Please try again.',
           step: 'verifying',
         })
       }
     } finally {
       setIsAuthenticating(false)
     }
-  }
+  }, [address, signMessageAsync])
+
+  // Auto-authenticate when wallet connects (with proper dependency tracking)
+  useEffect(() => {
+    // Only attempt auth once per address
+    if (address && !isAuthenticated && !isAuthenticating && authAttemptedRef.current !== address) {
+      authAttemptedRef.current = address
+      authenticateWithSIWE()
+    }
+
+    // Reset auth attempt tracking when address changes
+    if (!address) {
+      authAttemptedRef.current = null
+    }
+  }, [address, isAuthenticated, isAuthenticating, authenticateWithSIWE])
 
   /**
    * Disconnect wallet and clear session
    */
-  const handleDisconnect = async () => {
+  const handleDisconnect = useCallback(async () => {
     try {
       // Clear backend session
       await fetch('/api/auth/logout', { method: 'POST' })
@@ -158,17 +170,18 @@ export function useWalletAuth() {
       // Clear local state
       setIsAuthenticated(false)
       setError(null)
+      authAttemptedRef.current = null
     } catch (err) {
       console.error('Disconnect error:', err)
     }
-  }
+  }, [disconnectAsync])
 
   /**
    * Clear error state
    */
-  const clearError = () => {
+  const clearError = useCallback(() => {
     setError(null)
-  }
+  }, [])
 
   return {
     // Wallet state
@@ -192,7 +205,7 @@ export function useWalletAuth() {
       : 'idle',
 
     // Actions
-    connect: () => openConnectModal?.(),
+    connect: openConnectModal,
     disconnect: handleDisconnect,
     authenticate: authenticateWithSIWE,
 

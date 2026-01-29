@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Location } from '@/lib/types/map';
 import type { CharacterWithLocation } from '@/lib/repositories/character-repository';
 
@@ -14,11 +14,9 @@ export function useMapData() {
   const [loadingStage, setLoadingStage] = useState('');
   const [loadingStages] = useState([
     'Initializing WAGDIE World',
-    'Connecting to database',
-    'Fetching locations',
-    'Fetching staked characters',
+    'Fetching data',
     'Loading map assets',
-    'Finalizing setup',
+    'Complete',
   ]);
 
   useEffect(() => {
@@ -31,73 +29,57 @@ export function useMapData() {
         setIsLoading(true);
         setError(null);
 
-        // Stage 1: Initialize
+        // Stage 1: Initialize and import repositories in parallel
         setLoadingStage('Initializing WAGDIE World');
         setLoadingProgress(10);
-        await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Stage 2: Connect
-        setLoadingStage('Connecting to database');
-        setLoadingProgress(20);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Dynamically import repositories in parallel
+        const [{ LocationRepository }, { getStakedCharacters }] = await Promise.all([
+          import('@/lib/repositories/locationRepository'),
+          import('@/lib/repositories/character-repository'),
+        ]);
 
-        // Dynamically import repositories
-        const { LocationRepository } = await import('@/lib/repositories/locationRepository');
-        const { getStakedCharacters } = await import('@/lib/repositories/character-repository');
-
-        // Stage 3: Fetch locations
-        setLoadingStage('Fetching locations');
-        setLoadingProgress(40);
+        // Stage 2: Fetch locations and staked characters in parallel
+        setLoadingStage('Fetching data');
+        setLoadingProgress(30);
 
         const locationRepo = new LocationRepository();
-        let locationsData: Location[] = [];
-        try {
-          locationsData = await locationRepo.getAll();
-        } catch {
-          locationsData = [];
-        }
 
-        if (!locationsData || locationsData.length === 0) {
+        // Parallel fetch of locations and staked characters
+        const [locationsResult, stakedResult] = await Promise.allSettled([
+          locationRepo.getAll(),
+          getStakedCharacters(),
+        ]);
+
+        // Handle locations result
+        let locationsData: Location[] = [];
+        if (locationsResult.status === 'fulfilled' && locationsResult.value?.length > 0) {
+          locationsData = locationsResult.value;
+        } else {
           console.warn('[useMapData] No locations returned, falling back to mock locations');
           locationsData = locationRepo.getMockLocations();
         }
 
-        console.log('[useMapData] Locations loaded:', locationsData.length);
-        setLocations(locationsData);
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Stage 4: Fetch staked characters (wagdie_characters.location_id IS NOT NULL)
-        setLoadingStage('Fetching staked characters');
-        setLoadingProgress(60);
-
+        // Handle staked characters result
         let stakedData: CharacterWithLocation[] = [];
-        try {
-          stakedData = await getStakedCharacters();
-        } catch {
-          stakedData = [];
+        if (stakedResult.status === 'fulfilled' && stakedResult.value) {
+          stakedData = stakedResult.value;
         }
 
-        if (!stakedData) {
-          stakedData = [];
-        }
+        setLoadingProgress(70);
 
+        console.log('[useMapData] Locations loaded:', locationsData.length);
         console.log('[useMapData] Staked characters loaded:', stakedData.length);
+
+        setLocations(locationsData);
         setStakedCharacters(stakedData);
-        await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Stage 5: Load map assets
+        // Stage 3: Finalize
         setLoadingStage('Loading map assets');
-        setLoadingProgress(80);
-
-        // Simulate image loading
-        await new Promise(resolve => setTimeout(resolve, 400));
-
-        // Stage 6: Finalize
-        setLoadingStage('Finalizing setup');
-        setLoadingProgress(100);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        setLoadingProgress(90);
 
         setLoadingStage('Complete');
+        setLoadingProgress(100);
         console.log('[useMapData] All data loaded successfully');
 
       } catch (err) {
@@ -115,53 +97,74 @@ export function useMapData() {
     fetchData();
   }, []);
 
-  const fetchStakedCharactersFromApi = async (): Promise<CharacterWithLocation[]> => {
+  const fetchStakedCharactersFromApi = useCallback(async (): Promise<CharacterWithLocation[]> => {
     const perPage = 100;
     const maxPages = 50;
     const rows: CharacterWithLocation[] = [];
 
-    for (let page = 1; page <= maxPages; page += 1) {
-      const response = await fetch(
-        `/api/characters?tab=staked&page=${page}&perPage=${perPage}&sort=asc`,
-        {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        }
-      );
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        const suffix = text ? ` - ${text}` : '';
-        throw new Error(
-          `Failed to fetch staked characters (${response.status})${suffix}`
-        );
+    // Fetch first page to determine total
+    const firstResponse = await fetch(
+      `/api/characters?tab=staked&page=1&perPage=${perPage}&sort=asc`,
+      {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
       }
+    );
 
-      const payload = (await response.json()) as {
-        characters?: CharacterWithLocation[];
-        totalCount?: number;
-        hasMore?: boolean;
-      };
-      const pageRows = Array.isArray(payload.characters) ? payload.characters : [];
-      rows.push(...pageRows);
+    if (!firstResponse.ok) {
+      const text = await firstResponse.text().catch(() => '');
+      throw new Error(`Failed to fetch staked characters (${firstResponse.status})${text ? ` - ${text}` : ''}`);
+    }
 
-      const hasMore =
-        typeof payload.hasMore === 'boolean'
-          ? payload.hasMore
-          : typeof payload.totalCount === 'number'
-            ? rows.length < payload.totalCount
-            : pageRows.length === perPage;
+    const firstPayload = await firstResponse.json() as {
+      characters?: CharacterWithLocation[];
+      totalCount?: number;
+      hasMore?: boolean;
+    };
 
-      if (!hasMore) {
-        break;
+    const firstPageRows = Array.isArray(firstPayload.characters) ? firstPayload.characters : [];
+    rows.push(...firstPageRows);
+
+    // Calculate remaining pages needed
+    const totalCount = firstPayload.totalCount ?? 0;
+    const totalPages = Math.min(Math.ceil(totalCount / perPage), maxPages);
+
+    if (totalPages > 1) {
+      // Fetch remaining pages in parallel (with concurrency limit)
+      const CONCURRENCY = 5;
+      const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+
+      for (let i = 0; i < remainingPages.length; i += CONCURRENCY) {
+        const batch = remainingPages.slice(i, i + CONCURRENCY);
+        const batchResults = await Promise.all(
+          batch.map(async (page) => {
+            const response = await fetch(
+              `/api/characters?tab=staked&page=${page}&perPage=${perPage}&sort=asc`,
+              {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+                cache: 'no-store',
+              }
+            );
+
+            if (!response.ok) return [];
+
+            const payload = await response.json() as { characters?: CharacterWithLocation[] };
+            return Array.isArray(payload.characters) ? payload.characters : [];
+          })
+        );
+
+        for (const pageRows of batchResults) {
+          rows.push(...pageRows);
+        }
       }
     }
 
     return rows;
-  };
+  }, []);
 
-  const refetch = async (): Promise<void> => {
+  const refetch = useCallback(async (): Promise<void> => {
     if (typeof window === 'undefined') return;
 
     setIsRefreshing(true);
@@ -194,7 +197,7 @@ export function useMapData() {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [fetchStakedCharactersFromApi, locations]);
 
   return {
     locations,

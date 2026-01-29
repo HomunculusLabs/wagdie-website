@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useCallback, useState, ReactNode } from 'react'
+import { createContext, useContext, useCallback, useState, useMemo, ReactNode } from 'react'
 import { TransactionStatus, TransactionState, TransactionHash } from '@/types/blockchain'
 import { TransactionToast } from '@/components/shared/TransactionToast'
 
@@ -51,16 +51,20 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       tx.status === TransactionStatus.CONFIRMING
   ) || transactions[transactions.length - 1]
 
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const contextValue = useMemo(
+    () => ({
+      transactions,
+      addTransaction,
+      updateTransaction,
+      removeTransaction,
+      clearTransactions,
+    }),
+    [transactions, addTransaction, updateTransaction, removeTransaction, clearTransactions]
+  )
+
   return (
-    <TransactionContext.Provider
-      value={{
-        transactions,
-        addTransaction,
-        updateTransaction,
-        removeTransaction,
-        clearTransactions,
-      }}
-    >
+    <TransactionContext.Provider value={contextValue}>
       {children}
       {activeTransaction && activeTransaction.status !== TransactionStatus.IDLE && (
         <TransactionToast

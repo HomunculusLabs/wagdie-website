@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface PopoverProps {
   trigger: React.ReactNode;
@@ -17,20 +17,25 @@ export const Popover: React.FC<PopoverProps> = ({ trigger, content }) => {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use passive listener for better scroll performance
+    document.addEventListener('mousedown', handleClickOutside, { passive: true });
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleToggle = useCallback(() => {
+    setIsOpen(prev => !prev);
   }, []);
 
   return (
     <div className="relative inline-block" ref={containerRef}>
-      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">{trigger}</div>
-      {isOpen && (
+      <div onClick={handleToggle} className="cursor-pointer">{trigger}</div>
+      {isOpen ? (
         <div className="absolute z-50 mt-2 w-72 bg-soul-950/95 backdrop-blur-xl border border-midnight-light/50 p-4 animate-fade-in rounded-sm">
           <div className="text-ash font-eskapade text-sm leading-relaxed">
             {content}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

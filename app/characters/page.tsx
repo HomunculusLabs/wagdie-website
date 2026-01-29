@@ -372,7 +372,7 @@ function CharactersPageContent() {
                       }
                     }
                   }}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12"
+                  className="character-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12"
                 >
                   {characters.filter(character => character && character.token_id).map((character) => (
                     <CharacterCard

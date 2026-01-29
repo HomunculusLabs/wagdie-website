@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useReducer, useCallback, useEffect, useRef } from 'react'
+import { useReducer, useCallback, useEffect, useRef, useMemo } from 'react'
 import type {
   AICharacter,
   DraftAIPersona,
@@ -292,8 +292,8 @@ export function useAIPersonaEditor(
     }
   }, [state])
 
-  // Extract editor state (without meta fields)
-  const editorState = {
+  // Extract editor state (without meta fields) - memoized to prevent unnecessary re-renders
+  const editorState = useMemo(() => ({
     bio: state.bio,
     lore: state.lore,
     topics: state.topics,
@@ -303,7 +303,17 @@ export function useAIPersonaEditor(
     postExamples: state.postExamples,
     systemPrompt: state.systemPrompt,
     knowledgeIds: state.knowledgeIds,
-  }
+  }), [
+    state.bio,
+    state.lore,
+    state.topics,
+    state.adjectives,
+    state.style,
+    state.exampleMessages,
+    state.postExamples,
+    state.systemPrompt,
+    state.knowledgeIds,
+  ])
 
   return {
     state: editorState,

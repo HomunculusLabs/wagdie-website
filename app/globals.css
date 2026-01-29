@@ -118,4 +118,29 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Content visibility optimization for long lists */
+  /* Apply to grid children for deferred off-screen rendering */
+  .content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 300px;
+  }
+
+  /* Character card grid optimization - defer off-screen cards */
+  .character-grid > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 350px;
+  }
+
+  /* Tweet feed optimization */
+  .tweet-grid > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 400px;
+  }
+
+  /* Sidebar list optimization */
+  .sidebar-list > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 80px;
+  }
 }

@@ -16,8 +16,20 @@ import { useMapLayers } from '@/hooks/map/useMapLayers';
 import { EventBus, MapEvents, type MapCharacterData, type MarkerPayload, type MapLocationData, type MapEventData, type MapEventsData } from '@/game/EventBus';
 import { isBurnedOwner } from '@/lib/utils/blockchain';
 import { Spinner } from '@/components/ui';
-import MapStakingSidebar from '@/components/map/MapStakingSidebar';
 import { MapOnboarding } from '@/components/map/MapOnboarding';
+
+// Lazy load heavy sidebar (889 lines) - only loaded when opened
+const MapStakingSidebar = dynamic(
+  () => import('@/components/map/MapStakingSidebar'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed right-0 top-16 h-[calc(100vh-4rem)] w-[460px] bg-neutral-950 border-l border-neutral-800 flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    ),
+  }
+);
 import type { IRefPhaserGame } from '@/game/PhaserGame';
 import type { Location } from '@/lib/types/map';
 import { parseChainLocationId } from '@/lib/utils/chainIds';

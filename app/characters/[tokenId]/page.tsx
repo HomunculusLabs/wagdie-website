@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useAccount } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -13,11 +14,23 @@ import { LevelExperienceEditor } from '@/components/characters/LevelExperienceEd
 import { EmptyStatsPrompt } from '@/components/characters/EmptyStatsPrompt'
 import { NFTTraitsDisplay } from '@/components/characters/NFTTraitsDisplay'
 import { OwnershipVerificationBanner } from '@/components/OwnershipVerificationBanner'
-import { AIPersonaTab } from '@/components/characters/ai-editor'
 import {
   CharacterStoryTab, CharacterEquipmentTab, CharacterWalletTab,
   CharacterHeader, CharacterModals, CharacterActions,
 } from '@/components/characters/detail'
+
+// Lazy load heavy AI persona tab (393 lines) - only loaded when tab is active
+const AIPersonaTab = dynamic(
+  () => import('@/components/characters/ai-editor/AIPersonaTab').then(mod => ({ default: mod.AIPersonaTab })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-pulse text-neutral-500">Loading AI Persona Editor...</div>
+      </div>
+    ),
+  }
+)
 import { useCharacterEditor } from '@/hooks/useCharacterEditor'
 import { Card, CardTitle, CardContent, CardDescription, Button, Spinner, Separator, Badge, Tabs } from '@/components/ui'
 import type { TabItem } from '@/components/ui'
@@ -193,9 +206,9 @@ export default function CharacterDetailPage() {
                 <Image src={imageUrl} alt={name} fill sizes="(max-width: 1024px) 100vw, 40vw" className="object-cover [image-rendering:pixelated]" priority unoptimized onError={() => useLocalImage && setUseLocalImage(false)} />
                 <div className="absolute inset-0 bg-black/40" />
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
-                  {character.infection_status === 'infected' && <Badge className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge>}
-                  {character.infection_status === 'cured' && <Badge className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge>}
-                  {character.staking_status === 'staked' && <Badge variant="accent">Staked</Badge>}
+                  {character.infection_status === 'infected' ? <Badge className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge> : null}
+                  {character.infection_status === 'cured' ? <Badge className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge> : null}
+                  {character.staking_status === 'staked' ? <Badge variant="accent">Staked</Badge> : null}
                 </div>
               </div>
             </Card>
@@ -211,12 +224,12 @@ export default function CharacterDetailPage() {
 
               <div className="mb-6">
                 <DerivedStatsEditor stats={isEditMode ? editor.state.derivedStats : { hp: character.hp ?? null, max_hp: character.max_hp ?? null, ac: character.ac ?? null, speed: character.speed ?? null }} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setDerivedStats} />
-                {!isEditMode && <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-midnight/50"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-widest text-mist mb-1 lowercase">token</p><p className="text-2xl font-display text-bone">#{tokenId}</p></CardContent></Card></div>}
+                {!isEditMode ? <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-midnight/50"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-widest text-mist mb-1 lowercase">token</p><p className="text-2xl font-display text-bone">#{tokenId}</p></CardContent></Card></div> : null}
               </div>
 
-              {(hasCharacterSheet || (isOwner && isEditMode)) && <CoreStatsEditor stats={isEditMode ? editor.state.coreStats : attrs} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setCoreStats} className="h-full" />}
-              {isOwner && !hasAnyStats && !isEditMode && <EmptyStatsPrompt onAssignStats={handleAssignStats} />}
-              {isOwner && <CharacterActions isInfected={character.infection_status === 'infected'} onSear={() => setIsSearingModalOpen(true)} onInfect={() => setIsInfectionModalOpen(true)} onCure={() => setIsCureModalOpen(true)} />}
+              {(hasCharacterSheet || (isOwner && isEditMode)) ? <CoreStatsEditor stats={isEditMode ? editor.state.coreStats : attrs} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setCoreStats} className="h-full" /> : null}
+              {isOwner && !hasAnyStats && !isEditMode ? <EmptyStatsPrompt onAssignStats={handleAssignStats} /> : null}
+              {isOwner ? <CharacterActions isInfected={character.infection_status === 'infected'} onSear={() => setIsSearingModalOpen(true)} onInfect={() => setIsInfectionModalOpen(true)} onCure={() => setIsCureModalOpen(true)} /> : null}
             </div>
           </div>
         </div>
@@ -225,16 +238,16 @@ export default function CharacterDetailPage() {
         <Separator className="mb-8" />
         <Tabs items={tabs} activeId={activeTab} onChange={setActiveTab} />
         <div className="mt-6">
-          {activeTab === 'story' && <CharacterStoryTab story={editor.state.story} isEditMode={isEditMode} isOwner={isOwner} onChange={editor.setStory} />}
-          {activeTab === 'ai-persona' && <AIPersonaTab tokenId={String(tokenId)} isOwner={isOwner} characterName={name} characterBackstory={editor.state.story} />}
-          {activeTab === 'equipment' && <CharacterEquipmentTab equipment={character.equipment ?? null} metadataEquipment={character.metadata?.equipment} isEditMode={isEditMode} />}
-          {activeTab === 'wallet' && (
+          {activeTab === 'story' ? <CharacterStoryTab story={editor.state.story} isEditMode={isEditMode} isOwner={isOwner} onChange={editor.setStory} /> : null}
+          {activeTab === 'ai-persona' ? <AIPersonaTab tokenId={String(tokenId)} isOwner={isOwner} characterName={name} characterBackstory={editor.state.story} /> : null}
+          {activeTab === 'equipment' ? <CharacterEquipmentTab equipment={character.equipment ?? null} metadataEquipment={character.metadata?.equipment} isEditMode={isEditMode} /> : null}
+          {activeTab === 'wallet' ? (
             <CharacterWalletTab
               tokenId={tokenId}
               ownerAddress={character?.owner_address ?? null}
               stakerAddress={character?.staker_address ?? null}
             />
-          )}
+          ) : null}
         </div>
       </div>
 

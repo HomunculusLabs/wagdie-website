@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
@@ -9,7 +10,16 @@ import { TransactionProvider } from '@/contexts/TransactionContext'
 import '@rainbow-me/rainbowkit/styles.css'
 
 import { ChatDockProvider, useChatDock } from '@/contexts/ChatDockContext'
-import { ChatDock, ChatToggleButton } from '@/components/chat'
+
+// Lazy load chat components to reduce initial bundle size
+const ChatDock = dynamic(
+  () => import('@/components/chat/ChatDock').then(mod => ({ default: mod.ChatDock })),
+  { ssr: false }
+)
+const ChatToggleButton = dynamic(
+  () => import('@/components/chat/ChatToggleButton').then(mod => ({ default: mod.ChatToggleButton })),
+  { ssr: false }
+)
 
 function ChatDockContentWrapper({ children }: { children: React.ReactNode }) {
   const { isOpen, target } = useChatDock()

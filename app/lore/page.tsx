@@ -245,7 +245,7 @@ function LorePageContent() {
               isLoading={isLoading || isLoadingMore}
               onLoadMore={DISABLE_INFINITE_SCROLL ? () => {} : handleLoadMore}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="tweet-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tweets.map((tweet) => (
                   <CustomTweet
                     key={tweet.tweet_id}
