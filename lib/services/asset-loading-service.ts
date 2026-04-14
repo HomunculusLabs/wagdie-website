@@ -23,6 +23,7 @@ import {
   getRecoveryStrategy,
 } from '@/lib/services/assets/asset-policy';
 import { classifyAssetError, buildAssetError } from '@/lib/services/assets/asset-errors';
+import { loadImageWithTimeout } from '@/lib/services/assets/image-loader';
 
 // Debug configuration - set to false to reduce console spam
 const DEBUG_ASSET_LOADING = false;
@@ -300,26 +301,9 @@ export class AssetLoadingService implements IAssetLoadingService {
     const startTime = Date.now();
     const iconUrl = this.getAssetUrl(assetId);
 
-    const loadPromise = new Promise<{ url: string; size?: number }>((resolve, reject) => {
-      const img = new Image();
-      const timeout = setTimeout(() => {
-        reject(new Error('Asset load timeout'));
-      }, this.config.timeoutDuration);
+    await loadImageWithTimeout(iconUrl, this.config.timeoutDuration);
 
-      img.onload = () => {
-        clearTimeout(timeout);
-        resolve({ url: iconUrl, size: 0 });
-      };
-
-      img.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error('Asset load failed'));
-      };
-
-      img.src = iconUrl;
-    });
-
-    const result = await loadPromise;
+    const result = { url: iconUrl, size: 0 };
 
     // Update loading state on success
     const loadTime = Date.now() - startTime;

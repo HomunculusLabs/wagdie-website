@@ -5,7 +5,7 @@
  * Provides loading states, error handling, and performance metrics.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { getAssetLoadingService } from '@/lib/services/asset-loading-service';
 import { getAssetErrorHandler } from '@/lib/services/asset-error-handler';
 import { getAssetPerformanceMonitor } from '@/lib/utils/asset-performance';
@@ -53,6 +53,7 @@ export function useAssetLoading(options: UseAssetLoadingOptions = {}): UseAssetL
   const performanceMonitor = useRef(getAssetPerformanceMonitor({
     enableDetailedMetrics: enablePerformanceMonitoring
   }));
+  const initializationSignatureRef = useRef<string | null>(null);
 
   /**
    * Load a single asset
@@ -98,19 +99,21 @@ export function useAssetLoading(options: UseAssetLoadingOptions = {}): UseAssetL
       const results = await loadingService.current.loadAssets(assetIds);
 
       // Update local state
-      const newAssets = new Map(assets);
-      results.forEach(result => {
-        newAssets.set(result.assetId, result);
+      setAssets(prev => {
+        const newAssets = new Map(prev);
+        results.forEach(result => {
+          newAssets.set(result.assetId, result);
 
-        // Record performance metrics
-        if (enablePerformanceMonitoring && result.loadEndTime) {
-          const loadTime = result.loadEndTime - result.loadStartTime;
-          const success = result.status === 'loaded' || result.status === 'fallback';
-          performanceMonitor.current.recordAssetLoad(result.assetId, loadTime, success, result.retryCount);
-        }
+          // Record performance metrics
+          if (enablePerformanceMonitoring && result.loadEndTime) {
+            const loadTime = result.loadEndTime - result.loadStartTime;
+            const success = result.status === 'loaded' || result.status === 'fallback';
+            performanceMonitor.current.recordAssetLoad(result.assetId, loadTime, success, result.retryCount);
+          }
+        });
+
+        return newAssets;
       });
-
-      setAssets(newAssets);
 
       // Check if critical assets are loaded
       const context = loadingService.current.getLoadingContext();
@@ -123,7 +126,7 @@ export function useAssetLoading(options: UseAssetLoadingOptions = {}): UseAssetL
     } finally {
       setLoading(false);
     }
-  }, [assets, enablePerformanceMonitoring]);
+  }, [enablePerformanceMonitoring]);
 
   /**
    * Preload assets
@@ -175,9 +178,20 @@ export function useAssetLoading(options: UseAssetLoadingOptions = {}): UseAssetL
     }
   }, [assets, enablePerformanceMonitoring]);
 
+  const assetIdsSignature = useMemo(() => JSON.stringify(assetIds), [assetIds]);
+
   // Initialize effect
   useEffect(() => {
     let mounted = true;
+    const signature = `${preloadCritical}:${assetIdsSignature}`;
+
+    if (initializationSignatureRef.current === signature) {
+      return () => {
+        mounted = false;
+      };
+    }
+
+    initializationSignatureRef.current = signature;
 
     const initialize = async () => {
       try {
@@ -211,7 +225,7 @@ export function useAssetLoading(options: UseAssetLoadingOptions = {}): UseAssetL
     return () => {
       mounted = false;
     };
-  }, [assetIds, preloadCritical, loadAssets]);
+  }, [assetIdsSignature, assetIds, preloadCritical, loadAssets]);
 
   // Update metrics periodically
   useEffect(() => {

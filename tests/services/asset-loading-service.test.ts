@@ -224,6 +224,41 @@ describe('AssetLoadingService', () => {
   });
 
   describe('Retry Logic', () => {
+    it('should clear any existing retry timer before retrying', async () => {
+      const mockImage = {
+        onload: null as any,
+        onerror: jest.fn()
+      };
+
+      mockImageConstructor.mockReturnValue(mockImage);
+
+      const staleTimer = setTimeout(() => {
+        // no-op
+      }, 5000);
+
+      (service as any).retryTimers.set('location', staleTimer);
+      (service as any).loadingStates.set('location', {
+        assetId: 'location',
+        status: 'failed',
+        loadStartTime: Date.now(),
+        retryCount: 0,
+        usedFallback: false
+      });
+
+      const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+      const retryPromise = service.retryAsset('location');
+
+      if (mockImage.onload) {
+        mockImage.onload();
+      }
+
+      await retryPromise;
+
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(staleTimer);
+      expect((service as any).retryTimers.has('location')).toBe(false);
+    });
+
     it('should retry failed assets', async () => {
       const mockImage = {
         onload: null as any,
