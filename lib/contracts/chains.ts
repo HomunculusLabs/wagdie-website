@@ -10,7 +10,7 @@ const mainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
   (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
     ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-    : 'https://eth.llamarpc.com')
+    : 'https://ethereum.publicnode.com')
 
 const sepoliaRpcUrl =
   process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
@@ -31,7 +31,7 @@ export const mainnet: Chain = {
       http: [mainnetRpcUrl],
     },
     public: {
-      http: ['https://eth.llamarpc.com', 'https://rpc.ankr.com/eth'],
+      http: ['https://ethereum.publicnode.com', 'https://rpc.flashbots.net', 'https://eth.drpc.org'],
     },
   },
   blockExplorers: {

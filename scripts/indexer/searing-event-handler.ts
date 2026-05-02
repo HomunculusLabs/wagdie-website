@@ -51,9 +51,10 @@ const concordSearedEventAbi = {
   anonymous: false,
 } as const
 
-type ConcordSearedArgs = {
-  wagdieId: number
-  tokenId: number
+type ConcordSearedAbiArgs = {
+  wagdieId: number | bigint
+  /** ABI field name from ConcordSeared; domain name is concordId. */
+  tokenId: number | bigint
   owner: `0x${string}`
 }
 
@@ -73,6 +74,10 @@ function normalizeTokenId(value: unknown): number | null {
     return Number.isSafeInteger(value) ? value : null
   }
   return null
+}
+
+function normalizeConcordIdFromAbiTokenId(value: unknown): number | null {
+  return normalizeTokenId(value)
 }
 
 function getBlockNumber(log: Log): bigint | null {
@@ -128,9 +133,9 @@ export async function handleSearConcordsLogs(
 
     if (decoded.eventName !== 'ConcordSeared') continue
 
-    const args = decoded.args as ConcordSearedArgs
+    const args = decoded.args as ConcordSearedAbiArgs
     const tokenId = normalizeTokenId(args.wagdieId)
-    const concordId = normalizeTokenId(args.tokenId)
+    const concordId = normalizeConcordIdFromAbiTokenId(args.tokenId)
     const sender = normalizeAddress(args.owner)
 
     if (tokenId === null || concordId === null) continue
@@ -156,6 +161,7 @@ export async function handleSearConcordsLogs(
         sender,
         wagdieId: tokenId,
         concordId,
+        abiTokenId: concordId,
       },
     })
 

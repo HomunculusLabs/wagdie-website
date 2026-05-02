@@ -150,6 +150,33 @@ function getInfectedMetadataImageCandidates(
   ]
 }
 
+function isSearedMetadata(metadata: CharacterImageMetadata | null): boolean {
+  return Boolean(
+    metadata?.isSeared ||
+    metadata?.searImage ||
+    metadata?.searing_materialization?.seared_image_url
+  )
+}
+
+function getSearedMetadataImageCandidates(
+  metadata: CharacterImageMetadata | null,
+  imageUrl?: string | null
+): string[] {
+  if (!metadata || !isSearedMetadata(metadata)) return []
+
+  const materializedCandidates = [
+    ...normalizeImageUrlCandidates(metadata.searing_materialization?.seared_image_url),
+    ...normalizeImageUrlCandidates(metadata.searImage),
+    ...normalizeImageUrlCandidates(imageUrl),
+  ]
+
+  return [
+    ...materializedCandidates,
+    ...(materializedCandidates.length > 0 ? normalizeImageUrlCandidates(metadata.image_url) : []),
+    ...(materializedCandidates.length > 0 ? normalizeImageUrlCandidates(metadata.image) : []),
+  ]
+}
+
 function dedupeImageUrls(urls: string[]): string[] {
   const seen = new Set<string>()
   const deduped: string[] = []
@@ -166,9 +193,11 @@ function dedupeImageUrls(urls: string[]): string[] {
 /**
  * Get ordered image URL candidates for a character.
  *
- * Local-only runtime policy:
- * 1. local downloaded/static asset, when known to exist
- * 2. placeholder
+ * Runtime policy:
+ * 1. infected dynamic image, when the character is currently infected
+ * 2. seared dynamic image, when metadata indicates a materialized sear
+ * 3. local downloaded/static asset, when known to exist
+ * 4. placeholder
  */
 export function getCharacterImageCandidates(
   tokenId: number,
@@ -176,15 +205,15 @@ export function getCharacterImageCandidates(
   imageUrl?: string | null,
   options?: CharacterImageOptions
 ): string[] {
-  void metadataOrImage
-  void imageUrl
-  void options
+  const metadata = isMetadataObject(metadataOrImage) ? metadataOrImage : null
+  const localImage = hasLocalCharacterImage(tokenId) ? getLocalImagePath(tokenId) : null
 
-  if (hasLocalCharacterImage(tokenId)) {
-    return [getLocalImagePath(tokenId), getCharacterImageFallback()]
-  }
-
-  return [getCharacterImageFallback()]
+  return dedupeImageUrls([
+    ...getInfectedMetadataImageCandidates(metadata, options),
+    ...getSearedMetadataImageCandidates(metadata, imageUrl),
+    ...(localImage ? [localImage] : []),
+    getCharacterImageFallback(),
+  ])
 }
 
 /**

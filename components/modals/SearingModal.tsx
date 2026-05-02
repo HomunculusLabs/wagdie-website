@@ -3,21 +3,38 @@
 // SearingModal Component
 // Modal for searing Concords to transform WAGDIE characters
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAccount } from 'wagmi'
 import { useSearing } from '@/hooks/useSearing'
-import { useSingleTokenBalance } from '@/hooks/useTokenBalances'
+import {
+  useSearingConcords,
+  type OwnedSearableConcord,
+} from '@/hooks/useSearingConcords'
 import { TransactionStatus as TxStatusComponent } from '@/components/TransactionStatus'
 import { TransactionStatus } from '@/types/blockchain'
+import type { TransactionHash } from '@/types/blockchain'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import {
+  SearingApprovalPanel,
+  SearingConcordGrid,
+  SearingOffchainStatus,
+  SearingPreview,
+  readSearingSyncResponse,
+  syncStateFromResponse,
+  type SearingSyncState,
+} from '@/components/characters/searing'
 
 interface SearingModalProps {
   wagdieId: number
   wagdieName: string
   isOpen: boolean
   onClose: () => void
-  onSuccess?: () => void
+  onSuccess?: () => void | Promise<void>
+  initialSyncState?: SearingSyncState
 }
+
+const DEFAULT_SYNC_STATE: SearingSyncState = { status: 'idle' }
 
 export function SearingModal({
   wagdieId,
@@ -25,66 +42,163 @@ export function SearingModal({
   isOpen,
   onClose,
   onSuccess,
+  initialSyncState = DEFAULT_SYNC_STATE,
 }: SearingModalProps) {
-  const [concordId, setConcordId] = useState('')
-  const [step, setStep] = useState<'input' | 'approval' | 'searing'>('input')
+  const { address } = useAccount()
+  const [selectedConcord, setSelectedConcord] = useState<OwnedSearableConcord | null>(null)
+  const [syncState, setSyncState] = useState<SearingSyncState>(initialSyncState)
+  const [lastSearingHash, setLastSearingHash] = useState<TransactionHash | null>(null)
+  const [isSyncing, setIsSyncing] = useState(false)
 
-  const { balance: concordBalance, refetch: refetchBalance } = useSingleTokenBalance('concord')
   const {
     isSearing,
     isApproving,
     error,
     txHash,
     txStatus,
+    approvalStatus,
     searConcords,
-    checkApproval,
+    checkApprovalStatus,
     approveForSearing,
+    getConcordBalances,
   } = useSearing()
 
-  useEffect(() => {
-    if (isOpen) {
-      setConcordId('')
-      setStep('input')
-      refetchBalance()
-      checkIfApproved()
-    }
-  }, [isOpen])
+  const {
+    concords,
+    isLoading: isLoadingConcords,
+    error: concordsError,
+    refetch: refetchConcords,
+  } = useSearingConcords({
+    enabled: isOpen,
+    walletAddress: address,
+    getConcordBalances,
+  })
+
+  const checkApprovalStatusRef = useRef(checkApprovalStatus)
 
   useEffect(() => {
-    if (txStatus === TransactionStatus.SUCCESS && onSuccess) {
-      setTimeout(() => {
-        onSuccess()
-        onClose()
-      }, 2000)
-    }
-  }, [txStatus, onSuccess, onClose])
+    checkApprovalStatusRef.current = checkApprovalStatus
+  }, [checkApprovalStatus])
 
-  const checkIfApproved = async () => {
-    const approved = await checkApproval()
-    if (!approved) {
-      setStep('approval')
-    }
-  }
+  useEffect(() => {
+    if (!isOpen) return
 
-  const handleApprove = async () => {
-    await approveForSearing()
-    const approved = await checkApproval()
-    if (approved) {
-      setStep('input')
-    }
-  }
+    setSelectedConcord(null)
+    setSyncState(initialSyncState)
+    setLastSearingHash(null)
+    void checkApprovalStatusRef.current()
+  }, [initialSyncState, isOpen])
 
-  const handleSear = async () => {
-    const concordIdNum = parseInt(concordId, 10)
-    if (isNaN(concordIdNum) || concordIdNum <= 0) {
+  useEffect(() => {
+    if (!isOpen) return
+
+    if (concords.length === 0) {
+      setSelectedConcord(null)
       return
     }
 
-    setStep('searing')
-    await searConcords(wagdieId, concordIdNum)
+    setSelectedConcord((current) => {
+      if (current && concords.some((concord) => concord.concordId === current.concordId)) {
+        return current
+      }
+      return concords[0]
+    })
+  }, [concords, isOpen])
+
+  const syncSearingMaterialization = useCallback(async (hash: TransactionHash) => {
+    setIsSyncing(true)
+    setSyncState({
+      status: 'syncing',
+      message: 'The chain transaction succeeded. Syncing seared artwork and metadata now.',
+    })
+
+    try {
+      const response = await fetch(`/api/characters/${wagdieId}/searing/sync`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transactionHash: hash, retryFailed: true, repairCompleted: true }),
+      })
+      const payload = await readSearingSyncResponse(response)
+      const nextState = syncStateFromResponse({
+        ...payload,
+        error: response.ok ? payload.error : payload.error || 'Failed to sync searing materialization',
+      }, { responseOk: response.ok })
+
+      setSyncState(nextState)
+      await refetchConcords()
+
+      if (nextState.status === 'completed') {
+        await onSuccess?.()
+        window.setTimeout(onClose, 1200)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sync searing materialization'
+      setSyncState({
+        status: 'failed',
+        message,
+      })
+      await refetchConcords()
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [onClose, onSuccess, refetchConcords, wagdieId])
+
+  const handleApprove = async () => {
+    await approveForSearing()
+    await checkApprovalStatus()
   }
 
-  const hasEnoughBalance = concordBalance && concordBalance.balance > 0n
+  const handleSear = async () => {
+    if (!selectedConcord || !approvalStatus?.isFullyApproved) {
+      return
+    }
+
+    setSyncState({ status: 'idle' })
+    const result = await searConcords(wagdieId, selectedConcord.concordId)
+
+    if (!result.success) {
+      return
+    }
+
+    if (!result.hash) {
+      setSyncState({
+        status: 'pending',
+        message: 'The searing transaction succeeded but no hash was returned for off-chain sync. Refresh or retry sync from the character page.',
+      })
+      return
+    }
+
+    // useSearing().searConcords returns success only after the receipt is confirmed.
+    setLastSearingHash(result.hash)
+    await refetchConcords()
+    await syncSearingMaterialization(result.hash)
+  }
+
+  const handleRetrySync = async () => {
+    const hash = lastSearingHash ?? txHash
+    if (!hash) {
+      setSyncState({
+        status: 'pending',
+        message: 'No transaction hash is available for retrying off-chain sync yet.',
+      })
+      return
+    }
+
+    await syncSearingMaterialization(hash)
+  }
+
+  const selectedConcordId = selectedConcord?.concordId ?? null
+  const canSear = Boolean(
+    selectedConcord &&
+    approvalStatus?.isFullyApproved &&
+    !isSearing &&
+    !isApproving &&
+    !isSyncing
+  )
+  const activeTxHash = txHash ?? lastSearingHash ?? undefined
 
   return (
     <Modal
@@ -94,83 +208,57 @@ export function SearingModal({
       hideFooter
     >
       <div className="space-y-4">
-        <div className="rounded-lg border border-neutral-700 bg-white/5 p-4">
-          <p className="text-sm text-neutral-400 font-eskapade">Searing Character</p>
-          <p className="text-lg font-eskapade text-neutral-200">
-            {wagdieName} #{wagdieId}
-          </p>
-        </div>
+        <SearingPreview
+          wagdieId={wagdieId}
+          wagdieName={wagdieName}
+          concord={selectedConcord}
+        />
 
-        <div className="rounded-lg border border-neutral-700 bg-white/5 p-4">
-          <p className="text-sm text-neutral-400 font-eskapade">Your Concord Balance</p>
-          <p className="text-2xl font-eskapade text-neutral-200">
-            {concordBalance?.balance.toString() ?? '0'}
-          </p>
-          {!hasEnoughBalance && (
-            <p className="mt-2 text-xs text-red-400 font-eskapade">
-              You need at least 1 Concord token to sear
-            </p>
-          )}
-        </div>
+        <SearingApprovalPanel
+          approvalStatus={approvalStatus}
+          isApproving={isApproving}
+          onApprove={handleApprove}
+        />
 
-        {step === 'approval' && (
-          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
-            <p className="mb-3 text-sm text-yellow-400 font-eskapade">
-              Before searing, you need to approve the Searing contract to use your Concord tokens.
-            </p>
-            <Button
-              onClick={handleApprove}
-              disabled={isApproving}
-              isLoading={isApproving}
-              variant="danger"
-              className="w-full"
-            >
-              Approve Contract
-            </Button>
+        {concordsError && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+            <p className="text-sm text-red-400 font-eskapade">{concordsError.message}</p>
           </div>
         )}
 
-        {step === 'input' && (
-          <>
-            <div>
-              <label className="mb-2 block text-sm font-eskapade text-neutral-300">
-                Concord Token ID
-              </label>
-              <input
-                type="number"
-                value={concordId}
-                onChange={(e) => setConcordId(e.target.value)}
-                placeholder="Enter Concord ID"
-                className="w-full rounded-lg border border-neutral-700 bg-white/10 px-4 py-2 text-neutral-200 placeholder-neutral-500 focus:border-soul-accent focus:outline-none font-eskapade"
-                min="1"
-                disabled={isSearing}
-              />
-              <p className="mt-1 text-xs text-neutral-400 font-eskapade">
-                The Concord token that will be burned in the searing process
-              </p>
-            </div>
+        <SearingConcordGrid
+          concords={concords}
+          selectedConcordId={selectedConcordId}
+          isLoading={isLoadingConcords}
+          disabled={isSearing || isSyncing}
+          onSelect={setSelectedConcord}
+        />
 
-            <Button
-              onClick={handleSear}
-              disabled={!hasEnoughBalance || !concordId || isSearing}
-              isLoading={isSearing}
-              variant="primary"
-              className="w-full"
-            >
-              Sear Concords
-            </Button>
-          </>
-        )}
+        <Button
+          onClick={handleSear}
+          disabled={!canSear}
+          isLoading={isSearing || isSyncing}
+          variant="primary"
+          className="w-full"
+        >
+          {isSyncing ? 'Syncing seared artwork…' : 'Sear Selected Concord'}
+        </Button>
 
-        {(step === 'searing' || txHash) && (
+        {(txStatus !== TransactionStatus.IDLE || activeTxHash) && (
           <TxStatusComponent
             status={txStatus}
-            hash={txHash ?? undefined}
+            hash={activeTxHash}
             error={error?.message}
           />
         )}
 
-        {error && step !== 'searing' && (
+        <SearingOffchainStatus
+          state={syncState}
+          onRetry={handleRetrySync}
+          isRetrying={isSyncing}
+        />
+
+        {error && txStatus !== TransactionStatus.ERROR && (
           <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4">
             <p className="text-sm text-red-400 font-eskapade">{error.message}</p>
           </div>

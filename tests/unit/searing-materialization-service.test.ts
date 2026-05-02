@@ -1,0 +1,162 @@
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { TextDecoder, TextEncoder } from 'node:util'
+import sharp from 'sharp'
+import type { CharacterMetadata } from '@/types/character'
+import type { ConcordSearingMap } from '@/lib/domain/searing/concord-searing-map'
+import type { SearingEventMaterializationRow } from '@/lib/repositories/searing-event-repository'
+
+Object.assign(globalThis, { TextDecoder, TextEncoder })
+
+// Require after the TextEncoder polyfill because the materialization service imports viem.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { SearingMaterializationService } = require('@/lib/services/searing-materialization-service') as typeof import('@/lib/services/searing-materialization-service')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { SearingImageComposer } = require('@/lib/services/searing-image-composer') as typeof import('@/lib/services/searing-image-composer')
+
+async function rawRgba(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer()
+}
+
+function changedPixelCount(a: Buffer, b: Buffer): number {
+  const pixelCount = Math.min(a.length, b.length) / 4
+  let changed = 0
+
+  for (let pixel = 0; pixel < pixelCount; pixel += 1) {
+    const offset = pixel * 4
+    if (
+      a[offset] !== b[offset] ||
+      a[offset + 1] !== b[offset + 1] ||
+      a[offset + 2] !== b[offset + 2] ||
+      a[offset + 3] !== b[offset + 3]
+    ) {
+      changed += 1
+    }
+  }
+
+  return changed
+}
+
+describe('SearingMaterializationService', () => {
+  it('materializes #5873 + Orb of the Void into a visibly changed versioned image URL', async () => {
+    const metadata = JSON.parse(
+      await readFile(path.join(process.cwd(), 'public/metadata/characters/5873.json'), 'utf8')
+    ) as CharacterMetadata
+    const original = await readFile(path.join(process.cwd(), 'public/images/characters/5873.png'))
+    const transactionHash = `0x${'a'.repeat(64)}`
+    const event: SearingEventMaterializationRow = {
+      id: 'event-5873-orb',
+      token_id: 5873,
+      concord_id: 999,
+      event_type: 'sear',
+      transaction_hash: transactionHash,
+      block_number: 123,
+      log_index: 7,
+      actor_address: '0x0000000000000000000000000000000000000001',
+      event_timestamp: null,
+      metadata: {},
+      created_at: new Date(0).toISOString(),
+      materialization_status: 'pending',
+      materialization_attempts: 0,
+      materialization_error: null,
+      materialized_at: null,
+      seared_image_url: null,
+      materialization_metadata: {},
+    }
+    const concord: ConcordSearingMap = {
+      token_name: 'Orb of the Leorn',
+      tokenId: String(event.concord_id),
+      concordTokenId: event.concord_id,
+      location: 'Front',
+      new_trait: 'Orb of the Void',
+      makesBald: false,
+    }
+    let uploadedImage: Buffer | null = null
+    let uploadedVersion: string | undefined
+
+    const service = new SearingMaterializationService(
+      {
+        findById: jest.fn(async () => event),
+        claimForMaterialization: jest.fn(async () => ({ claimed: true as const, event })),
+        findLatestForToken: jest.fn(async () => event),
+        markCompleted: jest.fn(async (_id: string, searedImageUrl: string, materializationMetadata: Record<string, unknown>) => ({
+          ...event,
+          materialization_status: 'completed',
+          seared_image_url: searedImageUrl,
+          materialization_metadata: materializationMetadata,
+        })),
+        markFailed: jest.fn(),
+        markSkipped: jest.fn(),
+      } as never,
+      {
+        findCharacter: jest.fn(async () => ({ token_id: 5873, metadata })),
+        updateSearingReadModel: jest.fn(async () => undefined),
+        markCharacterConcordSeared: jest.fn(async () => undefined),
+      } as never,
+      {
+        findByConcordTokenId: jest.fn(async () => concord),
+      } as never,
+      new SearingImageComposer(),
+      {
+        uploadSearedImage: jest.fn(async (_tokenId: number, image: Buffer, options?: { version?: string }) => {
+          uploadedImage = image
+          uploadedVersion = options?.version
+          return `https://storage.googleapis.com/seared-wagdie-images/5873/${uploadedVersion}.png`
+        }),
+      } as never
+    )
+
+    const result = await service.materializeEvent(event.id)
+
+    expect(uploadedVersion).toMatch(new RegExp(`^tx-${transactionHash.slice(2)}-log-7-[a-f0-9]{16}$`))
+    expect(result).toMatchObject({
+      status: 'completed',
+      tokenId: 5873,
+      concordId: event.concord_id,
+      imageUrl: `https://storage.googleapis.com/seared-wagdie-images/5873/${uploadedVersion}.png`,
+    })
+    expect(uploadedImage).toBeTruthy()
+    expect(changedPixelCount(await rawRgba(original), await rawRgba(uploadedImage as Buffer))).toBeGreaterThan(1000)
+  })
+
+  it('does not treat a legacy deterministic completed image URL as completed when repair is not requested', async () => {
+    const transactionHash = `0x${'b'.repeat(64)}`
+    const completedLegacyEvent: SearingEventMaterializationRow = {
+      id: 'legacy-completed-event',
+      token_id: 5873,
+      concord_id: 999,
+      event_type: 'sear',
+      transaction_hash: transactionHash,
+      block_number: 123,
+      log_index: 7,
+      actor_address: null,
+      event_timestamp: null,
+      metadata: {},
+      created_at: new Date(0).toISOString(),
+      materialization_status: 'completed',
+      materialization_attempts: 1,
+      materialization_error: null,
+      materialized_at: new Date(0).toISOString(),
+      seared_image_url: 'https://storage.googleapis.com/seared-wagdie-images/5873.png',
+      materialization_metadata: {},
+    }
+    const service = new SearingMaterializationService(
+      {
+        findById: jest.fn(async () => completedLegacyEvent),
+        claimForMaterialization: jest.fn(),
+      } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
+    )
+
+    await expect(service.materializeEvent(completedLegacyEvent.id)).resolves.toMatchObject({
+      status: 'completed_without_image',
+      reason: 'legacy_uncache_safe_image_url',
+    })
+  })
+})
