@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import { Navigation } from './Navigation'
@@ -68,10 +69,18 @@ export function Header() {
           <Link
             href="/"
             onClick={scrollToTop}
-            className="text-2xl font-display text-neutral-200 hover:text-soul-accent transition-colors duration-300 cursor-pointer"
+            className="group flex items-center cursor-pointer"
             title="Scroll to top"
+            aria-label="WAGDIE home"
           >
-            Wagdie
+            <Image
+              src="/images/wagdie.png"
+              alt="WAGDIE"
+              width={1910}
+              height={588}
+              priority
+              className="h-9 w-auto transition-opacity duration-300 group-hover:opacity-80"
+            />
           </Link>
 
           {/* Desktop Navigation */}
