@@ -3,8 +3,10 @@
 import React from 'react';
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useAccount } from 'wagmi'
 import { Navigation } from './Navigation'
 import { WalletButton } from '@/components/wallet/WalletButton'
+import { isAdmin } from '@/lib/auth/admin'
 import { lockBodyScroll, unlockBodyScroll } from '@/lib/utils/bodyScrollLock'
 
 /**
@@ -15,6 +17,8 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
+  const { address } = useAccount()
+  const isAdminWallet = isAdmin(address)
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -174,6 +178,33 @@ export function Header() {
               >
                 Spread Infection
               </Link>
+              <Link
+                href="/searing"
+                onClick={closeDrawer}
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"
+              >
+                Searing
+              </Link>
+
+              {isAdminWallet && (
+                <>
+                  <div className="my-4 h-px bg-neutral-800" />
+                  <Link
+                    href="/map-editor"
+                    onClick={closeDrawer}
+                    className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"
+                  >
+                    Map Editor
+                  </Link>
+                  <Link
+                    href="/searing-map-editor"
+                    onClick={closeDrawer}
+                    className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"
+                  >
+                    Searing Map Editor
+                  </Link>
+                </>
+              )}
 
               <div className="my-4 h-px bg-neutral-800" />
 

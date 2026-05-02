@@ -12,6 +12,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', path: '/' },
   { label: 'Characters', path: '/characters' },
+  { label: 'Searing', path: '/searing' },
   { label: 'World Map', path: '/map' },
   { label: 'Lore', path: '/lore' },
   { label: 'Spread', path: '/spread' },

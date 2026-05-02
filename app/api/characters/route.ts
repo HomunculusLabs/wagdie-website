@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const perPage = parsePositiveIntParam(searchParams.get('perPage'), {
       defaultValue: 50,
       min: 1,
-      max: 100,
+      max: 200,
     })
     const search = searchParams.get('search') || undefined
     // Trait filter params

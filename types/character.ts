@@ -46,6 +46,20 @@ export interface CharacterMetadata {
   image?: string
   tokenId?: string
   description?: string
+  isSeared?: boolean
+  searImage?: string
+  infectedImage?: string
+  infected_image_url?: string
+  searedConcord?: {
+    id?: number | string
+    metadata?: Record<string, unknown>
+    searing?: Record<string, unknown>
+  }
+  searing_materialization?: {
+    concord_id?: number
+    seared_image_url?: string
+    materialized_at?: string
+  }
   // Character sheet data (if available)
   level?: number
   hit_points?: number

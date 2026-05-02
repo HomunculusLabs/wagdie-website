@@ -1,0 +1,58 @@
+{
+  "file": "4491.png",
+  "token_id": 4491,
+  "width": 400,
+  "height": 400,
+  "chunks": [
+    {
+      "type": "IHDR",
+      "length": 13,
+      "crc": "80bf36cc"
+    },
+    {
+      "type": "sRGB",
+      "length": 1,
+      "crc": "aece1ce9"
+    },
+    {
+      "type": "eXIf",
+      "length": 14,
+      "crc": "00d25393"
+    },
+    {
+      "type": "pHYs",
+      "length": 9,
+      "crc": "173a21b2"
+    },
+    {
+      "type": "iTXt",
+      "length": 892,
+      "crc": "a6837b7b"
+    },
+    {
+      "type": "IDAT",
+      "length": 16384,
+      "crc": "ca818d4c"
+    },
+    {
+      "type": "IDAT",
+      "length": 242,
+      "crc": "d29f4eea"
+    },
+    {
+      "type": "IEND",
+      "length": 0,
+      "crc": "ae426082"
+    }
+  ],
+  "textEntries": [
+    {
+      "chunkType": "iTXt",
+      "keyword": "XML:com.adobe.xmp",
+      "compressed": false,
+      "languageTag": "",
+      "translatedKeyword": "",
+      "text": "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"XMP Core 6.0.0\">\n   <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n      <rdf:Description rdf:about=\"\"\n            xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n            xmlns:tiff=\"http://ns.adobe.com/tiff/1.0/\"\n            xmlns:Iptc4xmpExt=\"http://iptc.org/std/Iptc4xmpExt/2008-02-29/\">\n         <dc:title>\n            <rdf:Alt>\n               <rdf:li xml:lang=\"x-default\">FUnOjlMWIAEs96M</rdf:li>\n            </rdf:Alt>\n         </dc:title>\n         <tiff:YResolution>264</tiff:YResolution>\n         <tiff:XResolution>264</tiff:XResolution>\n         <tiff:PhotometricInterpretation>2</tiff:PhotometricInterpretation>\n         <tiff:ResolutionUnit>2</tiff:ResolutionUnit>\n         <Iptc4xmpExt:ArtworkTitle>FUnOjlMWIAEs96M</Iptc4xmpExt:ArtworkTitle>\n      </rdf:Description>\n   </rdf:RDF>\n</x:xmpmeta>\n"
+    }
+  ]
+}

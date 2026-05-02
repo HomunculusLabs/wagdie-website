@@ -1,0 +1,43 @@
+{
+  "file": "6063.png",
+  "token_id": 6063,
+  "width": 400,
+  "height": 400,
+  "chunks": [
+    {
+      "type": "IHDR",
+      "length": 13,
+      "crc": "0fdda19b"
+    },
+    {
+      "type": "pHYs",
+      "length": 9,
+      "crc": "009a9c18"
+    },
+    {
+      "type": "iTXt",
+      "length": 1585,
+      "crc": "21a6c149"
+    },
+    {
+      "type": "IDAT",
+      "length": 5755,
+      "crc": "add85560"
+    },
+    {
+      "type": "IEND",
+      "length": 0,
+      "crc": "ae426082"
+    }
+  ],
+  "textEntries": [
+    {
+      "chunkType": "iTXt",
+      "keyword": "XML:com.adobe.xmp",
+      "compressed": false,
+      "languageTag": "",
+      "translatedKeyword": "",
+      "text": "<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?> <x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 9.1-c001 79.1462899, 2023/06/25-20:01:55        \"> <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"> <rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:photoshop=\"http://ns.adobe.com/photoshop/1.0/\" xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\" xmlns:stEvt=\"http://ns.adobe.com/xap/1.0/sType/ResourceEvent#\" xmp:CreatorTool=\"Adobe Photoshop 25.0 (Windows)\" xmp:CreateDate=\"2024-02-18T12:05:06-05:00\" xmp:ModifyDate=\"2024-02-21T12:56:24-05:00\" xmp:MetadataDate=\"2024-02-21T12:56:24-05:00\" dc:format=\"image/png\" photoshop:ColorMode=\"3\" xmpMM:InstanceID=\"xmp.iid:2f4b5d6e-1efe-9a48-bb97-547fb9bec9bf\" xmpMM:DocumentID=\"adobe:docid:photoshop:48f70a29-31c5-6549-81c3-27cf9c807da3\" xmpMM:OriginalDocumentID=\"xmp.did:8c7916e8-0a39-fb4d-9b64-04e2f44358c0\"> <xmpMM:History> <rdf:Seq> <rdf:li stEvt:action=\"created\" stEvt:instanceID=\"xmp.iid:8c7916e8-0a39-fb4d-9b64-04e2f44358c0\" stEvt:when=\"2024-02-18T12:05:06-05:00\" stEvt:softwareAgent=\"Adobe Photoshop 25.0 (Windows)\"/> <rdf:li stEvt:action=\"converted\" stEvt:parameters=\"from application/vnd.adobe.photoshop to image/png\"/> <rdf:li stEvt:action=\"saved\" stEvt:instanceID=\"xmp.iid:2f4b5d6e-1efe-9a48-bb97-547fb9bec9bf\" stEvt:when=\"2024-02-21T12:56:24-05:00\" stEvt:softwareAgent=\"Adobe Photoshop 25.0 (Windows)\" stEvt:changed=\"/\"/> </rdf:Seq> </xmpMM:History> </rdf:Description> </rdf:RDF> </x:xmpmeta> <?xpacket end=\"r\"?>"
+    }
+  ]
+}

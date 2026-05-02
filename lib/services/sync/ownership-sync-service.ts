@@ -3,7 +3,7 @@
  * Syncs NFT ownership from blockchain to database
  */
 
-import { createPublicClient, http } from 'viem'
+import { createPublicClient, fallback, http } from 'viem'
 import { mainnet } from 'viem/chains'
 import { OwnershipService } from '../blockchain/ownership'
 import { characterRepository } from '@/lib/repositories/character-repository'
@@ -23,20 +23,33 @@ export class OwnershipSyncService {
   constructor(config: SyncServiceConfig = {}) {
     const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || process.env.ALCHEMY_API_KEY
     const rpcUrl =
+      process.env.HTTP_RPC_URL ||
+      process.env.RPC_URL ||
+      process.env.ETH_RPC_URL ||
       process.env.MAINNET_RPC_URL ||
       process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
       process.env.ALCHEMY_RPC_URL ||
       process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
       (alchemyKey
         ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`
-        : 'https://eth.llamarpc.com')
+        : 'https://ethereum.publicnode.com')
 
     const publicClient = createPublicClient({
       chain: mainnet,
-      transport: http(rpcUrl, {
-        batch: true,
-        retryCount: 3,
-      }),
+      transport: fallback([
+        http(rpcUrl, {
+          batch: true,
+          retryCount: 3,
+        }),
+        http('https://ethereum.publicnode.com', {
+          batch: true,
+          retryCount: 2,
+        }),
+        http('https://rpc.flashbots.net', {
+          batch: true,
+          retryCount: 2,
+        }),
+      ]),
     })
 
     this.ownershipService = new OwnershipService({ publicClient })

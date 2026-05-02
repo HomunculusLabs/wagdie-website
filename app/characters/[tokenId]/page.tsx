@@ -1,18 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
-import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
+import { getCharacterImageCandidates, getCharacterImageFallback } from '@/lib/utils/image'
 import { NameEditor } from '@/components/characters/NameEditor'
 import { CoreStatsEditor } from '@/components/characters/CoreStatsEditor'
 import { DerivedStatsEditor } from '@/components/characters/DerivedStatsEditor'
 import { LevelExperienceEditor } from '@/components/characters/LevelExperienceEditor'
 import { EmptyStatsPrompt } from '@/components/characters/EmptyStatsPrompt'
 import { NFTTraitsDisplay } from '@/components/characters/NFTTraitsDisplay'
-import { OwnershipVerificationBanner } from '@/components/OwnershipVerificationBanner'
 import { AIPersonaTab } from '@/components/characters/ai-editor'
 import {
   CharacterStoryTab, CharacterEquipmentTab, CharacterWalletTab,
@@ -41,26 +40,27 @@ export default function CharacterDetailPage() {
   const [isInfectionModalOpen, setIsInfectionModalOpen] = useState(false)
   const [isCureModalOpen, setIsCureModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('story')
-  const [useLocalImage, setUseLocalImage] = useState(true)
+  const [imageUrl, setImageUrl] = useState(getCharacterImageFallback())
 
   const editor = useCharacterEditor({ character, isLoading })
 
-  useEffect(() => {
-    const fetchCharacter = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch(`/api/characters/${tokenId}`)
-        if (!response.ok) throw new Error('Failed to fetch character')
-        setCharacter(await response.json())
-      } catch (error) {
-        console.error('Error fetching character:', error)
-        toast.error('Failed to load character')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchCharacter = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/characters/${tokenId}`)
+      if (!response.ok) throw new Error('Failed to fetch character')
+      setCharacter(await response.json())
+    } catch (error) {
+      console.error('Error fetching character:', error)
+      toast.error('Failed to load character')
+    } finally {
+      setIsLoading(false)
     }
-    fetchCharacter()
   }, [tokenId])
+
+  useEffect(() => {
+    fetchCharacter()
+  }, [fetchCharacter])
 
   const userIsAdmin = isAdmin(address)
   // Include staker_address check for staked characters (user is the staker)
@@ -69,6 +69,14 @@ export default function CharacterDetailPage() {
       (character.staker_address?.toLowerCase() === address.toLowerCase()) ||
       userIsAdmin
     : false
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search)
+    const shouldOpenSearing = query.get('sear') === 'true' || query.get('searing') === 'true'
+    if (shouldOpenSearing && isOwner) {
+      setIsSearingModalOpen(true)
+    }
+  }, [isOwner])
 
   const handleEditToggle = useCallback(() => {
     if (isEditMode) editor.reset()
@@ -148,7 +156,24 @@ export default function CharacterDetailPage() {
   const handleAssignStats = () => { editor.assignDefaultStats(); setIsEditMode(true) }
 
   const name = character?.name || character?.metadata?.name || `Character #${tokenId}`
-  const imageUrl = useLocalImage ? getLocalImagePath(tokenId) : getCharacterImageFallback(character?.metadata?.image, character?.image_url)
+  const imageCandidates = useMemo(
+    () => getCharacterImageCandidates(tokenId, character?.metadata, character?.image_url, {
+      infectionStatus: character?.infection_status,
+      isInfected: character?.infected,
+    }),
+    [tokenId, character?.metadata, character?.image_url, character?.infection_status, character?.infected]
+  )
+
+  useEffect(() => {
+    setImageUrl(imageCandidates[0] || getCharacterImageFallback())
+  }, [imageCandidates])
+
+  const handleImageError = useCallback(() => {
+    setImageUrl((current) => {
+      const currentIndex = imageCandidates.indexOf(current)
+      return imageCandidates[currentIndex + 1] || current || getCharacterImageFallback()
+    })
+  }, [imageCandidates])
   // Prefer DB column over metadata (column is source of truth after saves)
   const level = character?.level ?? character?.metadata?.level ?? 1
   const attrs = character
@@ -184,13 +209,11 @@ export default function CharacterDetailPage() {
         onCancel={handleEditToggle} onChat={() => openChat({ tokenId: String(tokenId), characterName: name })} onAnimated={() => router.push(`/characters/${tokenId}/animated`)} />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <OwnershipVerificationBanner tokenId={BigInt(tokenId)} className="mb-8" />
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
           <div className="lg:col-span-5">
             <Card className="overflow-hidden">
               <div className="relative aspect-square">
-                <Image src={imageUrl} alt={name} fill sizes="(max-width: 1024px) 100vw, 40vw" className="object-cover [image-rendering:pixelated]" priority unoptimized onError={() => useLocalImage && setUseLocalImage(false)} />
+                <Image src={imageUrl} alt={name} fill sizes="(max-width: 1024px) 100vw, 40vw" className="object-cover [image-rendering:pixelated]" priority unoptimized onError={handleImageError} />
                 <div className="absolute inset-0 bg-black/40" />
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
                   {character.infection_status === 'infected' && <Badge className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge>}
@@ -238,7 +261,7 @@ export default function CharacterDetailPage() {
         </div>
       </div>
 
-      <CharacterModals tokenId={tokenId} name={name} isSearingModalOpen={isSearingModalOpen} isInfectionModalOpen={isInfectionModalOpen} isCureModalOpen={isCureModalOpen} onCloseSearing={() => setIsSearingModalOpen(false)} onCloseInfection={() => setIsInfectionModalOpen(false)} onCloseCure={() => setIsCureModalOpen(false)} />
+      <CharacterModals tokenId={tokenId} name={name} isSearingModalOpen={isSearingModalOpen} isInfectionModalOpen={isInfectionModalOpen} isCureModalOpen={isCureModalOpen} onCloseSearing={() => setIsSearingModalOpen(false)} onCloseInfection={() => setIsInfectionModalOpen(false)} onCloseCure={() => setIsCureModalOpen(false)} onSearingSuccess={fetchCharacter} />
     </div>
   )
 }

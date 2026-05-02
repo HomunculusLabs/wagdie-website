@@ -57,6 +57,44 @@ export const stakingHandlers = [
   }),
 ];
 
+// Searing endpoints
+export const searingHandlers = [
+  http.get('/api/concords/searing-map', () => {
+    return HttpResponse.json({
+      searingMap: [
+        {
+          token_name: 'Cauldron of Detriti',
+          location: 'body',
+          new_trait: 'detriti cauldron',
+          makesBald: false,
+          tokenId: '1',
+          concordTokenId: 1,
+        },
+      ],
+      total: 1,
+      count: 1,
+      limit: 2000,
+      offset: 0,
+    });
+  }),
+
+  http.post('/api/characters/:tokenId/searing/sync', ({ params }) => {
+    return HttpResponse.json({
+      transactionHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+      results: [
+        {
+          eventId: 'storybook-searing-event',
+          tokenId: Number(params.tokenId),
+          concordId: 1,
+          transactionHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+          status: 'completed',
+          imageUrl: '/images/characters/storybook-seared.png',
+        },
+      ],
+    });
+  }),
+];
+
 // Balance endpoints
 export const balanceHandlers = [
   http.get('/api/balances/:address', () => {
@@ -72,5 +110,6 @@ export const handlers = [
   ...authHandlers,
   ...characterHandlers,
   ...stakingHandlers,
+  ...searingHandlers,
   ...balanceHandlers,
 ];

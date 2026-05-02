@@ -18,7 +18,7 @@ import { useOrigins } from '@/hooks/useOrigins'
 import { useAlignments } from '@/hooks/useAlignments'
 import { useArmorTraits, useBackTraits, useMaskTraits } from '@/hooks/useTraitCounts'
 import { useWallet } from '@/hooks/useWallet'
-import type { CharacterFilterTab, SortOrder } from '@/types/character'
+import type { Character, CharacterFilterTab, SortOrder } from '@/types/character'
 
 const ITEMS_PER_PAGE = 50
 
@@ -241,6 +241,18 @@ function CharactersPageContent() {
     router.push(`/characters/${tokenId}`)
   }
 
+  const handleCharacterSearClick = (tokenId: number) => {
+    router.push(`/characters/${tokenId}?sear=true`)
+  }
+
+  const canSearCharacter = (character: Character) => {
+    if (!address) return false
+
+    const walletAddress = address.toLowerCase()
+    return character.owner_address?.toLowerCase() === walletAddress ||
+      character.staker_address?.toLowerCase() === walletAddress
+  }
+
   return (
     <div className="min-h-screen bg-soul-950">
       <BannerHeader
@@ -363,6 +375,8 @@ function CharactersPageContent() {
                       key={character.token_id}
                       character={character}
                       onClick={handleCharacterClick}
+                      onSearClick={handleCharacterSearClick}
+                      showSearingLink={canSearCharacter(character)}
                     />
                   ))}
                 </div>

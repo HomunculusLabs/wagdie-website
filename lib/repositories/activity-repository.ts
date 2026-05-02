@@ -60,6 +60,7 @@ export interface ConcordTransfer {
   transaction_hash: string
   block_number: number
   log_index: number
+  batch_index: number
   event_timestamp: string | null
   is_mint: boolean
   is_burn: boolean

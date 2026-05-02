@@ -23,14 +23,15 @@ const config: StorybookConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': resolve(__dirname, '../'),
       '@/hooks/useSearing': resolve(__dirname, './mocks/hooks/useSearing'),
+      '@/hooks/useSearingConcords': resolve(__dirname, './mocks/hooks/useSearingConcords'),
       '@/hooks/useSpread': resolve(__dirname, './mocks/hooks/useSpread'),
       '@/hooks/useCure': resolve(__dirname, './mocks/hooks/useCure'),
       '@/hooks/useCorpseBurning': resolve(__dirname, './mocks/hooks/useCorpseBurning'),
       '@/hooks/useTokenBalances': resolve(__dirname, './mocks/hooks/useTokenBalances'),
       '@/hooks/useStaking': resolve(__dirname, './mocks/hooks/useStaking'),
       '@/hooks/useAICharacter': resolve(__dirname, './mocks/hooks/useAICharacter'),
+      '@': resolve(__dirname, '../'),
       'next/link': resolve(__dirname, './mocks/next/link'),
       'next/image': resolve(__dirname, './mocks/next/image'),
       'next/navigation': resolve(__dirname, './mocks/next/navigation'),

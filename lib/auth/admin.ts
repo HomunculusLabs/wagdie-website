@@ -6,6 +6,8 @@
 // Admin wallet addresses (case-insensitive)
 export const ADMIN_WALLETS = [
   '0x5a7F5938deA6238137043415e28efd99A6532dD3',
+  '0xb384d03d8311cA41a163001dDDbaC75d86abf1fb',
+  '0xDc0f9e358F8EEF58beA41b1Cad8FD23F84D15713',
 ] as const
 
 /**

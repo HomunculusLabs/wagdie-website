@@ -11,11 +11,18 @@
     "test:watch": "jest --watch",
     "seed": "cd scripts && npx ts-node seed-database.ts",
     "seed:quick": "cd scripts && npx ts-node quick-seed.ts",
+    "import:gcs": "npx ts-node --project scripts/tsconfig.json scripts/import-gcs-images.ts",
+    "images:localize": "npx ts-node --project scripts/tsconfig.json scripts/point-images-to-local.ts",
+    "images:extract-metadata": "npx ts-node --project scripts/tsconfig.json scripts/extract-png-metadata.ts",
+    "images:compare-metadata": "npx ts-node --project scripts/tsconfig.json scripts/compare-extracted-metadata.ts",
+    "assets:collect": "npx ts-node --project scripts/tsconfig.json scripts/collect-character-assets.ts",
+    "searing:materialize": "npx ts-node --project scripts/tsconfig.json scripts/materialize-searing-events.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
   "dependencies": {
     "@eliza/sdk": "file:eliza-sdk-master",
+    "@google-cloud/storage": "^7.19.0",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/supabase-js": "^2.39.0",
@@ -32,6 +39,7 @@
     "react-dom": "^18.3.0",
     "react-hot-toast": "^2.6.0",
     "react-intersection-observer": "^10.0.0",
+    "sharp": "^0.34.5",
     "siwe": "^2.1.4",
     "viem": "^2.0.0",
     "wagmi": "^2.0.0"

@@ -1,0 +1,7 @@
+{
+  "sourceDir": "/Users/t3rpz/projects/wagdie-simplified/data/gcs-bucket-dump/images",
+  "outputDir": "/Users/t3rpz/projects/wagdie-simplified/data/gcs-bucket-dump/extracted-metadata",
+  "scanned": 716,
+  "filesWithEmbeddedTextMetadata": 6,
+  "generatedAt": "2026-03-28T00:43:03.295Z"
+}

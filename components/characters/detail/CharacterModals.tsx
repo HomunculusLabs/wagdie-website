@@ -19,6 +19,7 @@ interface CharacterModalsProps {
   onCloseSearing: () => void
   onCloseInfection: () => void
   onCloseCure: () => void
+  onSearingSuccess?: () => void | Promise<void>
 }
 
 export function CharacterModals({
@@ -30,6 +31,7 @@ export function CharacterModals({
   onCloseSearing,
   onCloseInfection,
   onCloseCure,
+  onSearingSuccess,
 }: CharacterModalsProps) {
   return (
     <>
@@ -38,9 +40,9 @@ export function CharacterModals({
         wagdieName={name}
         isOpen={isSearingModalOpen}
         onClose={onCloseSearing}
-        onSuccess={() => {
+        onSuccess={async () => {
           toast.success('Character seared successfully!')
-          window.location.reload()
+          await onSearingSuccess?.()
         }}
       />
       <InfectionModal

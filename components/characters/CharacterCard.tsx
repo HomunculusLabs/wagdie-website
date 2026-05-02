@@ -5,40 +5,55 @@
 
 'use client'
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image'
-import { Card, CardContent, Badge } from '@/components/ui'
+import { Card, CardContent, Badge, Button } from '@/components/ui'
 import type { Character } from '@/types/character'
 import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
-import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
+import { getCharacterImageCandidates } from '@/lib/utils/image'
 
 interface CharacterCardProps {
   character: Character
   onClick?: (tokenId: number) => void
+  onSearClick?: (tokenId: number) => void
+  showSearingLink?: boolean
   className?: string
 }
 
-export function CharacterCard({ character, onClick, className = '' }: CharacterCardProps) {
+export function CharacterCard({ character, onClick, onSearClick, showSearingLink = false, className = '' }: CharacterCardProps) {
   const [isLoading, setIsLoading] = useState(true)
-  const [useLocalImage, setUseLocalImage] = useState(true)
+  const infectionStatus = character.infection_status ?? (character.infected ? 'infected' : 'healthy')
+  const imageCandidates = useMemo(
+    () => getCharacterImageCandidates(character.token_id, character.metadata, character.image_url, {
+      infectionStatus,
+      isInfected: character.infected,
+    }),
+    [character.token_id, character.metadata, character.image_url, character.infected, infectionStatus]
+  )
+  const [imageUrl, setImageUrl] = useState(() => imageCandidates[0])
 
   // Extract data from metadata if available, otherwise use direct fields
   const name = character.metadata?.name || character.name || `character #${character.token_id}`
 
-  // Use local image first, fallback to IPFS if local fails
-  const localImageUrl = getLocalImagePath(character.token_id)
-  const fallbackImageUrl = getCharacterImageFallback(character.metadata?.image, character.image_url)
-  const imageUrl = useLocalImage ? localImageUrl : fallbackImageUrl
+  useEffect(() => {
+    setIsLoading(true)
+    setImageUrl(imageCandidates[0])
+  }, [imageCandidates])
 
   const level = character.metadata?.level || character.level
   const characterClass = character.class
-  const infectionStatus = character.infection_status ?? (character.infected ? 'infected' : 'healthy')
 
   const handleImageError = () => {
-    if (useLocalImage) {
-      // Local image failed, try IPFS fallback
-      setUseLocalImage(false)
-    }
+    setImageUrl((current) => {
+      const currentIndex = imageCandidates.indexOf(current)
+      const nextImage = imageCandidates[currentIndex + 1]
+      if (nextImage) {
+        setIsLoading(true)
+        return nextImage
+      }
+      setIsLoading(false)
+      return current
+    })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -46,6 +61,15 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
       e.preventDefault()
       onClick?.(character.token_id)
     }
+  }
+
+  const handleSearClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    onSearClick?.(character.token_id)
+  }
+
+  const handleSearKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
   }
 
   return (
@@ -127,6 +151,18 @@ export function CharacterCard({ character, onClick, className = '' }: CharacterC
             {characterClass && level && ' · '}
             {level && `level ${level}`}
           </p>
+        )}
+        {showSearingLink && (
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            className="mt-3 w-full lowercase"
+            onClick={handleSearClick}
+            onKeyDown={handleSearKeyDown}
+          >
+            sear concord
+          </Button>
         )}
       </CardContent>
     </Card>

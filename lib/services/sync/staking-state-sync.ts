@@ -11,7 +11,7 @@
  * - Per-token errors: one token failing should not fail the whole batch
  */
 
-import { createPublicClient, http, type Address } from 'viem'
+import { createPublicClient, fallback, http, type Address } from 'viem'
 import { mainnet, sepolia } from 'viem/chains'
 import { wagdieWorldABI } from '../../contracts/abis/wagdie-world'
 import { getContractAddresses } from '../../contracts/addresses'
@@ -36,7 +36,7 @@ export type StakingStateSyncResponse = {
   results: StakingStateSyncResult[]
 }
 
-const FALLBACK_RPC_URL = 'https://cloudflare-eth.com'
+const FALLBACK_RPC_URL = 'https://ethereum.publicnode.com'
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 type WagdieInfo = {
@@ -119,7 +119,11 @@ async function fetchWagdieInfosFromChain(params: {
   const chain = getViemChain(chainId)
   const publicClient = createPublicClient({
     chain,
-    transport: http(rpcUrl),
+    transport: fallback([
+      http(rpcUrl),
+      http(FALLBACK_RPC_URL),
+      http('https://rpc.flashbots.net'),
+    ]),
   })
 
   const { wagdieWorld } = getContractAddresses(chainId)
@@ -234,8 +238,13 @@ async function bulkUpdateCharacterStakingState(params: {
       batch.map(async (u) => {
         // IMPORTANT: Create a fresh query builder for each update
         // Supabase query builders are not reusable
-        const { error } = await adminClient
-          .from(CHARACTERS_TABLE)
+        // Cast required: Supabase generated types may not allow partial updates on this table
+        const query = adminClient.from(CHARACTERS_TABLE) as unknown as {
+          update: (values: Record<string, unknown>) => {
+            eq: (column: string, value: number) => Promise<{ error: { message: string } | null }>
+          }
+        }
+        const { error } = await query
           .update({
             location_id: u.locationId,
             staker_address: u.stakerAddress,
@@ -276,7 +285,14 @@ export async function syncStakingState(params: {
   rpcUrl?: string
 }): Promise<StakingStateSyncResponse> {
   const chainId = params.chainId ?? 1
-  const rpcUrl = params.rpcUrl ?? process.env.HTTP_RPC_URL ?? FALLBACK_RPC_URL
+  const rpcUrl =
+    params.rpcUrl ??
+    process.env.HTTP_RPC_URL ??
+    process.env.RPC_URL ??
+    process.env.ETH_RPC_URL ??
+    process.env.MAINNET_RPC_URL ??
+    process.env.NEXT_PUBLIC_MAINNET_RPC_URL ??
+    FALLBACK_RPC_URL
 
   const validation = validateTokenIds(params.tokenIds)
   if (validation.error) {

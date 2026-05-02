@@ -10,9 +10,20 @@ import { useAdminAuth } from '@/hooks/map/useAdminAuth'
 interface AdminGateProps {
   children: React.ReactNode
   fallback?: React.ReactNode
+  title?: string
+  connectDescription?: string
+  deniedDescription?: string
+  deniedHelp?: string
 }
 
-export function AdminGate({ children, fallback }: AdminGateProps) {
+export function AdminGate({
+  children,
+  fallback,
+  title = 'Map Editor',
+  connectDescription = 'Connect your wallet to access the map editor.',
+  deniedDescription = 'You do not have permission to access the map editor.',
+  deniedHelp = 'Only admin wallets can create, edit, or delete locations.',
+}: AdminGateProps) {
   const { isConnected, isAdmin, isLoading, connect } = useAdminAuth()
 
   // Loading state
@@ -33,10 +44,10 @@ export function AdminGate({ children, fallback }: AdminGateProps) {
       <div className="flex min-h-screen items-center justify-center bg-abyss">
         <div className="max-w-md text-center p-8">
           <h1 className="font-display text-3xl text-soul-accent mb-4">
-            Map Editor
+            {title}
           </h1>
           <p className="text-soul-mist mb-6">
-            Connect your wallet to access the map editor.
+            {connectDescription}
           </p>
           <button
             onClick={connect}
@@ -62,10 +73,10 @@ export function AdminGate({ children, fallback }: AdminGateProps) {
             Access Denied
           </h1>
           <p className="text-soul-mist mb-4">
-            You do not have permission to access the map editor.
+            {deniedDescription}
           </p>
           <p className="text-soul-mist/60 text-sm">
-            Only admin wallets can create, edit, or delete locations.
+            {deniedHelp}
           </p>
         </div>
       </div>

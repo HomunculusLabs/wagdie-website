@@ -1,6 +1,7 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
 
 import type { useSearing } from '@/hooks/useSearing';
+import type { useSearingConcords } from '@/hooks/useSearingConcords';
 import type { useSpread } from '@/hooks/useSpread';
 import type { useCure } from '@/hooks/useCure';
 import type { useCorpseBurning } from '@/hooks/useCorpseBurning';
@@ -10,6 +11,7 @@ import type { useAICharacter } from '@/hooks/useAICharacter';
 
 export type HookMocks = {
   useSearing?: ReturnType<typeof useSearing>;
+  useSearingConcords?: ReturnType<typeof useSearingConcords>;
   useSpread?: ReturnType<typeof useSpread>;
   useCure?: ReturnType<typeof useCure>;
   useCorpseBurning?: ReturnType<typeof useCorpseBurning>;

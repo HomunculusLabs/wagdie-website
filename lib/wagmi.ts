@@ -1,4 +1,4 @@
-import { createConfig, http } from 'wagmi'
+import { createConfig, fallback, http } from 'wagmi'
 import { injected, coinbaseWallet } from 'wagmi/connectors'
 import type { Chain } from 'wagmi/chains'
 import { getSupportedChains, mainnet, sepolia } from './contracts/chains'
@@ -11,7 +11,7 @@ const mainnetRpcUrl =
   process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
   (process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
     ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-    : 'https://eth.llamarpc.com')
+    : 'https://ethereum.publicnode.com')
 
 const sepoliaRpcUrl =
   process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
@@ -32,10 +32,20 @@ export const config = createConfig({
   ],
   ssr: true,
   transports: {
-    [mainnet.id]: http(mainnetRpcUrl, {
-      batch: true,
-      retryCount: 3,
-    }),
+    [mainnet.id]: fallback([
+      http(mainnetRpcUrl, {
+        batch: true,
+        retryCount: 3,
+      }),
+      http('https://ethereum.publicnode.com', {
+        batch: true,
+        retryCount: 2,
+      }),
+      http('https://rpc.flashbots.net', {
+        batch: true,
+        retryCount: 2,
+      }),
+    ]),
     [sepolia.id]: http(sepoliaRpcUrl, {
       batch: true,
       retryCount: 3,

@@ -13,6 +13,8 @@ import { useWallet } from './useWallet'
 import { api } from '@/lib/api'
 import type { WalletAuthError } from '@/types/wallet'
 
+let activeAuthentication: Promise<boolean> | null = null
+
 /**
  * Authentication hook return type
  */
@@ -60,31 +62,41 @@ export function useAuth(): UseAuthReturn {
       setIsAuthenticating(true)
       setError(null)
 
-      // Step 1: Get nonce
-      const { nonce } = await api.auth.getNonce(wallet.address)
+      if (!activeAuthentication) {
+        activeAuthentication = (async () => {
+          // Step 1: Get nonce
+          const { nonce } = await api.auth.getNonce(wallet.address!)
 
-      // Step 2: Create SIWE message
-      const message = new SiweMessage({
-        domain: typeof window !== 'undefined' ? window.location.host : 'localhost',
-        address: wallet.address,
-        statement: 'Sign in to WAGDIE',
-        uri: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-        version: '1',
-        chainId: 1,
-        nonce,
-      })
+          // Step 2: Create SIWE message
+          const message = new SiweMessage({
+            domain: typeof window !== 'undefined' ? window.location.host : 'localhost',
+            address: wallet.address!,
+            statement: 'Sign in to WAGDIE',
+            uri: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+            version: '1',
+            chainId: 1,
+            nonce,
+          })
 
-      const preparedMessage = message.prepareMessage()
+          const preparedMessage = message.prepareMessage()
 
-      // Step 3: Sign message
-      const signature = await signMessageAsync({ message: preparedMessage })
+          // Step 3: Sign message
+          const signature = await signMessageAsync({ message: preparedMessage })
 
-      // Step 4: Verify signature
-      const { success } = await api.auth.verify({
-        address: wallet.address,
-        signature,
-        message: preparedMessage,
-      })
+          // Step 4: Verify signature
+          const { success } = await api.auth.verify({
+            address: wallet.address!,
+            signature,
+            message: preparedMessage,
+          })
+
+          return success
+        })().finally(() => {
+          activeAuthentication = null
+        })
+      }
+
+      const success = await activeAuthentication
 
       if (success) {
         setIsAuthenticated(true)

@@ -4,6 +4,8 @@
 import { Address } from './blockchain'
 
 // Searing contract parameters
+// Domain parameters keep the app-facing Concord ID name. The SearWagdie ABI
+// names this same value `tokenId`; convert at the blockchain service boundary.
 export interface SearConcordsParams {
   wagdieId: number
   concordId: number
@@ -12,6 +14,11 @@ export interface SearConcordsParams {
 export interface TameBeastsParams {
   wagdieId: number
   concordId: number
+}
+
+export interface SearWagdieABIParams {
+  wagdieId: number
+  tokenId: number
 }
 
 // Staking contract parameters

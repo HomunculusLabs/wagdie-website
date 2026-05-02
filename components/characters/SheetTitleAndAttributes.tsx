@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { Character } from '@/types/character'
-import { getLocalImagePath, getCharacterImageFallback } from '@/lib/utils/image'
+import { getCharacterImageCandidates, getCharacterImageFallback } from '@/lib/utils/image'
 
 interface SheetTitleAndAttributesProps {
   character: Character
@@ -14,14 +14,28 @@ interface SheetTitleAndAttributesProps {
 }
 
 export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesProps) {
-  const [useLocalImage, setUseLocalImage] = useState(true)
+  const infectionStatus = character.infection_status ?? (character.infected ? 'infected' : 'healthy')
+  const imageCandidates = useMemo(
+    () => getCharacterImageCandidates(character.token_id, character.metadata, character.image_url, {
+      infectionStatus,
+      isInfected: character.infected,
+    }),
+    [character.token_id, character.metadata, character.image_url, character.infected, infectionStatus]
+  )
+  const [imageUrl, setImageUrl] = useState(() => imageCandidates[0])
 
   const name = character.metadata?.name || character.name || `character #${character.token_id}`
 
-  // Use local image first, fallback to IPFS if local fails
-  const localImageUrl = getLocalImagePath(character.token_id)
-  const fallbackImageUrl = getCharacterImageFallback(character.metadata?.image, character.image_url)
-  const imageUrl = useLocalImage ? localImageUrl : fallbackImageUrl
+  useEffect(() => {
+    setImageUrl(imageCandidates[0] || getCharacterImageFallback())
+  }, [imageCandidates])
+
+  const handleImageError = () => {
+    setImageUrl((current) => {
+      const currentIndex = imageCandidates.indexOf(current)
+      return imageCandidates[currentIndex + 1] || current || getCharacterImageFallback()
+    })
+  }
   const level = character.metadata?.level || character.level || 1
   const hp = character.metadata?.hit_points || character.hp
   const maxHp = character.max_hp
@@ -77,7 +91,8 @@ export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesPr
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover grayscale-[30%] contrast-110"
               priority
-              onError={() => useLocalImage && setUseLocalImage(false)}
+              unoptimized
+              onError={handleImageError}
             />
             <div className="absolute inset-0 bg-black/40" />
 

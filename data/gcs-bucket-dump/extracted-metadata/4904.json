@@ -1,0 +1,43 @@
+{
+  "file": "4904.png",
+  "token_id": 4904,
+  "width": 400,
+  "height": 400,
+  "chunks": [
+    {
+      "type": "IHDR",
+      "length": 13,
+      "crc": "0fdda19b"
+    },
+    {
+      "type": "pHYs",
+      "length": 9,
+      "crc": "009a9c18"
+    },
+    {
+      "type": "iTXt",
+      "length": 1262,
+      "crc": "c55dd31c"
+    },
+    {
+      "type": "IDAT",
+      "length": 8285,
+      "crc": "efbbb35b"
+    },
+    {
+      "type": "IEND",
+      "length": 0,
+      "crc": "ae426082"
+    }
+  ],
+  "textEntries": [
+    {
+      "chunkType": "iTXt",
+      "keyword": "XML:com.adobe.xmp",
+      "compressed": false,
+      "languageTag": "",
+      "translatedKeyword": "",
+      "text": "<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?> <x:xmpmeta xmlns:x=\"adobe:ns:meta/\" x:xmptk=\"Adobe XMP Core 9.1-c001 79.1462899, 2023/06/25-20:01:55        \"> <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"> <rdf:Description rdf:about=\"\" xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:photoshop=\"http://ns.adobe.com/photoshop/1.0/\" xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\" xmlns:stEvt=\"http://ns.adobe.com/xap/1.0/sType/ResourceEvent#\" xmp:CreatorTool=\"Adobe Photoshop 25.0 (Windows)\" xmp:CreateDate=\"2024-03-19T10:35:56-04:00\" xmp:ModifyDate=\"2024-03-19T10:37:37-04:00\" xmp:MetadataDate=\"2024-03-19T10:37:37-04:00\" dc:format=\"image/png\" photoshop:ColorMode=\"3\" xmpMM:InstanceID=\"xmp.iid:8068cd4a-82bb-c640-adfe-43c7721764f1\" xmpMM:DocumentID=\"xmp.did:8068cd4a-82bb-c640-adfe-43c7721764f1\" xmpMM:OriginalDocumentID=\"xmp.did:8068cd4a-82bb-c640-adfe-43c7721764f1\"> <xmpMM:History> <rdf:Seq> <rdf:li stEvt:action=\"created\" stEvt:instanceID=\"xmp.iid:8068cd4a-82bb-c640-adfe-43c7721764f1\" stEvt:when=\"2024-03-19T10:35:56-04:00\" stEvt:softwareAgent=\"Adobe Photoshop 25.0 (Windows)\"/> </rdf:Seq> </xmpMM:History> </rdf:Description> </rdf:RDF> </x:xmpmeta> <?xpacket end=\"r\"?>"
+    }
+  ]
+}
