@@ -155,6 +155,29 @@ export function generateTransactionId(type: string, identifier: string): string 
   return `${type}-${identifier}-${Date.now()}-${transactionCounter}`
 }
 
+export function createContractError(
+  type: ContractErrorType,
+  message: string,
+  originalError?: unknown
+): ContractError {
+  return {
+    type,
+    message,
+    originalError: originalError instanceof Error ? originalError : undefined,
+  }
+}
+
+export function walletNotConnectedError(): ContractError {
+  return createContractError(ContractErrorType.UNKNOWN, 'Wallet not connected')
+}
+
+export function missingTransactionHashError(action: string): ContractError {
+  return createContractError(
+    ContractErrorType.UNKNOWN,
+    `${action} transaction did not return a hash`
+  )
+}
+
 export async function confirmContractTransaction({
   transaction,
   service,
@@ -278,6 +301,10 @@ export function useBlockchainTransaction<TResult = void>(
 
         const finalHash = result.hash ?? submittedHash
 
+        if (finalHash && !submittedHash) {
+          markSubmitted(finalHash)
+        }
+
         // Handle error
         if (result.error) {
           setError(result.error)
@@ -296,10 +323,6 @@ export function useBlockchainTransaction<TResult = void>(
             error: result.error,
             result: result.result,
           }
-        }
-
-        if (result.hash && !submittedHash) {
-          markSubmitted(result.hash)
         }
 
         // Handle success with hash
@@ -343,6 +366,7 @@ export function useBlockchainTransaction<TResult = void>(
         setError(contractError)
         setStatus(TxStatus.ERROR)
         updateTransaction?.(txId, {
+          ...(submittedHash ? { hash: submittedHash } : {}),
           status: TxStatus.ERROR,
           error: contractError.message,
         })

@@ -29,12 +29,46 @@ interface TransactionStore {
 const STORAGE_KEY = 'wagdie-transactions'
 const MAX_TRANSACTION_AGE = 7 * 24 * 60 * 60 * 1000 // 7 days
 
+function normalizeMetadata(metadata: unknown): Record<string, unknown> | undefined {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return undefined
+  }
+
+  try {
+    const parsed = JSON.parse(
+      JSON.stringify(metadata, (_key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      )
+    )
+
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function normalizeTransactionState<T extends Partial<TransactionState>>(state: T): T {
+  const metadata = normalizeMetadata(state.metadata)
+
+  if (!metadata) {
+    return state.metadata === undefined
+      ? state
+      : ({ ...state, metadata: undefined } as T)
+  }
+
+  return { ...state, metadata } as T
+}
+
 export const useTransactionStore = create<TransactionStore>()(
   persist(
     (set, get) => ({
       transactions: {},
 
       addTransaction: (id, operationType, initialState = {}) => {
+        const normalizedInitialState = normalizeTransactionState(initialState)
+
         set((state) => ({
           transactions: {
             ...state.transactions,
@@ -43,13 +77,15 @@ export const useTransactionStore = create<TransactionStore>()(
               operationType,
               status: TransactionStatus.IDLE,
               createdAt: Date.now(),
-              ...initialState,
+              ...normalizedInitialState,
             },
           },
         }))
       },
 
       updateTransaction: (id, updates) => {
+        const normalizedUpdates = normalizeTransactionState(updates)
+
         set((state) => {
           const existing = state.transactions[id]
           if (!existing) return state
@@ -59,7 +95,7 @@ export const useTransactionStore = create<TransactionStore>()(
               ...state.transactions,
               [id]: {
                 ...existing,
-                ...updates,
+                ...normalizedUpdates,
               },
             },
           }
