@@ -3,6 +3,10 @@
  *
  * Generic blockchain transaction execution utility.
  * Handles common transaction lifecycle: pending → confirming → success/error.
+ *
+ * The hook is the source of truth for transaction lifecycle state and store
+ * updates. Feature hooks should preserve their public APIs and delegate common
+ * submit/confirm/error behavior here.
  */
 
 import type { ContractError, TransactionHash, TransactionStatus } from '@/types/blockchain';
@@ -18,9 +22,18 @@ interface UseBlockchainTransactionOptions<TResult> {
   onSuccess?: (hash: TransactionHash, result?: TResult) => void;
   onError?: (error: ContractError) => void;
 
-  // Transaction store integration (optional)
-  addTransaction?: (txId: string, type: string, data: any) => void;
-  updateTransaction?: (txId: string, data: any) => void;
+  // Transaction store integration (optional). Metadata must be safe to persist;
+  // bigint values are normalized to strings by the implementation/store.
+  addTransaction?: (txId: string, type: string, data: TransactionStoreData) => void;
+  updateTransaction?: (txId: string, data: TransactionStoreData) => void;
+}
+
+interface TransactionStoreData {
+  status?: TransactionStatus;
+  hash?: TransactionHash;
+  error?: string;
+  confirmations?: number;
+  metadata?: Record<string, unknown>;
 }
 
 // Return type
@@ -34,11 +47,32 @@ interface UseBlockchainTransactionReturn<TResult> {
   // Execute function
   execute: <TParams>(
     params: TParams,
-    executor: (params: TParams) => Promise<ExecutorResult<TResult>>
-  ) => Promise<void>;
+    executor: (
+      params: TParams,
+      context: TransactionExecutionContext
+    ) => Promise<ExecutorResult<TResult>>
+  ) => Promise<TransactionExecutionOutcome<TResult>>;
 
   // Reset state
   reset: () => void;
+}
+
+interface TransactionExecutionContext {
+  txId: string;
+  isCurrent: () => boolean;
+  markSubmitted: (
+    hash: TransactionHash,
+    update?: { metadata?: Record<string, unknown> }
+  ) => void;
+}
+
+interface TransactionExecutionOutcome<TResult> {
+  success: boolean;
+  txId: string;
+  hash?: TransactionHash;
+  error?: ContractError;
+  result?: TResult;
+  superseded?: boolean;
 }
 
 // Executor result shape
@@ -47,6 +81,27 @@ interface ExecutorResult<TResult> {
   error?: ContractError;
   result?: TResult;
 }
+
+interface ConfirmableTransactionService {
+  waitForTransactionConfirmation: (
+    hash: TransactionHash,
+    confirmations?: number
+  ) => Promise<{ error?: ContractError }>;
+}
+
+interface ConfirmContractTransactionOptions {
+  transaction: () => Promise<{ hash?: TransactionHash; error?: ContractError }>;
+  service: ConfirmableTransactionService;
+  context: TransactionExecutionContext;
+  missingHashError: ContractError;
+  confirmations?: number;
+}
+
+// Shared helper contract:
+// confirmContractTransaction submits a transaction, calls context.markSubmitted
+// once a hash is available, waits through service.waitForTransactionConfirmation,
+// and returns { hash } or { hash, error } without reaching into protected service
+// members.
 
 // Usage example:
 // const { execute, isExecuting, status, error } = useBlockchainTransaction({
@@ -57,7 +112,18 @@ interface ExecutorResult<TResult> {
 //   updateTransaction,
 // });
 //
-// await execute({ tokenId }, async ({ tokenId }) => {
-//   const result = await service.infectWagdie(tokenId, address);
-//   return { hash: result.hash, error: result.error };
+// const outcome = await execute({ tokenId }, async ({ tokenId }, context) => {
+//   return confirmContractTransaction({
+//     transaction: () => service.infectWagdie(tokenId, address),
+//     service,
+//     context,
+//     missingHashError: {
+//       type: ContractErrorType.UNKNOWN,
+//       message: 'Infection transaction did not return a hash',
+//     },
+//   });
 // });
+//
+// if (outcome.success && !outcome.superseded) {
+//   // Run post-confirmation follow-up work.
+// }
