@@ -181,6 +181,13 @@ export function Header() {
                 Lore & History
               </Link>
               <Link
+                href="/videos"
+                onClick={closeDrawer}
+                className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"
+              >
+                Low Poly Videos
+              </Link>
+              <Link
                 href="/spread"
                 onClick={closeDrawer}
                 className="block px-4 py-3 text-neutral-400 hover:text-soul-accent hover:bg-soul-accent/5 transition-all duration-300 font-eskapade text-sm"

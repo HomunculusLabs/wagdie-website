@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Searing', path: '/searing' },
   { label: 'World Map', path: '/map' },
   { label: 'Lore', path: '/lore' },
+  { label: 'Low Poly', path: '/videos' },
   { label: 'Spread', path: '/spread' },
 ]
 
