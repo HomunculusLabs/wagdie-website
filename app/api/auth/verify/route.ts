@@ -1,17 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { SiweMessage } from 'siwe'
 import { verifySiweMessage, upsertUser } from '@/lib/auth/siwe'
 import { cookies } from 'next/headers'
 import { getSession } from '@/lib/auth/session'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
+
+interface VerifyBody {
+  message?: unknown
+  signature?: unknown
+}
+
+function parseRequiredString(value: unknown): string | null {
+  return typeof value === 'string' && value ? value : null
+}
+
+function extractNonce(message: string): string | null {
+  try {
+    return new SiweMessage(message).nonce || null
+  } catch {
+    return null
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, signature } = await request.json()
+    const body = await request.json() as VerifyBody
+    const message = parseRequiredString(body.message)
+    const signature = parseRequiredString(body.signature)
 
     if (!message || !signature) {
-      return NextResponse.json(
-        { error: 'Missing message or signature' },
-        { status: 400 }
-      )
+      return jsonRawError('Missing message or signature', 400)
     }
 
     // Get nonce from cookie
@@ -19,20 +37,19 @@ export async function POST(request: NextRequest) {
     const nonce = cookieStore.get('siwe-nonce')?.value
 
     if (!nonce) {
-      return NextResponse.json(
-        { error: 'No nonce found. Please request a new one.' },
-        { status: 400 }
-      )
+      return jsonRawError('No nonce found. Please request a new one.', 400)
+    }
+
+    const messageNonce = extractNonce(message)
+    if (!messageNonce || messageNonce !== nonce) {
+      return jsonRawError('Invalid nonce', 401)
     }
 
     // Verify the SIWE message
     const verification = await verifySiweMessage(message, signature)
 
     if (!verification.success || !verification.address) {
-      return NextResponse.json(
-        { error: verification.error || 'Verification failed' },
-        { status: 401 }
-      )
+      return jsonRawError(verification.error || 'Verification failed', 401)
     }
 
     // Create or update user in database
@@ -40,10 +57,7 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('Database error:', dbError)
-      return NextResponse.json(
-        { error: 'Failed to save user data' },
-        { status: 500 }
-      )
+      return jsonRawError('Failed to save user data', 500)
     }
 
     // Clear the nonce cookie
@@ -69,16 +83,13 @@ export async function POST(request: NextRequest) {
       path: '/',
     })
 
-    return NextResponse.json({
+    return jsonRaw({
       success: true,
       address: verification.address,
       user,
     })
   } catch (error) {
     console.error('Verification error:', error)
-    return NextResponse.json(
-      { error: 'Verification failed' },
-      { status: 500 }
-    )
+    return jsonRawError('Verification failed', 500)
   }
 }

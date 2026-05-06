@@ -1,4 +1,6 @@
 /**
+ * @jest-environment node
+ *
  * Integration tests for nonce verification and replay prevention
  * Tests T010 [US1] - Secure nonce verification in SIWE flow
  */
@@ -6,6 +8,7 @@
 import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { POST } from '@/app/api/auth/verify/route'
+import { getSession } from '@/lib/auth/session'
 import { SiweMessage } from 'siwe'
 
 // Mock next/headers
@@ -232,6 +235,33 @@ Issued At: 2025-01-01T00:00:00.000Z`
 
       expect(response.status).toBe(200)
       expect(data.address).toBe(validAddress)
+    })
+
+    it('should store the exact signed message without trimming', async () => {
+      mockCookieStore.get.mockReturnValue({ value: validNonce })
+      const session = {
+        address: null,
+        siwe: null,
+        expires: null,
+        save: jest.fn(),
+        destroy: jest.fn(),
+      }
+      ;(getSession as jest.Mock).mockResolvedValueOnce(session)
+
+      const message = ` ${createMockMessage(validNonce)} `
+      const request = createMockRequest({
+        message,
+        signature: '0xvalidsignature',
+      })
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(200)
+      expect(session.siwe).toEqual({
+        message,
+        signature: '0xvalidsignature',
+        nonce: validNonce,
+      })
     })
   })
 })
