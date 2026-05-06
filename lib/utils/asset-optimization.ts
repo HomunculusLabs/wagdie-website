@@ -32,6 +32,38 @@ export interface OptimizationResult {
 // Debug configuration - set to false to reduce console spam
 const DEBUG_ASSET_OPTIMIZATION = false;
 
+function hasWindow(): boolean {
+  return typeof window !== 'undefined';
+}
+
+function hasDocument(): boolean {
+  return typeof document !== 'undefined';
+}
+
+function hasNavigator(): boolean {
+  return typeof navigator !== 'undefined';
+}
+
+function getDefaultDeviceCapabilities(): DeviceCapabilities {
+  return {
+    supportsWebP: false,
+    supportsAVIF: false,
+    pixelRatio: 1,
+    connectionType: 'unknown',
+    saveData: false,
+    hardwareConcurrency: 4,
+    memory: 4,
+  };
+}
+
+function safeBaseOrigin(): string {
+  return hasWindow() && window.location?.origin ? window.location.origin : 'http://localhost';
+}
+
+function isRelativeUrl(url: string): boolean {
+  return url.startsWith('/');
+}
+
 export interface DeviceCapabilities {
   supportsWebP: boolean;
   supportsAVIF: boolean;
@@ -109,7 +141,7 @@ export class AssetOptimizer {
 
     // Calculate optimization metrics
     const optimizedSize = await this.getImageSize(optimizedUrl);
-    const compressionRatio = 1 - (optimizedSize / originalSize);
+    const compressionRatio = originalSize > 0 ? 1 - (optimizedSize / originalSize) : 0;
 
     return {
       optimizedUrl,
@@ -202,7 +234,8 @@ export class AssetOptimizer {
       maxHeight?: number;
     }
   ): string {
-    const url = new URL(originalUrl, window.location.origin);
+    const shouldReturnRelative = !hasWindow() && isRelativeUrl(originalUrl);
+    const url = new URL(originalUrl, safeBaseOrigin());
 
     // Add optimization parameters
     if (params.format && !originalUrl.includes('.webp') && !originalUrl.includes('.avif')) {
@@ -229,6 +262,10 @@ export class AssetOptimizer {
       url.searchParams.set('dpr', Math.min(this.deviceCapabilities.pixelRatio, 2).toString());
     }
 
+    if (shouldReturnRelative) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
     return url.toString();
   }
 
@@ -237,6 +274,10 @@ export class AssetOptimizer {
    */
   private async getImageSize(url: string): Promise<number> {
     try {
+      if (typeof fetch === 'undefined') {
+        return 0;
+      }
+
       const response = await fetch(url, { method: 'HEAD' });
       const contentLength = response.headers.get('content-length');
       return contentLength ? parseInt(contentLength, 10) : 0;
@@ -255,43 +296,63 @@ export class AssetOptimizer {
       options,
       capabilities: this.deviceCapabilities,
     };
-    return btoa(JSON.stringify(keyData));
+    const serialized = JSON.stringify(keyData);
+
+    if (typeof btoa === 'function') {
+      return btoa(serialized);
+    }
+
+    return encodeURIComponent(serialized);
   }
 
   /**
    * Detect device capabilities
    */
   private detectDeviceCapabilities(): DeviceCapabilities {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const defaults = getDefaultDeviceCapabilities();
 
-    // Test WebP support
-    const supportsWebP = ctx?.canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    let supportsWebP = defaults.supportsWebP;
+    let supportsAVIF = defaults.supportsAVIF;
 
-    // Test AVIF support
-    const supportsAVIF = ctx?.canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
+    if (hasDocument()) {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Test WebP support
+        supportsWebP = ctx?.canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+
+        // Test AVIF support
+        supportsAVIF = ctx?.canvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
+      } catch {
+        supportsWebP = defaults.supportsWebP;
+        supportsAVIF = defaults.supportsAVIF;
+      }
+    }
 
     // Get pixel ratio
-    const pixelRatio = window.devicePixelRatio || 1;
+    const pixelRatio = hasWindow() ? window.devicePixelRatio || defaults.pixelRatio : defaults.pixelRatio;
 
     // Get connection information (Network Information API)
     interface NetworkInformation {
       effectiveType?: string;
       saveData?: boolean;
     }
-    const navigatorWithConnection = navigator as Navigator & {
-      connection?: NetworkInformation;
-      mozConnection?: NetworkInformation;
-      webkitConnection?: NetworkInformation;
-      deviceMemory?: number;
-    };
-    const connection = navigatorWithConnection.connection || navigatorWithConnection.mozConnection || navigatorWithConnection.webkitConnection;
-    const connectionType = (connection?.effectiveType || 'unknown') as DeviceCapabilities['connectionType'];
-    const saveData = connection?.saveData || false;
+    const navigatorWithConnection = hasNavigator()
+      ? navigator as Navigator & {
+        connection?: NetworkInformation;
+        mozConnection?: NetworkInformation;
+        webkitConnection?: NetworkInformation;
+        deviceMemory?: number;
+      }
+      : null;
+    const connection = navigatorWithConnection?.connection || navigatorWithConnection?.mozConnection || navigatorWithConnection?.webkitConnection;
+    const connectionType = (connection?.effectiveType || defaults.connectionType) as DeviceCapabilities['connectionType'];
+    const saveData = connection?.saveData || defaults.saveData;
 
     // Get hardware info
-    const hardwareConcurrency = navigator.hardwareConcurrency || 4;
-    const memory = navigatorWithConnection.deviceMemory || 4;
+    const hardwareConcurrency = navigatorWithConnection?.hardwareConcurrency || defaults.hardwareConcurrency;
+    const memory = navigatorWithConnection?.deviceMemory || defaults.memory;
 
     return {
       supportsWebP,
@@ -308,6 +369,10 @@ export class AssetOptimizer {
    * Preload critical assets with optimization
    */
   async preloadCriticalAssets(urls: string[]): Promise<void> {
+    if (!hasDocument()) {
+      return;
+    }
+
     const criticalUrls = urls.slice(0, 5); // Limit to 5 critical assets
 
     const preloadPromises = criticalUrls.map(async (url) => {
@@ -445,7 +510,7 @@ export class LazyImageLoader {
    * Initialize intersection observer for lazy loading
    */
   private initializeIntersectionObserver(): void {
-    if (!('IntersectionObserver' in window)) {
+    if (!hasWindow() || typeof IntersectionObserver === 'undefined') {
       return; // Fallback for older browsers
     }
 
@@ -498,6 +563,15 @@ export class LazyImageLoader {
    */
   disconnect(): void {
     this.observer?.disconnect();
+    this.observer = null;
+    this.loadedImages.clear();
+  }
+
+  /**
+   * Alias for consumers that use destroy-style lifecycle cleanup.
+   */
+  destroy(): void {
+    this.disconnect();
   }
 }
 
@@ -532,6 +606,10 @@ export async function loadOptimizedImage(
 ): Promise<HTMLImageElement> {
   const optimizer = getAssetOptimizer();
   const optimization = await optimizer.optimizeImageUrl(url, options);
+
+  if (typeof Image === 'undefined') {
+    throw new Error('Image API is unavailable in this runtime');
+  }
 
   return new Promise((resolve, reject) => {
     const img = new Image();

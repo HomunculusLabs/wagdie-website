@@ -12,6 +12,22 @@
 // Debug flag - set to true for development logging
 const DEBUG_ASSET_CACHE = process.env.NODE_ENV === 'development' && process.env.DEBUG_ASSET_CACHE === 'true';
 
+function hasWindow(): boolean {
+  return typeof window !== 'undefined';
+}
+
+function getLocalStorage(): Storage | null {
+  if (!hasWindow()) {
+    return null;
+  }
+
+  try {
+    return typeof window.localStorage === 'undefined' ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
@@ -62,7 +78,7 @@ export class AssetCache {
   private cache: Map<string, CacheEntry> = new Map();
   private config: CacheConfig;
   private stats: CachePerformanceMetrics;
-  private cleanupTimer: NodeJS.Timeout | null = null;
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
   private memoryMonitor: MemoryMonitor | null = null;
 
   constructor(config: Partial<CacheConfig> = {}) {
@@ -94,11 +110,13 @@ export class AssetCache {
    * Initialize cache and start background processes
    */
   private initializeCache(): void {
-    // Start cleanup timer
-    this.startCleanupTimer();
+    // Start cleanup timer only where timers are expected to live beyond a request.
+    if (hasWindow()) {
+      this.startCleanupTimer();
+    }
 
     // Initialize memory monitoring
-    if (typeof window !== 'undefined') {
+    if (hasWindow()) {
       this.memoryMonitor = new MemoryMonitor();
       this.memoryMonitor.onPressure = () => this.handleMemoryPressure();
     }
@@ -227,7 +245,7 @@ export class AssetCache {
       missRate: this.stats.misses / totalRequests,
       evictionCount: this.stats.evictions,
       compressionSavings: this.stats.compressionRatio * totalSize,
-      averageLoadTime: this.stats.totalLoadTime / this.stats.hits,
+      averageLoadTime: this.stats.hits > 0 ? this.stats.totalLoadTime / this.stats.hits : 0,
       memoryUsage: this.memoryMonitor?.getCurrentUsage() || 0,
     };
   }
@@ -384,7 +402,7 @@ export class AssetCache {
     if (typeof data === 'string') {
       return data.length * 2; // Unicode characters
     }
-    if (data instanceof Blob) {
+    if (typeof Blob !== 'undefined' && data instanceof Blob) {
       return data.size;
     }
     if (data && typeof data === 'object') {
@@ -463,6 +481,9 @@ export class AssetCache {
    * Persist cache entry to localStorage
    */
   private persistEntry(key: string, entry: CacheEntry): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
     try {
       const serialized = JSON.stringify({
         data: entry.data,
@@ -473,7 +494,7 @@ export class AssetCache {
         etag: entry.etag,
       });
 
-      localStorage.setItem(`asset_cache_${key}`, serialized);
+      storage.setItem(`asset_cache_${key}`, serialized);
     } catch (error) {
       console.warn(`[AssetCache] Failed to persist entry: ${key}`, error);
     }
@@ -483,13 +504,16 @@ export class AssetCache {
    * Load persisted cache entries
    */
   private loadPersistedCache(): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
     try {
-      const keys = Object.keys(localStorage);
+      const keys = Object.keys(storage);
       const cacheKeys = keys.filter(key => key.startsWith('asset_cache_'));
 
       for (const storageKey of cacheKeys) {
         const key = storageKey.replace('asset_cache_', '');
-        const serialized = localStorage.getItem(storageKey);
+        const serialized = storage.getItem(storageKey);
 
         if (serialized) {
           const entry = JSON.parse(serialized);
@@ -503,7 +527,7 @@ export class AssetCache {
               size: this.estimateSize(entry.data),
             });
           } else {
-            localStorage.removeItem(storageKey);
+            storage.removeItem(storageKey);
           }
         }
       }
@@ -518,8 +542,11 @@ export class AssetCache {
    * Remove persisted entry
    */
   private removePersistedEntry(key: string): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
     try {
-      localStorage.removeItem(`asset_cache_${key}`);
+      storage.removeItem(`asset_cache_${key}`);
     } catch (error) {
       console.warn(`[AssetCache] Failed to remove persisted entry: ${key}`, error);
     }
@@ -529,12 +556,15 @@ export class AssetCache {
    * Clear persistent cache
    */
   private clearPersistedCache(): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
     try {
-      const keys = Object.keys(localStorage);
+      const keys = Object.keys(storage);
       const cacheKeys = keys.filter(key => key.startsWith('asset_cache_'));
 
       for (const key of cacheKeys) {
-        localStorage.removeItem(key);
+        storage.removeItem(key);
       }
     } catch (error) {
       console.warn('[AssetCache] Failed to clear persistent cache:', error);
@@ -550,6 +580,9 @@ export class AssetCache {
       this.cleanupTimer = null;
     }
 
+    this.memoryMonitor?.destroy();
+    this.memoryMonitor = null;
+
     this.clear();
   }
 }
@@ -559,11 +592,11 @@ export class AssetCache {
  */
 class MemoryMonitor {
   public onPressure?: () => void;
-  private checkInterval: NodeJS.Timeout | null = null;
+  private checkInterval: ReturnType<typeof setInterval> | null = null;
   private pressureThreshold = 0.8; // 80% memory usage
 
   constructor() {
-    if (typeof window !== 'undefined' && 'memory' in performance) {
+    if (hasWindow() && typeof performance !== 'undefined' && 'memory' in performance) {
       this.startMonitoring();
     }
   }
@@ -578,7 +611,7 @@ class MemoryMonitor {
   }
 
   getCurrentUsage(): number {
-    if (typeof window !== 'undefined' && 'memory' in performance) {
+    if (hasWindow() && typeof performance !== 'undefined' && 'memory' in performance) {
       interface PerformanceWithMemory {
         memory?: {
           usedJSHeapSize: number;

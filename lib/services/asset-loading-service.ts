@@ -31,8 +31,10 @@ const DEBUG_ASSET_LOADING = false;
 export class AssetLoadingService implements IAssetLoadingService {
   private loadingStates: Map<string, AssetLoadingState> = new Map();
   private loadingQueue: string[] = [];
-  private retryTimers: Map<string, NodeJS.Timeout> = new Map();
+  private retryTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private delayTimers: Map<ReturnType<typeof setTimeout>, () => void> = new Map();
   private performanceMetrics: Map<string, AssetPerformanceMetrics> = new Map();
+  private lifecycleVersion = 0;
   private completedCritical: boolean = false;
   private errorCount: number = 0;
   private assetCache = getAssetCache();
@@ -65,7 +67,15 @@ export class AssetLoadingService implements IAssetLoadingService {
     // Stage 1: Check if asset is already being loaded or completed
     // This prevents duplicate network requests for the same asset
     const existingState = this.loadingStates.get(assetId);
-    if (existingState && (existingState.status === 'loaded' || existingState.status === 'loading')) {
+    if (
+      existingState &&
+      (
+        existingState.status === 'loaded' ||
+        existingState.status === 'loading' ||
+        existingState.status === 'retrying' ||
+        this.retryTimers.has(assetId)
+      )
+    ) {
       return existingState;
     }
 
@@ -99,11 +109,28 @@ export class AssetLoadingService implements IAssetLoadingService {
       usedFallback: false
     };
 
+    if (typeof Image === 'undefined') {
+      const unavailableState = this.buildCancelledState(
+        assetId,
+        loadingState.loadStartTime,
+        'Image API is unavailable in this runtime'
+      );
+      this.loadingStates.set(assetId, unavailableState);
+      this.errorCount++;
+      this.updatePerformanceMetrics(assetId, unavailableState.loadTime ?? 0, false);
+      return unavailableState;
+    }
+
+    const lifecycleVersion = this.lifecycleVersion;
     this.loadingStates.set(assetId, loadingState);
 
     try {
       // Stage 4: Attempt network load with optimization
-      const result = await this.attemptAssetLoad(assetId);
+      const result = await this.attemptAssetLoad(assetId, lifecycleVersion);
+
+      if (result.cancelled) {
+        return this.buildCancelledState(assetId, loadingState.loadStartTime);
+      }
 
       // Cache the successfully loaded asset with priority-based TTL
       // Critical assets get longer cache time (2 hours vs 30 minutes)
@@ -119,13 +146,20 @@ export class AssetLoadingService implements IAssetLoadingService {
       );
 
       // Ensure consumers always have a URL on success (even if they never consult the cache)
-      const loadedState = this.loadingStates.get(assetId)!;
+      const loadedState = this.loadingStates.get(assetId);
+      if (!loadedState) {
+        return this.buildCancelledState(assetId, loadingState.loadStartTime);
+      }
       loadedState.url = result.url;
 
       return loadedState;
     } catch (error) {
+      if (lifecycleVersion !== this.lifecycleVersion || !this.loadingStates.has(assetId)) {
+        return this.buildCancelledState(assetId, loadingState.loadStartTime);
+      }
+
       // Error handling with progressive fallbacks
-      return this.handleLoadError(assetId, error as Error);
+      return this.handleLoadError(assetId, error as Error, lifecycleVersion);
     }
   }
 
@@ -174,9 +208,11 @@ export class AssetLoadingService implements IAssetLoadingService {
     const nonCriticalAssets = assetIds.filter(id => !this.criticalAssets.has(id));
 
     // Add to loading queue with lower priority
+    const lifecycleVersion = this.lifecycleVersion;
     const loadPromises = nonCriticalAssets.map(async (assetId) => {
       // Add delay to prioritize critical assets
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.delay(100);
+      if (lifecycleVersion !== this.lifecycleVersion) return undefined;
       return this.loadAsset(assetId);
     });
 
@@ -229,14 +265,33 @@ export class AssetLoadingService implements IAssetLoadingService {
       this.retryTimers.delete(assetId);
     }
 
+    if (typeof Image === 'undefined') {
+      return this.buildCancelledState(
+        assetId,
+        currentState.loadStartTime,
+        'Image API is unavailable in this runtime'
+      );
+    }
+
     currentState.status = 'retrying';
     currentState.retryCount++;
 
+    const lifecycleVersion = this.lifecycleVersion;
+
     try {
-      await this.attemptAssetLoad(assetId);
-      return this.loadingStates.get(assetId)!;
+      const result = await this.attemptAssetLoad(assetId, lifecycleVersion);
+      const latestState = this.loadingStates.get(assetId);
+      if (result.cancelled || !latestState) {
+        return this.buildCancelledState(assetId, currentState.loadStartTime);
+      }
+
+      return latestState;
     } catch (error) {
-      return this.handleLoadError(assetId, error as Error);
+      if (lifecycleVersion !== this.lifecycleVersion || !this.loadingStates.has(assetId)) {
+        return this.buildCancelledState(assetId, currentState.loadStartTime);
+      }
+
+      return this.handleLoadError(assetId, error as Error, lifecycleVersion);
     }
   }
 
@@ -297,7 +352,10 @@ export class AssetLoadingService implements IAssetLoadingService {
   /**
    * Attempt to load an asset with timeout
    */
-  private async attemptAssetLoad(assetId: string): Promise<{ url: string; size?: number }> {
+  private async attemptAssetLoad(
+    assetId: string,
+    lifecycleVersion: number
+  ): Promise<{ url: string; size?: number; cancelled?: boolean }> {
     const startTime = Date.now();
     const iconUrl = this.getAssetUrl(assetId);
 
@@ -305,9 +363,16 @@ export class AssetLoadingService implements IAssetLoadingService {
 
     const result = { url: iconUrl, size: 0 };
 
+    if (lifecycleVersion !== this.lifecycleVersion) {
+      return { ...result, cancelled: true };
+    }
+
     // Update loading state on success
     const loadTime = Date.now() - startTime;
-    const loadingState = this.loadingStates.get(assetId)!;
+    const loadingState = this.loadingStates.get(assetId);
+    if (!loadingState) {
+      return { ...result, cancelled: true };
+    }
     loadingState.status = 'loaded';
     loadingState.loadEndTime = Date.now();
     loadingState.loadTime = loadTime;
@@ -333,8 +398,11 @@ export class AssetLoadingService implements IAssetLoadingService {
    * @param error - The error object from the failed load attempt
    * @returns AssetLoadingState - Updated loading state with error information
    */
-  private handleLoadError(assetId: string, error: Error): AssetLoadingState {
-    const loadingState = this.loadingStates.get(assetId)!;
+  private handleLoadError(assetId: string, error: Error, lifecycleVersion: number): AssetLoadingState {
+    const loadingState = this.loadingStates.get(assetId);
+    if (!loadingState || lifecycleVersion !== this.lifecycleVersion) {
+      return this.buildCancelledState(assetId);
+    }
     loadingState.lastError = error.message;
     loadingState.loadEndTime = Date.now();
 
@@ -364,20 +432,43 @@ export class AssetLoadingService implements IAssetLoadingService {
     // This prevents overwhelming the server with rapid retries
     if (assetError.canRetry && strategy.retryDelay > 0) {
       const timer = setTimeout(() => {
-        this.retryAsset(assetId);
+        this.retryTimers.delete(assetId);
+        void this.retryAsset(assetId);
       }, strategy.retryDelay);
       this.retryTimers.set(assetId, timer);
+      loadingState.status = 'retrying';
+      return loadingState;
     }
 
     // Mark as permanently failed if no more retries are available
     // This is the final failure state for the asset
+    loadingState.status = 'failed';
+
     if (!assetError.canRetry) {
-      loadingState.status = 'failed';
       this.errorCount++; // Track total errors for monitoring
       this.updatePerformanceMetrics(assetId, Date.now() - loadingState.loadStartTime, false);
     }
 
     return loadingState;
+  }
+
+  private buildCancelledState(
+    assetId: string,
+    loadStartTime: number = Date.now(),
+    lastError: string = 'Asset load cancelled'
+  ): AssetLoadingState {
+    const loadEndTime = Date.now();
+
+    return {
+      assetId,
+      status: 'failed',
+      loadStartTime,
+      loadEndTime,
+      loadTime: loadEndTime - loadStartTime,
+      retryCount: 0,
+      lastError,
+      usedFallback: false,
+    };
   }
 
   /**
@@ -390,16 +481,25 @@ export class AssetLoadingService implements IAssetLoadingService {
       ? getFallbackUrl(assetId)
       : getFallbackUrl('location');
 
+    loadingState.usedFallback = true;
+    loadingState.url = fallbackUrl;
+
+    if (typeof Image === 'undefined') {
+      loadingState.status = 'fallback';
+      loadingState.loadEndTime = Date.now();
+      loadingState.loadTime = loadingState.loadEndTime - loadingState.loadStartTime;
+      return loadingState;
+    }
+
     // Try to load fallback asset
     const img = new Image();
     img.onload = () => {
       loadingState.status = 'fallback';
-      loadingState.usedFallback = true;
       loadingState.loadEndTime = Date.now();
+      loadingState.loadTime = loadingState.loadEndTime - loadingState.loadStartTime;
     };
     img.onerror = () => {
       loadingState.status = 'failed';
-      loadingState.usedFallback = true;
       this.errorCount++;
     };
     img.src = fallbackUrl;
@@ -438,6 +538,17 @@ export class AssetLoadingService implements IAssetLoadingService {
   private isValidAssetId(assetId: string): assetId is import('@/types/assets').IconType {
     // Asset ID must be a non-empty string
     return isAllowedAssetId(assetId);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        this.delayTimers.delete(timer);
+        resolve();
+      }, ms);
+
+      this.delayTimers.set(timer, resolve);
+    });
   }
 
   /**
@@ -484,13 +595,29 @@ export class AssetLoadingService implements IAssetLoadingService {
    * Clear all loading states and caches
    */
   clearCache(): void {
+    this.lifecycleVersion++;
     this.loadingStates.clear();
     this.loadingQueue = [];
     this.retryTimers.forEach(timer => clearTimeout(timer));
     this.retryTimers.clear();
+    this.delayTimers.forEach((resolve, timer) => {
+      clearTimeout(timer);
+      resolve();
+    });
+    this.delayTimers.clear();
     this.performanceMetrics.clear();
+    this.criticalAssets.clear();
+    this.assetCache.clear();
+    this.assetOptimizer.clearCache();
     this.completedCritical = false;
     this.errorCount = 0;
+  }
+
+  /**
+   * Destroy service-owned lifecycle resources.
+   */
+  destroy(): void {
+    this.clearCache();
   }
 }
 
