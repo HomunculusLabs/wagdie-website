@@ -48,4 +48,11 @@ scripts/migration/.env
 storybook-static/
 .vite/
 volumes/db/data/
+
+# local Wiki.js Docker stack data
+.env.wiki
+volumes/wiki/db/
+volumes/wiki/files/
+volumes/wiki/import/
+
 scripts/indexer/state.json

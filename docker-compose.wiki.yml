@@ -1,0 +1,48 @@
+name: wagdie-wiki
+
+services:
+  wiki-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${WIKI_DB_NAME:-wikijs}
+      POSTGRES_USER: ${WIKI_DB_USER:-wikijs}
+      POSTGRES_PASSWORD: ${WIKI_DB_PASSWORD:?Set WIKI_DB_PASSWORD in .env.wiki}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:${WIKI_DB_HOST_PORT:-5452}:5432"
+    volumes:
+      - ./volumes/wiki/db:/var/lib/postgresql/data
+      - ./volumes/wiki/import:/wiki-import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - wiki
+
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    restart: unless-stopped
+    depends_on:
+      wiki-db:
+        condition: service_healthy
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: wiki-db
+      DB_PORT: 5432
+      DB_USER: ${WIKI_DB_USER:-wikijs}
+      DB_PASS: ${WIKI_DB_PASSWORD:?Set WIKI_DB_PASSWORD in .env.wiki}
+      DB_NAME: ${WIKI_DB_NAME:-wikijs}
+      DB_SSL: "false"
+    ports:
+      - "127.0.0.1:${WIKI_HTTP_PORT:-3020}:3000"
+    volumes:
+      - ./volumes/wiki/files:/wiki/data
+    networks:
+      - wiki
+
+networks:
+  wiki:
+    driver: bridge

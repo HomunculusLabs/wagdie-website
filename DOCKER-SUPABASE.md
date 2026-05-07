@@ -2,6 +2,8 @@
 
 This project runs a local Supabase instance in Docker on custom ports to avoid conflicts with other Supabase instances.
 
+> Looking for the restored WAGDIE Wiki.js instance? Use the isolated `docker-compose.wiki.yml` stack documented in [DOCKER-WIKI.md](./DOCKER-WIKI.md). It uses separate ports, environment, and data volumes from Supabase.
+
 ## Port Mappings
 
 The following ports are used (different from default to avoid conflicts):
