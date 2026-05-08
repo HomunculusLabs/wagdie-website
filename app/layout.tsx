@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import '@/lib/utils/server-browser-globals'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/layout/Header'

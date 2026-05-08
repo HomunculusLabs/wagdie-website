@@ -34,7 +34,7 @@ This project represents a complete architectural simplification of the original 
 
 ### Prerequisites
 
-- **Node 20.x** — *not* 22+. Pinned in `.nvmrc`; enforced via `engines` in `package.json`. Node 22's built-in `localStorage` global breaks Next.js 15 SSR.
+- **Node 23.3.0**. Pinned in `.nvmrc` and enforced via `engines` in `package.json` so local, CI, and deploy runtimes stay consistent.
 - Bun (preferred) or npm.
 - A wallet provider (MetaMask, Rainbow, etc.).
 - A Supabase account — *only* if you need DB writes locally. For UI work, see Quick Start below.
@@ -42,7 +42,7 @@ This project represents a complete architectural simplification of the original 
 ### Quick Start (UI work, no database)
 
 ```bash
-nvm use                                # respects .nvmrc → Node 20
+nvm use                                # respects .nvmrc → Node 23.3.0
 bun install                            # or: npm install
 cp .env.example .env.local
 # In .env.local, set:

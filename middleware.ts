@@ -40,9 +40,20 @@ async function proxyApiRequest(request: NextRequest) {
 
   // Defense-in-depth: if upstream still set an encoding header, drop it along
   // with content-length (which would no longer match the decoded body).
+  const upstreamHeaders = upstream.headers as Headers & { getSetCookie?: () => string[] }
+  const upstreamSetCookies = typeof upstreamHeaders.getSetCookie === 'function'
+    ? upstreamHeaders.getSetCookie()
+    : []
   const responseHeaders = new Headers(upstream.headers)
   responseHeaders.delete('content-encoding')
   responseHeaders.delete('content-length')
+
+  // Preserve multiple Set-Cookie headers when rebuilding the response. Fetch
+  // Headers can otherwise collapse them into a single comma-joined value.
+  if (upstreamSetCookies.length > 0) {
+    responseHeaders.delete('set-cookie')
+    upstreamSetCookies.forEach((cookie) => responseHeaders.append('set-cookie', cookie))
+  }
 
   return new Response(upstream.body, {
     status: upstream.status,

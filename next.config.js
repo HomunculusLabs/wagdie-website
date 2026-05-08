@@ -1,3 +1,5 @@
+require('./lib/utils/server-browser-globals')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Disable React Strict Mode to prevent double-invocation of effects that can

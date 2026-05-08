@@ -15,10 +15,10 @@ This guide walks you through setting up the WAGDIE Simplified project from scrat
 
 ## Prerequisites
 
-- **Node 20.x** (NOT 22+). Node 22 introduced a built-in `localStorage` global that breaks Next.js 15 SSR — you'll see `TypeError: localStorage.getItem is not a function` and 500s on every page render. Enforced via `engines` in `package.json` and pinned in `.nvmrc`.
+- **Node 23.3.0**. Enforced via `engines` in `package.json` and pinned in `.nvmrc` so every contributor runs the same runtime.
   ```bash
   nvm use            # picks up .nvmrc
-  # or: nvm install 20 && nvm use 20
+  # or: nvm install 23.3.0 && nvm use 23.3.0
   ```
 - **Bun** (preferred per `AGENTS.md`) or **npm**.
 - **Wallet** (MetaMask, Rainbow, etc.) for SIWE auth and ownership-gated UI.
@@ -28,7 +28,7 @@ This guide walks you through setting up the WAGDIE Simplified project from scrat
 For UI-only changes (component fixes, styling, page layout), you don't need to provision your own Supabase project. Point `/api/*` at the live deployment and run only the local Next.js process:
 
 ```bash
-nvm use                    # Node 20
+nvm use                    # Node 23.3.0
 bun install                # or: npm install
 cp .env.example .env.local
 ```
@@ -238,15 +238,15 @@ const transformedCharacters = firestoreCharacters.map(char => ({
 
 ## Troubleshooting
 
-### Issue: `TypeError: localStorage.getItem is not a function` (500 on every page)
+### Issue: wrong Node version
 
-**Cause**: You're on Node 22 or newer. Node 22+ exposes a built-in `localStorage` global on the server, which Next.js 15's "is this the browser?" detection mistakes for a real browser environment, then calls `getItem` on a stub.
+**Cause**: The project is locked to Node 23.3.0. Other Node versions may behave differently during SSR, dependency install, or local development.
 
-**Solution**: Use Node 20.x.
+**Solution**: Use the pinned version.
 ```bash
-nvm install 20 && nvm use 20
+nvm install 23.3.0 && nvm use 23.3.0
 # verify
-node -v   # should print v20.x
+node -v   # should print v23.3.0
 ```
 The repo pins this in `.nvmrc` and `engines` in `package.json`.
 
