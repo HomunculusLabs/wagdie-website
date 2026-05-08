@@ -4,11 +4,53 @@ This guide walks you through setting up the WAGDIE Simplified project from scrat
 
 ## Table of Contents
 
-1. [Supabase Setup](#supabase-setup)
-2. [Local Development Setup](#local-development-setup)
-3. [Vercel Deployment](#vercel-deployment)
-4. [Data Migration](#data-migration)
-5. [Troubleshooting](#troubleshooting)
+1. [Prerequisites](#prerequisites)
+2. [Quick Start (UI work, no database)](#quick-start-ui-work-no-database)
+3. [Supabase Setup](#supabase-setup)
+4. [Local Development Setup](#local-development-setup)
+5. [Vercel Deployment](#vercel-deployment)
+6. [Data Migration](#data-migration)
+7. [Troubleshooting](#troubleshooting)
+8. [Roadmap](#roadmap)
+
+## Prerequisites
+
+- **Node 20.x** (NOT 22+). Node 22 introduced a built-in `localStorage` global that breaks Next.js 15 SSR — you'll see `TypeError: localStorage.getItem is not a function` and 500s on every page render. Enforced via `engines` in `package.json` and pinned in `.nvmrc`.
+  ```bash
+  nvm use            # picks up .nvmrc
+  # or: nvm install 20 && nvm use 20
+  ```
+- **Bun** (preferred per `AGENTS.md`) or **npm**.
+- **Wallet** (MetaMask, Rainbow, etc.) for SIWE auth and ownership-gated UI.
+
+## Quick Start (UI work, no database)
+
+For UI-only changes (component fixes, styling, page layout), you don't need to provision your own Supabase project. Point `/api/*` at the live deployment and run only the local Next.js process:
+
+```bash
+nvm use                    # Node 20
+bun install                # or: npm install
+cp .env.example .env.local
+```
+
+Then edit `.env.local` and add **only**:
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+WAGDIE_API_BASE_URL=https://fateofwagdie.com
+SESSION_SECRET=local_dev_session_secret_at_least_32_characters_long_xxxxx
+NEXT_PUBLIC_CHAIN_ID=1
+```
+
+Start the dev server:
+
+```bash
+bun run dev               # or: npm run dev
+```
+
+Open http://localhost:3000. The proxy in `middleware.ts` forwards every `/api/*` request to the deployed instance, so character pages, the map, etc. load real data without any Supabase keys, RPC URLs, or migrations on your machine. Connect a wallet to exercise owner-gated UI.
+
+> **What this does NOT cover:** writes that bypass `/api/*` (direct DB clients), local migration testing, or anything that needs a private signing key. Use the full setup below for those.
 
 ## Supabase Setup
 
@@ -196,6 +238,24 @@ const transformedCharacters = firestoreCharacters.map(char => ({
 
 ## Troubleshooting
 
+### Issue: `TypeError: localStorage.getItem is not a function` (500 on every page)
+
+**Cause**: You're on Node 22 or newer. Node 22+ exposes a built-in `localStorage` global on the server, which Next.js 15's "is this the browser?" detection mistakes for a real browser environment, then calls `getItem` on a stub.
+
+**Solution**: Use Node 20.x.
+```bash
+nvm install 20 && nvm use 20
+# verify
+node -v   # should print v20.x
+```
+The repo pins this in `.nvmrc` and `engines` in `package.json`.
+
+### Issue: API proxy returns garbled JSON (`Unexpected token '(', "(X{"...`)
+
+**Cause**: When using `WAGDIE_API_BASE_URL` to proxy `/api/*` to the live deployment, the upstream returns a gzip-encoded body. If `Accept-Encoding` isn't normalized in `middleware.ts`, the browser ends up trying to decompress an already-decompressed (or mis-flagged) body.
+
+**Solution**: Already handled in `middleware.ts` — it sets `Accept-Encoding: identity` upstream and strips `Content-Encoding`/`Content-Length` from the response. If you see this again, verify those headers are still being managed in the proxy block.
+
 ### Issue: "Missing Supabase environment variables"
 
 **Solution**: Make sure you've created `.env.local` with the correct variables:
@@ -257,3 +317,40 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key
 - [SIWE Examples](https://docs.login.xyz/integrations/nextjs)
 - [Wagmi Documentation](https://wagmi.sh)
 - [Vercel Next.js Deployment](https://vercel.com/docs/frameworks/nextjs)
+
+## Roadmap
+
+### Local mainnet fork via Foundry/anvil (planned)
+
+Today, exercising on-chain actions (sear, infect, cure, stake) in local dev means signing real transactions on Ethereum mainnet — which costs gas and has irreversible side effects. We want to fork mainnet locally so the full transaction lifecycle works without spending ETH or polluting prod state.
+
+Sketch:
+
+1. **Spin up a fork.**
+   ```bash
+   anvil --fork-url $MAINNET_RPC_URL --chain-id 31337
+   ```
+   This produces a local node at `http://127.0.0.1:8545` that mirrors mainnet state at the fork block. Pre-funded test accounts are printed on startup.
+2. **Point the app at the fork.** Set in `.env.local`:
+   ```env
+   NEXT_PUBLIC_CHAIN_ID=31337
+   NEXT_PUBLIC_MAINNET_RPC_URL=http://127.0.0.1:8545
+   ```
+   `lib/wagmi.ts` already reads from `NEXT_PUBLIC_MAINNET_RPC_URL`. We'll likely need a `localhost` chain entry in `lib/contracts/chains.ts` and a wallet that supports custom RPCs (MetaMask "Add network").
+3. **Impersonate the wallet you want to test as.**
+   ```bash
+   cast rpc anvil_impersonateAccount 0xYourAddress
+   cast rpc anvil_setBalance 0xYourAddress 0x56BC75E2D63100000   # 100 ETH
+   ```
+   Then sign and send via the local node.
+4. **Snapshot/restore for repeatability.**
+   ```bash
+   cast rpc evm_snapshot      # returns id
+   cast rpc evm_revert <id>
+   ```
+   Useful for test fixtures.
+
+Open questions to resolve before implementing:
+- How does the deployed `/api/*` (which we proxy to in dev) reconcile with chain state on a local fork? It won't — actions taken on the fork will not be reflected in prod's Supabase. We may need a "local API mode" that talks to a local Supabase or skips DB writes for fork-only sessions.
+- Indexer behavior: the indexer (`021-indexer-fixes`) reads chain events. On a fork it'll see no events past the fork block. Probably fine for one-off action testing, problematic for soak tests.
+- Do we want this wired into Jest as well (Foundry's anvil + viem testClient)? Probably yes — would let us add integration tests for `useStaking`, `useSearing`, etc. without mocks.

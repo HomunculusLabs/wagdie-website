@@ -34,56 +34,27 @@ This project represents a complete architectural simplification of the original 
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- A Supabase account (free tier works)
-- A wallet provider (MetaMask, Rainbow, etc.)
+- **Node 20.x** — *not* 22+. Pinned in `.nvmrc`; enforced via `engines` in `package.json`. Node 22's built-in `localStorage` global breaks Next.js 15 SSR.
+- Bun (preferred) or npm.
+- A wallet provider (MetaMask, Rainbow, etc.).
+- A Supabase account — *only* if you need DB writes locally. For UI work, see Quick Start below.
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-org/wagdie-simplified.git
-cd wagdie-simplified
-```
-
-### 2. Install Dependencies
+### Quick Start (UI work, no database)
 
 ```bash
-npm install
-```
-
-### 3. Set Up Supabase
-
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to Project Settings > API
-3. Copy your project URL and anon key
-4. In the SQL Editor, run the migration file:
-   ```bash
-   # Copy contents of supabase/migrations/20250101000000_initial_schema.sql
-   # and run it in the Supabase SQL Editor
-   ```
-
-### 4. Configure Environment Variables
-
-Copy the example environment file:
-
-```bash
+nvm use                                # respects .nvmrc → Node 20
+bun install                            # or: npm install
 cp .env.example .env.local
+# In .env.local, set:
+#   WAGDIE_API_BASE_URL=https://fateofwagdie.com
+#   SESSION_SECRET=any_string_at_least_32_characters_long_xxxxx
+#   NEXT_PUBLIC_CHAIN_ID=1
+bun run dev                            # or: npm run dev
 ```
 
-Edit `.env.local` and add your Supabase credentials:
+`middleware.ts` proxies all `/api/*` calls to the deployed instance, so character pages, the map, etc. load real data without provisioning Supabase. Open http://localhost:3000.
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### 5. Run the Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+For full local Supabase setup (writes, migrations, isolated dev data), see [SETUP.md](./SETUP.md).
 
 ## Project Structure
 

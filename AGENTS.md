@@ -12,6 +12,8 @@ This is a Next.js application for the WAGDIE project with Phaser game integratio
 
 ## Build, Test, and Development Commands
 
+> **Before you start:** read the Quick Start in `SETUP.md`. **Use Node 20** — Node 22+ breaks SSR (built-in `localStorage` global). For UI-only work, set `WAGDIE_API_BASE_URL=https://fateofwagdie.com` in `.env.local` and skip Supabase entirely; `middleware.ts` proxies `/api/*` to the deployed instance.
+
 ```bash
 # Install dependencies
 bun install
