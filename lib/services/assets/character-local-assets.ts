@@ -42,6 +42,7 @@ const DYNAMIC_METADATA_KEYS = [
 const TRAIT_TYPE_BY_FILTER_KEY = {
   origin: 'Body',
   alignment: 'Alignment',
+  the17: 'The 17',
   armor: 'Armor',
   back: 'Back',
   mask: 'Mask',
@@ -63,6 +64,39 @@ function toAttributes(metadata: CharacterMetadata | null | undefined): MetadataA
   return metadata.attributes.filter((attribute) => isRecord(attribute)) as MetadataAttribute[]
 }
 
+const DYNAMIC_TRAIT_TYPES = new Set(['Seared Trait', 'Seared Token', 'Concord'])
+
+function mergeDynamicAttributes(
+  localAttributes: CharacterMetadata['attributes'],
+  remoteAttributes: CharacterMetadata['attributes']
+): CharacterMetadata['attributes'] {
+  if (!Array.isArray(remoteAttributes)) return localAttributes
+  if (!Array.isArray(localAttributes)) return remoteAttributes
+
+  const remoteDynamicByType = new Map<string, MetadataAttribute>()
+  for (const attribute of remoteAttributes) {
+    if (!isRecord(attribute) || typeof attribute.trait_type !== 'string') continue
+    if (!DYNAMIC_TRAIT_TYPES.has(attribute.trait_type)) continue
+    if (attribute.value == null || attribute.value === '' || attribute.value === 'None') continue
+    remoteDynamicByType.set(attribute.trait_type, attribute)
+  }
+
+  if (remoteDynamicByType.size === 0) return localAttributes
+
+  const merged = localAttributes.map((attribute) => {
+    if (!isRecord(attribute) || typeof attribute.trait_type !== 'string') return attribute
+    return remoteDynamicByType.get(attribute.trait_type) || attribute
+  })
+
+  for (const [traitType, attribute] of remoteDynamicByType) {
+    if (!merged.some((item) => isRecord(item) && item.trait_type === traitType)) {
+      merged.push(attribute)
+    }
+  }
+
+  return merged as CharacterMetadata['attributes']
+}
+
 function mergeMetadata(
   localMetadata: CharacterMetadata,
   remoteMetadata: CharacterMetadata | null | undefined
@@ -81,9 +115,10 @@ function mergeMetadata(
     }
   }
 
-  if (!Array.isArray(merged.attributes) && Array.isArray(remoteMetadata.attributes)) {
-    ;(merged as CharacterMetadata).attributes = remoteMetadata.attributes
-  }
+  ;(merged as CharacterMetadata).attributes = mergeDynamicAttributes(
+    merged.attributes,
+    remoteMetadata.attributes
+  )
 
   return merged
 }

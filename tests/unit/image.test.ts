@@ -1,5 +1,6 @@
 import {
   getCharacterImageCandidates,
+  getCharacterImageDisclosure,
   getCharacterImageUrl,
   getIpfsUrl,
 } from '@/lib/utils/image'
@@ -53,6 +54,37 @@ describe('getCharacterImageUrl', () => {
     expect(getCharacterImageUrl(0, {
       image: 'ipfs://bafkreiexample',
     }, 'https://example.com/db.png')).toBe('/images/placeholder-character.svg')
+  })
+
+  it('exposes seared image disclosure without changing infected primary precedence', () => {
+    const disclosure = getCharacterImageDisclosure(1, {
+      isSeared: true,
+      searImage: 'https://example.com/seared.png',
+      infectedImage: 'https://cdn.example.com/infected.png',
+    }, null, {
+      infectionStatus: 'infected',
+    })
+
+    expect(disclosure.primaryUrl).toBe('https://cdn.example.com/infected.png')
+    expect(disclosure.searedImageUrl).toBe('https://example.com/seared.png')
+    expect(disclosure.hasSearedImage).toBe(true)
+    expect(disclosure.isSearedPrimary).toBe(false)
+    expect(disclosure.isCurrentlyInfected).toBe(true)
+    expect(disclosure.isSearedImageHiddenByInfection).toBe(true)
+  })
+
+  it('marks seared image primary when no infected image masks it', () => {
+    const disclosure = getCharacterImageDisclosure(1, {
+      isSeared: true,
+      searing_materialization: {
+        seared_image_url: 'https://storage.googleapis.com/seared-wagdie-images/1/tx-test-log-1.png',
+      },
+    })
+
+    expect(disclosure.primaryUrl).toBe('https://storage.googleapis.com/seared-wagdie-images/1/tx-test-log-1.png')
+    expect(disclosure.searedImageUrl).toBe(disclosure.primaryUrl)
+    expect(disclosure.isSearedPrimary).toBe(true)
+    expect(disclosure.isSearedImageHiddenByInfection).toBe(false)
   })
 
   it('still normalizes IPFS URLs for collector and utility callers', () => {

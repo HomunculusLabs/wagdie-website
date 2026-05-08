@@ -5,12 +5,14 @@ interface SearingOffchainStatusProps {
   state: SearingSyncState;
   onRetry?: () => void | Promise<void>;
   isRetrying?: boolean;
+  isSearedImageHiddenByInfection?: boolean;
 }
 
 export function SearingOffchainStatus({
   state,
   onRetry,
   isRetrying = false,
+  isSearedImageHiddenByInfection = false,
 }: SearingOffchainStatusProps) {
   if (state.status === 'idle') return null;
 
@@ -34,7 +36,7 @@ export function SearingOffchainStatus({
     state.status === 'syncing'
       ? 'The transaction succeeded. Now materializing the seared image and character metadata.'
       : state.status === 'completed'
-        ? 'The seared character image and metadata were updated successfully.'
+        ? 'Seared artwork was generated and saved successfully.'
         : state.status === 'completed_without_image'
           ? 'The chain event is confirmed, but the materialized seared image URL was not returned. Retry off-chain sync to repair it.'
           : 'The transaction is not failed. You can retry the off-chain sync later.'
@@ -44,6 +46,21 @@ export function SearingOffchainStatus({
     <div className={`rounded-lg border p-4 ${styles[state.status]}`}>
       <p className="text-sm font-eskapade">{title}</p>
       <p className="mt-1 text-xs font-eskapade opacity-80">{message}</p>
+      {state.status === 'completed' && isSearedImageHiddenByInfection && (
+        <p className="mt-2 text-xs font-eskapade opacity-90">
+          Seared artwork was generated, but the infected image remains primary while this character is infected.
+        </p>
+      )}
+      {state.status === 'completed' && state.imageUrl && (
+        <a
+          href={state.imageUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-block text-xs font-eskapade underline underline-offset-4 hover:text-bone"
+        >
+          View seared image
+        </a>
+      )}
       {(state.status === 'pending' || state.status === 'completed_without_image' || state.status === 'failed') && onRetry && (
         <Button
           type="button"

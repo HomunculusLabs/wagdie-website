@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import type { Character } from '@/types/character'
-import { getCharacterImageCandidates, getCharacterImageFallback } from '@/lib/utils/image'
+import { getCharacterImageDisclosure, getCharacterImageFallback } from '@/lib/utils/image'
 
 interface SheetTitleAndAttributesProps {
   character: Character
@@ -15,20 +15,21 @@ interface SheetTitleAndAttributesProps {
 
 export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesProps) {
   const infectionStatus = character.infection_status ?? (character.infected ? 'infected' : 'healthy')
-  const imageCandidates = useMemo(
-    () => getCharacterImageCandidates(character.token_id, character.metadata, character.image_url, {
+  const imageDisclosure = useMemo(
+    () => getCharacterImageDisclosure(character.token_id, character.metadata, character.image_url, {
       infectionStatus,
       isInfected: character.infected,
     }),
     [character.token_id, character.metadata, character.image_url, character.infected, infectionStatus]
   )
-  const [imageUrl, setImageUrl] = useState(() => imageCandidates[0])
+  const imageCandidates = imageDisclosure.candidates
+  const [imageUrl, setImageUrl] = useState(() => imageDisclosure.primaryUrl)
 
   const name = character.metadata?.name || character.name || `character #${character.token_id}`
 
   useEffect(() => {
-    setImageUrl(imageCandidates[0] || getCharacterImageFallback())
-  }, [imageCandidates])
+    setImageUrl(imageDisclosure.primaryUrl)
+  }, [imageDisclosure.primaryUrl])
 
   const handleImageError = () => {
     setImageUrl((current) => {
@@ -103,6 +104,11 @@ export function SheetTitleAndAttributes({ character }: SheetTitleAndAttributesPr
               )}
               {character.infection_status === 'cured' && (
                 <Badge variant="default" className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge>
+              )}
+              {imageDisclosure.hasSearedImage && (
+                <span title={imageDisclosure.isSearedImageHiddenByInfection ? 'Seared art generated; infected art remains primary' : undefined}>
+                  <Badge variant="accent">Seared</Badge>
+                </span>
               )}
               {character.staking_status === 'staked' && (
                 <Badge variant="accent">Staked</Badge>

@@ -54,7 +54,7 @@ export function syncStateFromResponse(
       return {
         status: 'completed',
         imageUrl,
-        message: 'The seared character image and metadata were updated.',
+        message: 'Seared artwork was generated and saved.',
       }
     }
 

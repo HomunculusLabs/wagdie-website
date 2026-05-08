@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { jsonNoStore, jsonNoStoreError } from '@/lib/api/responses'
 import { getCharacter, updateCharacter } from '@/lib/services/character-service'
 import { getSession } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/admin'
@@ -55,19 +56,19 @@ export function canEditCharacter(
 export async function handleCharacterGet(tokenId: number): Promise<NextResponse> {
   try {
     if (isNaN(tokenId) || tokenId < 1 || tokenId > 6666) {
-      return NextResponse.json({ error: 'Invalid token ID' }, { status: 400 })
+      return jsonNoStoreError('Invalid token ID', 400)
     }
 
     const character = await getCharacter(tokenId)
 
     if (!character) {
-      return NextResponse.json({ error: 'Character not found' }, { status: 404 })
+      return jsonNoStoreError('Character not found', 404)
     }
 
-    return NextResponse.json(character)
+    return jsonNoStore(character)
   } catch (error) {
     console.error('[GET /api/characters] Error fetching character:', error)
-    return NextResponse.json({ error: 'Failed to fetch character' }, { status: 500 })
+    return jsonNoStoreError('Failed to fetch character', 500)
   }
 }
 
