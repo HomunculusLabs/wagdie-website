@@ -24,8 +24,12 @@ async function proxyApiRequest(request: NextRequest) {
   headers.delete('x-forwarded-proto')
   headers.set('x-forwarded-host', destination.host)
   headers.set('x-forwarded-proto', destination.protocol.replace(':', ''))
+  // Force uncompressed upstream response. Node's fetch transparently
+  // decompresses, but if we forward a `Content-Encoding: gzip` header back
+  // with an already-decompressed body the browser double-decodes → garbage.
+  headers.set('accept-encoding', 'identity')
 
-  return fetch(destination, {
+  const upstream = await fetch(destination, {
     method: request.method,
     headers,
     body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
@@ -33,6 +37,18 @@ async function proxyApiRequest(request: NextRequest) {
     // Required by fetch when forwarding a streamed request body in Node/undici.
     duplex: 'half',
   } as RequestInit & { duplex: 'half' })
+
+  // Defense-in-depth: if upstream still set an encoding header, drop it along
+  // with content-length (which would no longer match the decoded body).
+  const responseHeaders = new Headers(upstream.headers)
+  responseHeaders.delete('content-encoding')
+  responseHeaders.delete('content-length')
+
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: responseHeaders,
+  })
 }
 
 export async function middleware(request: NextRequest) {
