@@ -104,9 +104,19 @@ function normalizeImageUrlCandidates(url: string | undefined | null): string[] {
   return [trimmed]
 }
 
-type CharacterImageOptions = {
+export type CharacterImageOptions = {
   infectionStatus?: string | null
   isInfected?: boolean | null
+}
+
+export type CharacterImageDisclosure = {
+  primaryUrl: string
+  candidates: string[]
+  searedImageUrl: string | null
+  hasSearedImage: boolean
+  isSearedPrimary: boolean
+  isCurrentlyInfected: boolean
+  isSearedImageHiddenByInfection: boolean
 }
 
 type CharacterImageMetadata = {
@@ -226,6 +236,38 @@ export function getCharacterImageUrl(
   options?: CharacterImageOptions
 ): string {
   return getCharacterImageCandidates(tokenId, metadataOrImage, imageUrl, options)[0] || getCharacterImageFallback()
+}
+
+/**
+ * Get image display details for UIs that need to expose seared art even when
+ * current primary-image policy keeps infected art first.
+ */
+export function getCharacterImageDisclosure(
+  tokenId: number,
+  metadataOrImage?: CharacterImageMetadata | string | null,
+  imageUrl?: string | null,
+  options?: CharacterImageOptions
+): CharacterImageDisclosure {
+  const metadata = isMetadataObject(metadataOrImage) ? metadataOrImage : null
+  const candidates = getCharacterImageCandidates(tokenId, metadataOrImage, imageUrl, options)
+  const primaryUrl = candidates[0] || getCharacterImageFallback()
+  const searedImageUrl = getSearedMetadataImageCandidates(metadata, imageUrl)[0] || null
+  const currentlyInfected = isCurrentlyInfected(options)
+  const isSearedPrimary = Boolean(searedImageUrl && primaryUrl === searedImageUrl)
+
+  return {
+    primaryUrl,
+    candidates,
+    searedImageUrl,
+    hasSearedImage: Boolean(searedImageUrl),
+    isSearedPrimary,
+    isCurrentlyInfected: currentlyInfected,
+    isSearedImageHiddenByInfection: Boolean(
+      currentlyInfected &&
+      searedImageUrl &&
+      primaryUrl !== searedImageUrl
+    ),
+  }
 }
 
 /**

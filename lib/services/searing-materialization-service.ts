@@ -226,14 +226,26 @@ export class SearingMaterializationService {
         }
       }
 
+      if (event.materialization_status === 'completed' || claim.reason === 'completed') {
+        const hasCacheSafeImage = isVersionedSearedImageUrl(event, event.seared_image_url)
+        return {
+          eventId: event.id,
+          tokenId: event.token_id,
+          concordId: event.concord_id,
+          transactionHash: event.transaction_hash,
+          status: event.seared_image_url && hasCacheSafeImage ? 'completed' : 'completed_without_image',
+          ...(event.seared_image_url && hasCacheSafeImage ? { imageUrl: event.seared_image_url } : {}),
+          reason: event.seared_image_url && hasCacheSafeImage ? 'completed' : event.seared_image_url ? 'legacy_uncache_safe_image_url' : 'completed_without_image',
+        }
+      }
+
       return {
         eventId: event.id,
         tokenId: event.token_id,
         concordId: event.concord_id,
         transactionHash: event.transaction_hash,
-        status: claim.reason === 'completed' && !event.seared_image_url ? 'completed_without_image' : claim.reason === 'completed' ? 'completed' : 'skipped',
-        ...(event.seared_image_url ? { imageUrl: event.seared_image_url } : {}),
-        reason: claim.reason === 'completed' && !event.seared_image_url ? 'completed_without_image' : claim.reason,
+        status: 'skipped',
+        reason: claim.reason,
       }
     }
 

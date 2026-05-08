@@ -23,7 +23,7 @@ import {
   normalizeNftAttributes,
   resolveSearingVariant,
 } from '@/lib/domain/searing/searing-layer-resolver'
-import { getCharacterImageFallback, getCharacterImageUrl } from '@/lib/utils/image'
+import { getCharacterImageDisclosure, getCharacterImageFallback, getCharacterImageUrl } from '@/lib/utils/image'
 import { TransactionStatus } from '@/types/blockchain'
 import type { TransactionHash } from '@/types/blockchain'
 import type { Character } from '@/types/character'
@@ -44,15 +44,17 @@ function CharacterTile({
   character,
   selected,
   disabled,
+  optimisticSearedImageUrl,
   onSelect,
 }: {
   character: Character
   selected: boolean
   disabled?: boolean
+  optimisticSearedImageUrl?: string
   onSelect: (character: Character) => void
 }) {
   const name = getCharacterName(character)
-  const imageUrl = getCharacterImageUrl(
+  const disclosure = getCharacterImageDisclosure(
     character.token_id,
     character.metadata,
     character.image_url,
@@ -61,7 +63,10 @@ function CharacterTile({
       isInfected: character.infected,
     }
   )
-  const seared = isCharacterSeared(character)
+  const imageUrl = optimisticSearedImageUrl && !disclosure.isCurrentlyInfected
+    ? optimisticSearedImageUrl
+    : disclosure.primaryUrl
+  const seared = isCharacterSeared(character) || Boolean(optimisticSearedImageUrl)
 
   return (
     <button
@@ -89,7 +94,11 @@ function CharacterTile({
         <p className="truncate text-sm text-neutral-100 font-eskapade" title={name}>{name}</p>
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="text-xs text-neutral-500 font-eskapade">#{character.token_id}</span>
-          {seared && <Badge variant="outline">seared</Badge>}
+          {seared && (
+            <span title={disclosure.isSearedImageHiddenByInfection ? 'Seared art generated; infected art remains primary' : undefined}>
+              <Badge variant="outline">seared</Badge>
+            </span>
+          )}
         </div>
       </div>
     </button>
@@ -200,6 +209,7 @@ export function SearingPageClient() {
   const [syncState, setSyncState] = useState<SearingSyncState>({ status: 'idle' })
   const [lastSearingHash, setLastSearingHash] = useState<TransactionHash | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [optimisticSearedImagesByTokenId, setOptimisticSearedImagesByTokenId] = useState<Record<number, string>>({})
 
   const {
     isSearing,
@@ -273,6 +283,20 @@ export function SearingPageClient() {
     () => characters.find((character) => character.token_id === selectedCharacterId) ?? null,
     [characters, selectedCharacterId]
   )
+  const selectedCharacterDisclosure = useMemo(
+    () => selectedCharacter
+      ? getCharacterImageDisclosure(selectedCharacter.token_id, selectedCharacter.metadata, selectedCharacter.image_url, {
+        infectionStatus: selectedCharacter.infection_status,
+        isInfected: selectedCharacter.infected,
+      })
+      : null,
+    [selectedCharacter]
+  )
+  const isCompletedImageHiddenByInfection = Boolean(
+    syncState.status === 'completed' &&
+    selectedCharacterDisclosure?.isCurrentlyInfected &&
+    selectedCharacterDisclosure.primaryUrl !== syncState.imageUrl
+  )
 
   const activeTxHash = txHash ?? lastSearingHash ?? undefined
   const canSear = Boolean(
@@ -326,6 +350,12 @@ export function SearingPageClient() {
       }, { responseOk: response.ok })
 
       setSyncState(nextState)
+      if (nextState.status === 'completed') {
+        setOptimisticSearedImagesByTokenId((current) => ({
+          ...current,
+          [selectedCharacter.token_id]: nextState.imageUrl,
+        }))
+      }
       await Promise.all([refetchConcords(), refetchCharacters()])
     } catch (err) {
       setSyncState({
@@ -428,6 +458,7 @@ export function SearingPageClient() {
                           character={character}
                           selected={character.token_id === selectedCharacterId}
                           disabled={isSearing || isSyncing}
+                          optimisticSearedImageUrl={optimisticSearedImagesByTokenId[character.token_id]}
                           onSelect={handleSelectCharacter}
                         />
                       ))}
@@ -494,6 +525,7 @@ export function SearingPageClient() {
                 state={syncState}
                 onRetry={handleRetrySync}
                 isRetrying={isSyncing}
+                isSearedImageHiddenByInfection={isCompletedImageHiddenByInfection}
               />
 
               {error && txStatus !== TransactionStatus.ERROR && (

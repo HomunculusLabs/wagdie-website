@@ -10,7 +10,7 @@ import Image from 'next/image'
 import { Card, CardContent, Badge, Button } from '@/components/ui'
 import type { Character } from '@/types/character'
 import { OwnershipBadge } from '@/components/OwnershipVerificationBanner'
-import { getCharacterImageCandidates } from '@/lib/utils/image'
+import { getCharacterImageDisclosure } from '@/lib/utils/image'
 
 interface CharacterCardProps {
   character: Character
@@ -23,22 +23,23 @@ interface CharacterCardProps {
 export function CharacterCard({ character, onClick, onSearClick, showSearingLink = false, className = '' }: CharacterCardProps) {
   const [isLoading, setIsLoading] = useState(true)
   const infectionStatus = character.infection_status ?? (character.infected ? 'infected' : 'healthy')
-  const imageCandidates = useMemo(
-    () => getCharacterImageCandidates(character.token_id, character.metadata, character.image_url, {
+  const imageDisclosure = useMemo(
+    () => getCharacterImageDisclosure(character.token_id, character.metadata, character.image_url, {
       infectionStatus,
       isInfected: character.infected,
     }),
     [character.token_id, character.metadata, character.image_url, character.infected, infectionStatus]
   )
-  const [imageUrl, setImageUrl] = useState(() => imageCandidates[0])
+  const imageCandidates = imageDisclosure.candidates
+  const [imageUrl, setImageUrl] = useState(() => imageDisclosure.primaryUrl)
 
   // Extract data from metadata if available, otherwise use direct fields
   const name = character.metadata?.name || character.name || `character #${character.token_id}`
 
   useEffect(() => {
     setIsLoading(true)
-    setImageUrl(imageCandidates[0])
-  }, [imageCandidates])
+    setImageUrl(imageDisclosure.primaryUrl)
+  }, [imageDisclosure.primaryUrl])
 
   const level = character.metadata?.level || character.level
   const characterClass = character.class
@@ -92,14 +93,12 @@ export function CharacterCard({ character, onClick, onSearClick, showSearingLink
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-          className={`object-cover [image-rendering:pixelated] grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          className={`object-cover [image-rendering:pixelated] group-hover:scale-105 transition-all duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
           unoptimized
           onLoad={() => setIsLoading(false)}
           onError={handleImageError}
         />
 
-        {/* Solid overlay */}
-        <div className="absolute inset-0 bg-black/20" />
 
         {/* Status Badges */}
         <div className="absolute top-2 right-2 flex flex-col gap-1">
@@ -124,6 +123,14 @@ export function CharacterCard({ character, onClick, onSearClick, showSearingLink
           {infectionStatus === 'cured' && (
             <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-900/50 text-emerald-400 text-caption font-display tracking-widest">
               Cured
+            </span>
+          )}
+          {imageDisclosure.hasSearedImage && (
+            <span
+              className="px-2 py-0.5 bg-soul-accent/20 border border-soul-accent/50 text-soul-accent text-caption font-display tracking-widest"
+              title={imageDisclosure.isSearedImageHiddenByInfection ? 'Seared art generated; infected art remains primary' : undefined}
+            >
+              Seared
             </span>
           )}
           {/* Staked badge only for non-burned staked characters */}

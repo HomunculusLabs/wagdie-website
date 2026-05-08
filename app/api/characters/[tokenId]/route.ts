@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 import { handleCharacterGet, handleCharacterPatch } from '@/lib/api/handlers/character-update'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,

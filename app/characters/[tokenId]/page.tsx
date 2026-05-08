@@ -5,7 +5,7 @@ import { useAccount } from 'wagmi'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
-import { getCharacterImageCandidates, getCharacterImageFallback } from '@/lib/utils/image'
+import { getCharacterImageDisclosure, getCharacterImageFallback } from '@/lib/utils/image'
 import { NameEditor } from '@/components/characters/NameEditor'
 import { CoreStatsEditor } from '@/components/characters/CoreStatsEditor'
 import { DerivedStatsEditor } from '@/components/characters/DerivedStatsEditor'
@@ -47,7 +47,7 @@ export default function CharacterDetailPage() {
   const fetchCharacter = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/characters/${tokenId}`)
+      const response = await fetch(`/api/characters/${tokenId}`, { cache: 'no-store' })
       if (!response.ok) throw new Error('Failed to fetch character')
       setCharacter(await response.json())
     } catch (error) {
@@ -156,17 +156,18 @@ export default function CharacterDetailPage() {
   const handleAssignStats = () => { editor.assignDefaultStats(); setIsEditMode(true) }
 
   const name = character?.name || character?.metadata?.name || `Character #${tokenId}`
-  const imageCandidates = useMemo(
-    () => getCharacterImageCandidates(tokenId, character?.metadata, character?.image_url, {
+  const imageDisclosure = useMemo(
+    () => getCharacterImageDisclosure(tokenId, character?.metadata, character?.image_url, {
       infectionStatus: character?.infection_status,
       isInfected: character?.infected,
     }),
     [tokenId, character?.metadata, character?.image_url, character?.infection_status, character?.infected]
   )
+  const imageCandidates = imageDisclosure.candidates
 
   useEffect(() => {
-    setImageUrl(imageCandidates[0] || getCharacterImageFallback())
-  }, [imageCandidates])
+    setImageUrl(imageDisclosure.primaryUrl)
+  }, [imageDisclosure.primaryUrl])
 
   const handleImageError = useCallback(() => {
     setImageUrl((current) => {
@@ -218,10 +219,24 @@ export default function CharacterDetailPage() {
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
                   {character.infection_status === 'infected' && <Badge className="bg-red-900/80 border-red-700 text-red-400">Infected</Badge>}
                   {character.infection_status === 'cured' && <Badge className="bg-emerald-900/80 border-emerald-700 text-emerald-400">Cured</Badge>}
+                  {imageDisclosure.hasSearedImage && <Badge variant="accent">Seared</Badge>}
                   {character.staking_status === 'staked' && <Badge variant="accent">Staked</Badge>}
                 </div>
               </div>
             </Card>
+            {imageDisclosure.isSearedImageHiddenByInfection && imageDisclosure.searedImageUrl && (
+              <div className="mt-3 rounded-lg border border-soul-accent/20 bg-soul-accent/5 p-3 text-sm text-soul-accent font-eskapade">
+                Seared artwork has been generated, but infected artwork remains primary while this character is infected.{' '}
+                <a
+                  href={imageDisclosure.searedImageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4 hover:text-bone"
+                >
+                  View seared image
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-5">
