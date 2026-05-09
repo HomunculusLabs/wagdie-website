@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui';
 import { AppearedInTimeline } from './AppearedInTimeline';
 import { CanonizationPath } from './CanonizationPath';
 import { CanonStatusBadge } from './CanonStatusBadge';
+import { CanonWorkflowSummary } from './CanonWorkflowSummary';
 import { CharacterPortrait } from './CharacterPortrait';
 import { EntityChips } from './EntityChips';
 import { MediaGallery } from './MediaGallery';
@@ -104,14 +105,17 @@ export function LoreEventDetail({
                 <span className={`border px-2.5 py-1 text-sm font-serif uppercase tracking-[0.06em] ${event.kind === 'official' ? 'border-soul-accent/40 bg-soul-accent/10 text-soul-accent' : 'border-sky-400/40 bg-sky-400/10 text-sky-300'}`}>
                   {eventKindLabels[event.kind]}
                 </span>
-                <CanonStatusBadge status={event.canon.status} />
+                <CanonStatusBadge status={event.canon.status} stageId={event.canon.stageId} />
               </div>
 
               {communityContext && (
                 <div className="border border-sky-400/30 bg-sky-400/10 p-4 font-serif text-base leading-7 text-sky-100">
-                  This is a community-originated archive record. Its canon state is shown separately so preserved community material is not confused with official canon.
+                  This is a community-originated archive record. Its canon workflow is shown explicitly so preserved community material, review candidates, disputes, and approved canon are not confused.
+                  {event.canon.status !== 'canon' && ' This record is not fully accepted canon.'}
                 </div>
               )}
+
+              <CanonWorkflowSummary canon={event.canon} variant="detail" />
 
               <div className="space-y-4">
                 <p className="text-sm font-serif uppercase tracking-[0.06em] text-neutral-200">

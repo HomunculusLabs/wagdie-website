@@ -3,6 +3,11 @@ import { loreEvents } from './data/events';
 import { loreLocations } from './data/locations';
 import { loreSeasons } from './data/seasons';
 import { loreMedia, loreSources } from './data/sources';
+import {
+  getCurrentCanonizationStep,
+  isCanonizationStageId,
+  isValidCanonizationStageForStatus,
+} from './canonization';
 import type {
   LoreArchiveValidationResult,
   LoreCharacter,
@@ -58,15 +63,65 @@ const addDuplicateErrors = <T extends KeyedRecord>(
 
 const hasKnownId = (ids: ReadonlySet<string>, id: string): boolean => ids.has(id);
 
+const validateEventCanonization = (
+  event: LoreEvent,
+  sourceIds: ReadonlySet<string>,
+  errors: string[],
+): void => {
+  if (!isCanonizationStageId(event.canon.stageId)) {
+    errors.push(`Event ${event.id} has unknown canon stage: ${event.canon.stageId}`);
+  }
+
+  if (!isValidCanonizationStageForStatus(event.canon.status, event.canon.stageId)) {
+    errors.push(`Event ${event.id} canon status ${event.canon.status} is incompatible with stage ${event.canon.stageId}`);
+  }
+
+  if (event.canon.path.length === 0) {
+    errors.push(`Event ${event.id} canon path must include at least one step`);
+    return;
+  }
+
+  const currentSteps = event.canon.path.filter((step) => step.status === 'current');
+
+  if (currentSteps.length !== 1) {
+    errors.push(`Event ${event.id} canon path must include exactly one current step`);
+  }
+
+  const currentStep = getCurrentCanonizationStep(event.canon);
+
+  if (currentStep && currentStep.stageId !== event.canon.stageId) {
+    errors.push(`Event ${event.id} current canon step ${currentStep.stageId} does not match stage ${event.canon.stageId}`);
+  }
+
+  const seenStageIds = new Set<string>();
+
+  event.canon.path.forEach((step, stepIndex) => {
+    if (!isCanonizationStageId(step.stageId)) {
+      errors.push(`Event ${event.id} canon step ${stepIndex + 1} has unknown stage: ${step.stageId}`);
+    }
+
+    if (seenStageIds.has(step.stageId)) {
+      errors.push(`Event ${event.id} canon step ${stepIndex + 1} duplicates stage: ${step.stageId}`);
+    }
+    seenStageIds.add(step.stageId);
+
+    step.sourceIds?.forEach((sourceId) => {
+      if (!hasKnownId(sourceIds, sourceId)) {
+        errors.push(`Event ${event.id} canon step ${stepIndex + 1} references missing source: ${sourceId}`);
+      }
+    });
+  });
+};
+
 export const validateLoreArchive = (
   data: LoreArchiveValidationData = {},
 ): LoreArchiveValidationResult => {
-  const events = data.events ?? loreEvents;
-  const characters = data.characters ?? loreCharacters;
-  const locations = data.locations ?? loreLocations;
-  const seasons = data.seasons ?? loreSeasons;
-  const sources = data.sources ?? loreSources;
-  const media = data.media ?? loreMedia;
+  const events: readonly LoreEvent[] = data.events ?? loreEvents;
+  const characters: readonly LoreCharacter[] = data.characters ?? loreCharacters;
+  const locations: readonly LoreLocation[] = data.locations ?? loreLocations;
+  const seasons: readonly LoreSeason[] = data.seasons ?? loreSeasons;
+  const sources: readonly SourceRecord[] = data.sources ?? loreSources;
+  const media: readonly LoreMedia[] = data.media ?? loreMedia;
   const errors: string[] = [];
 
   addDuplicateErrors(events, 'event', 'id', errors);
@@ -116,13 +171,7 @@ export const validateLoreArchive = (
       }
     });
 
-    event.canon.path.forEach((step, stepIndex) => {
-      step.sourceIds?.forEach((sourceId) => {
-        if (!hasKnownId(sourceIds, sourceId)) {
-          errors.push(`Event ${event.id} canon step ${stepIndex + 1} references missing source: ${sourceId}`);
-        }
-      });
-    });
+    validateEventCanonization(event, sourceIds, errors);
   });
 
   characters.forEach((character) => {

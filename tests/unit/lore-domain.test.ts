@@ -1,5 +1,6 @@
 import {
   getArchiveItems,
+  getCanonizationProgress,
   getEventsForCharacter,
   getEventsForLocation,
   getSourcesForEvent,
@@ -12,16 +13,20 @@ import {
   parseLoreArchiveFilters,
   validateLoreArchive,
 } from '@/lib/lore';
+import type { LoreEvent } from '@/lib/lore/types';
+
+const cloneEvent = (event: LoreEvent): LoreEvent => JSON.parse(JSON.stringify(event)) as LoreEvent;
 
 describe('lore domain', () => {
   it('ships valid static archive data', () => {
     expect(validateLoreArchive()).toEqual({ valid: true, errors: [] });
   });
 
-  it('filters by character, canon status, and keyword-expanded related records', () => {
+  it('filters by character, canon status, canon stage, and keyword-expanded related records', () => {
     const filters = parseLoreArchiveFilters({
       character: 'steely-3721',
       canonStatus: 'canonizing',
+      canonStage: 'continuity_review',
       keyword: 'Steely',
     });
 
@@ -30,11 +35,52 @@ describe('lore domain', () => {
     expect(items.map((event) => event.slug)).toEqual(['pilgrims-of-the-ashen-road']);
   });
 
-  it('keeps invalid canon statuses from throwing or constraining results', () => {
-    const filters = parseLoreArchiveFilters({ canonStatus: 'not-real' });
+  it('keeps invalid canon statuses and stages from throwing or constraining results', () => {
+    const filters = parseLoreArchiveFilters({ canonStatus: 'not-real', canonStage: 'also-not-real' });
 
     expect(filters.canonStatus).toBeUndefined();
+    expect(filters.canonStage).toBeUndefined();
     expect(getArchiveItems(filters)).toHaveLength(loreEvents.length);
+  });
+
+  it('applies canonStatus and canonStage filters with AND semantics', () => {
+    const validCombination = getArchiveItems(parseLoreArchiveFilters({
+      canonStatus: 'canonizing',
+      canonStage: 'continuity_review',
+    }));
+    const emptyCombination = getArchiveItems(parseLoreArchiveFilters({
+      canonStatus: 'canon',
+      canonStage: 'continuity_review',
+    }));
+
+    expect(validCombination.map((event) => event.slug)).toEqual(['pilgrims-of-the-ashen-road']);
+    expect(emptyCombination).toEqual([]);
+  });
+
+  it('derives canonization progress from the current stage and displayable steps', () => {
+    const event = loreEvents.find((item) => item.slug === 'pilgrims-of-the-ashen-road')!;
+    const progress = getCanonizationProgress(event.canon);
+
+    expect(progress.stage.id).toBe('continuity_review');
+    expect(progress.currentStep?.stageId).toBe('continuity_review');
+    expect(progress.completedCount).toBe(2);
+    expect(progress.totalCount).toBe(5);
+    expect(progress.percent).toBe(50);
+    expect(progress.terminal).toBe(false);
+  });
+
+  it('excludes skipped steps and weights terminal current stages as complete', () => {
+    const disputedEvent = loreEvents.find((item) => item.slug === 'rumor-beneath-the-citadel')!;
+    const disputedProgress = getCanonizationProgress(disputedEvent.canon);
+    const canonEvent = loreEvents.find((item) => item.slug === 'genesis-mint')!;
+    const canonProgress = getCanonizationProgress(canonEvent.canon);
+
+    expect(disputedProgress.stage.id).toBe('disputed');
+    expect(disputedProgress.terminal).toBe(true);
+    expect(disputedProgress.totalCount).toBe(3);
+    expect(disputedProgress.percent).toBe(67);
+    expect(canonProgress.terminal).toBe(true);
+    expect(canonProgress.percent).toBe(100);
   });
 
   it('returns sorted appearances and source records through query helpers', () => {
@@ -77,7 +123,6 @@ describe('lore domain', () => {
     expect(characters.every((character) => referencedCharacterIds.has(character.id))).toBe(true);
   });
 
-
   it('derives co-appearing character connections for character profiles', () => {
     const connections = getCharacterConnections('character-5');
 
@@ -89,24 +134,20 @@ describe('lore domain', () => {
   });
 
   it('reports duplicate ids/slugs and missing references', () => {
-    const brokenEvent = {
-      ...loreEvents[0],
-      id: 'event-broken-references',
-      slug: loreEvents[1].slug,
-      sourceIds: ['source-missing'],
-      characterIds: ['character-missing'],
-      locationIds: ['location-missing'],
-      canon: {
-        ...loreEvents[0].canon,
-        path: [
-          {
-            label: 'Broken step',
-            status: 'complete' as const,
-            sourceIds: ['source-step-missing'],
-          },
-        ],
+    const brokenEvent = cloneEvent(loreEvents[0]);
+    brokenEvent.id = 'event-broken-references';
+    brokenEvent.slug = loreEvents[1].slug;
+    brokenEvent.sourceIds = ['source-missing'];
+    brokenEvent.characterIds = ['character-missing'];
+    brokenEvent.locationIds = ['location-missing'];
+    brokenEvent.canon.path = [
+      {
+        stageId: 'canonized',
+        label: 'Broken step',
+        status: 'current',
+        sourceIds: ['source-step-missing'],
       },
-    };
+    ];
 
     const result = validateLoreArchive({ events: [...loreEvents, brokenEvent] });
 
@@ -122,6 +163,54 @@ describe('lore domain', () => {
     );
   });
 
+  it('reports canon status and stage mismatches', () => {
+    const brokenEvent = cloneEvent(loreEvents[0]);
+    brokenEvent.id = 'event-broken-stage-mismatch';
+    brokenEvent.slug = 'broken-stage-mismatch';
+    brokenEvent.canon.status = 'canon';
+    brokenEvent.canon.stageId = 'continuity_review';
+    brokenEvent.canon.path = [
+      { stageId: 'continuity_review', status: 'current' },
+    ];
+
+    const result = validateLoreArchive({ events: [brokenEvent] });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'Event event-broken-stage-mismatch canon status canon is incompatible with stage continuity_review',
+    );
+  });
+
+  it('reports missing current canon steps', () => {
+    const brokenEvent = cloneEvent(loreEvents[0]);
+    brokenEvent.id = 'event-missing-current-step';
+    brokenEvent.slug = 'missing-current-step';
+    brokenEvent.canon.path = [
+      { stageId: 'canonized', status: 'complete' },
+    ];
+
+    const result = validateLoreArchive({ events: [brokenEvent] });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Event event-missing-current-step canon path must include exactly one current step');
+  });
+
+  it('reports current canon step stage mismatches', () => {
+    const brokenEvent = cloneEvent(loreEvents[0]);
+    brokenEvent.id = 'event-current-step-mismatch';
+    brokenEvent.slug = 'current-step-mismatch';
+    brokenEvent.canon.stageId = 'canonized';
+    brokenEvent.canon.path = [
+      { stageId: 'source_attributed', status: 'current' },
+    ];
+
+    const result = validateLoreArchive({ events: [brokenEvent] });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'Event event-current-step-mismatch current canon step source_attributed does not match stage canonized',
+    );
+  });
 
   it('reports duplicate location slugs and missing location media/source references', () => {
     const [location] = getAllLoreLocations();

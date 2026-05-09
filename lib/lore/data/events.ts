@@ -31,19 +31,30 @@ export const loreEvents = [
     timelineOrder: 10,
     canon: {
       status: 'canon',
+      stageId: 'canonized',
+      updatedAt: '2026-05-08',
       note: 'Official genesis material is treated as core canon.',
       path: [
         {
+          stageId: 'source_attributed',
           label: 'Published by official channel',
           status: 'complete',
           date: '2022-06-03',
           sourceIds: ['source-official-genesis-tweet'],
         },
         {
+          stageId: 'continuity_review',
           label: 'Cross-referenced with official lore surface',
           status: 'complete',
           date: '2026-05-08',
           sourceIds: ['source-official-site-lore'],
+        },
+        {
+          stageId: 'canonized',
+          label: 'Approved as genesis canon',
+          status: 'current',
+          date: '2026-05-08',
+          sourceIds: ['source-official-genesis-tweet', 'source-official-site-lore'],
         },
       ],
     },
@@ -82,12 +93,22 @@ export const loreEvents = [
     timelineOrder: 20,
     canon: {
       status: 'canon',
+      stageId: 'canonized',
+      updatedAt: '2026-05-08',
       note: 'Seeded as an official bridge between genesis and later campaigns.',
       path: [
         {
+          stageId: 'source_attributed',
           label: 'Published by official channel',
           status: 'complete',
           date: '2022-07-15',
+          sourceIds: ['source-official-site-lore'],
+        },
+        {
+          stageId: 'canonized',
+          label: 'Approved as official campaign canon',
+          status: 'current',
+          date: '2026-05-08',
           sourceIds: ['source-official-site-lore'],
         },
       ],
@@ -131,17 +152,28 @@ export const loreEvents = [
     timelineOrder: 30,
     canon: {
       status: 'canon',
+      stageId: 'canonized',
+      updatedAt: '2026-05-08',
       note: 'The Searing is official canon and should anchor future transformation stories.',
       path: [
         {
+          stageId: 'source_attributed',
           label: 'Official dispatch recorded',
           status: 'complete',
           date: '2023-10-31',
           sourceIds: ['source-official-searing-dispatch'],
         },
         {
+          stageId: 'continuity_review',
           label: 'Media preservation linked',
           status: 'complete',
+          date: '2026-05-08',
+          sourceIds: ['source-official-searing-dispatch'],
+        },
+        {
+          stageId: 'canonized',
+          label: 'Approved as ritual canon',
+          status: 'current',
           date: '2026-05-08',
           sourceIds: ['source-official-searing-dispatch'],
         },
@@ -184,23 +216,39 @@ export const loreEvents = [
     timelineOrder: 40,
     canon: {
       status: 'canonizing',
+      stageId: 'continuity_review',
+      updatedAt: '2026-05-08',
       note: 'Community-originated geography is promoted for review, not yet core canon.',
       path: [
         {
+          stageId: 'community_recorded',
           label: 'Community thread preserved',
           status: 'complete',
           date: '2024-02-19',
           sourceIds: ['source-discord-pilgrimage-thread'],
         },
         {
-          label: 'Archive curator review',
+          stageId: 'source_attributed',
+          label: 'Review & verification',
           status: 'complete',
           date: '2026-05-08',
           sourceIds: ['source-discord-pilgrimage-thread'],
         },
         {
+          stageId: 'continuity_review',
           label: 'Official canon review',
           status: 'current',
+          note: 'Curators are checking the route name against established campaign geography.',
+        },
+        {
+          stageId: 'canon_candidate',
+          label: 'Promoted for approval',
+          status: 'not_started',
+        },
+        {
+          stageId: 'canonized',
+          label: 'Approved as canon geography',
+          status: 'not_started',
         },
       ],
     },
@@ -243,15 +291,26 @@ export const loreEvents = [
     timelineOrder: 50,
     canon: {
       status: 'community',
+      stageId: 'source_attributed',
+      updatedAt: '2026-05-08',
       note: 'Accepted into the archive as community content, but not promoted to official canon.',
       path: [
         {
-          label: 'Image source captured',
+          stageId: 'community_recorded',
+          label: 'Community entry recorded',
           status: 'complete',
           date: '2024-03-10',
           sourceIds: ['source-community-map-submission'],
         },
         {
+          stageId: 'source_attributed',
+          label: 'Image source captured',
+          status: 'current',
+          date: '2026-05-08',
+          sourceIds: ['source-community-map-submission'],
+        },
+        {
+          stageId: 'continuity_review',
           label: 'Canon promotion requested',
           status: 'not_started',
         },
@@ -295,17 +354,33 @@ export const loreEvents = [
     timelineOrder: 60,
     canon: {
       status: 'disputed',
+      stageId: 'disputed',
+      updatedAt: '2026-05-08',
       note: 'Disputed community rumor retained for attribution and future reconciliation.',
       path: [
         {
+          stageId: 'community_recorded',
           label: 'Manual archive note created',
           status: 'complete',
           date: '2026-05-08',
           sourceIds: ['source-manual-rumor-ledger'],
         },
         {
+          stageId: 'source_attributed',
           label: 'Source verification',
           status: 'blocked',
+          note: 'No stable source confirms the second altar claim.',
+        },
+        {
+          stageId: 'disputed',
+          label: 'Marked disputed pending reconciliation',
+          status: 'current',
+          date: '2026-05-08',
+        },
+        {
+          stageId: 'canonized',
+          label: 'Approved as canon',
+          status: 'skipped',
         },
       ],
     },

@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Select } from '@/components/ui';
+import { canonStatusLabels, getCanonizationStageOptions } from '@/lib/lore/canonization';
 import { canonStatuses } from '@/lib/lore/types';
-import { canonStatusLabels } from './CanonStatusBadge';
 import type { LoreArchiveFilters, LoreCharacter, LoreLocation, LoreSeason } from '@/lib/lore/types';
 
 interface LoreFilterBarProps {
@@ -49,6 +49,11 @@ export function LoreFilterBar({ filters, seasons, locations, characters }: LoreF
     ...canonStatuses.map((status) => ({ value: status, label: canonStatusLabels[status] })),
   ], []);
 
+  const canonStageOptions = useMemo(() => [
+    unsetOption('All workflow stages'),
+    ...getCanonizationStageOptions().map((stage) => ({ value: stage.id, label: stage.label })),
+  ], []);
+
   const pushFilter = (key: keyof LoreArchiveFilters, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -75,7 +80,7 @@ export function LoreFilterBar({ filters, seasons, locations, characters }: LoreF
             Archive filters
           </p>
           <p className="mt-1 text-sm font-eskapade text-neutral-500">
-            URL-driven controls for season, place, character, keyword, and canon status.
+            URL-driven controls for season, place, character, keyword, canon status, and canon workflow stage.
           </p>
         </div>
         <Link
@@ -86,7 +91,7 @@ export function LoreFilterBar({ filters, seasons, locations, characters }: LoreF
         </Link>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid gap-4 lg:grid-cols-6">
         <Select
           label="Season"
           aria-label="Filter by season"
@@ -114,6 +119,13 @@ export function LoreFilterBar({ filters, seasons, locations, characters }: LoreF
           value={filters.canonStatus ?? ''}
           options={canonOptions}
           onChange={(event) => pushFilter('canonStatus', event.target.value)}
+        />
+        <Select
+          label="Canon stage"
+          aria-label="Filter by canon workflow stage"
+          value={filters.canonStage ?? ''}
+          options={canonStageOptions}
+          onChange={(event) => pushFilter('canonStage', event.target.value)}
         />
         <form onSubmit={handleKeywordSubmit} className="flex items-end gap-2">
           <Input

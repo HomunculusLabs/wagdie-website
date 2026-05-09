@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui';
 import { CanonStatusBadge } from './CanonStatusBadge';
+import { CanonWorkflowSummary } from './CanonWorkflowSummary';
 import { CharacterPortrait } from './CharacterPortrait';
 import { EntityChips } from './EntityChips';
 import { SourceAttribution } from './SourceAttribution';
@@ -65,7 +66,7 @@ export function LoreEventCard({
               <span className={`border px-2.5 py-1 text-sm font-serif uppercase tracking-[0.06em] ${event.kind === 'official' ? 'border-soul-accent/40 bg-soul-accent/10 text-soul-accent' : 'border-sky-400/40 bg-sky-400/10 text-sky-300'}`}>
                 {eventKindLabels[event.kind]}
               </span>
-              <CanonStatusBadge status={event.canon.status} />
+              <CanonStatusBadge status={event.canon.status} stageId={event.canon.stageId} />
             </div>
 
             <div className="space-y-3">
@@ -115,6 +116,8 @@ export function LoreEventCard({
                 }))}
               />
             </div>
+
+            <CanonWorkflowSummary canon={event.canon} />
 
             {event.canon.note && (
               <p className="border-l border-midnight-light/60 pl-3 font-serif text-sm leading-6 text-neutral-200">
