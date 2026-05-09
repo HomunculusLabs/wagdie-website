@@ -59,7 +59,7 @@ const relatedEntityHref = (entity: LoreResolvedEntity) => {
   }
 
   if (entity.kind === 'location') {
-    return `/lore?location=${entity.slug}`;
+    return `/lore/locations/${entity.slug}`;
   }
 
   if (entity.kind === 'event') {
@@ -179,7 +179,7 @@ export function LoreEventDetail({
             label="Locations"
             items={locations.map((location) => ({
               label: location.name,
-              href: `/lore?location=${location.slug}`,
+              href: `/lore/locations/${location.slug}`,
             }))}
           />
           <EntityChips

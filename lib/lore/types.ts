@@ -69,7 +69,11 @@ export interface LoreLocation {
   id: string;
   slug: string;
   name: string;
+  aliases: string[];
   summary: string;
+  description?: string;
+  imageId?: string;
+  sourceIds?: string[];
   tags: string[];
 }
 

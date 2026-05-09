@@ -20,6 +20,9 @@ const sourceById = new Map<string, SourceRecord>(
 const mediaById = new Map<string, LoreMedia>(
   loreMedia.map((media) => [media.id, media as LoreMedia]),
 );
+const locationById = new Map<string, LoreLocation>(
+  loreLocations.map((location) => [location.id, location as LoreLocation]),
+);
 
 const byTimeline = (a: LoreEvent, b: LoreEvent): number => {
   if (a.timelineOrder !== b.timelineOrder) {
@@ -59,14 +62,36 @@ export const getCharacterBySlug = (slug: string): LoreCharacter | undefined => {
   return loreCharacters.find((character) => character.slug === slug);
 };
 
+export const getAllLocations = (): LoreLocation[] => {
+  return [...loreLocations].sort((a, b) => a.name.localeCompare(b.name));
+};
+
 export const getLocationBySlug = (slug: string): LoreLocation | undefined => {
   return loreLocations.find((location) => location.slug === slug);
+};
+
+export const getLocationById = (id: string): LoreLocation | undefined => {
+  return locationById.get(id);
 };
 
 export const getEventsForCharacter = (characterId: string): LoreEvent[] => {
   return getAllLoreEvents().filter((event) => event.characterIds.includes(characterId));
 };
 
+export const getEventsForLocation = (locationId: string): LoreEvent[] => {
+  return getAllLoreEvents().filter((event) => event.locationIds.includes(locationId));
+};
+
+export const getSourcesForLocation = (location: LoreLocation): SourceRecord[] => {
+  return (location.sourceIds ?? []).flatMap((sourceId) => {
+    const source = sourceById.get(sourceId);
+    return source ? [source] : [];
+  });
+};
+
+export const getMediaForLocation = (location: LoreLocation): LoreMedia[] => {
+  return location.imageId ? [mediaById.get(location.imageId)].filter((media): media is LoreMedia => Boolean(media)) : [];
+};
 
 export const getCharacterConnections = (characterId: string): LoreCharacterConnection[] => {
   const appearances = getEventsForCharacter(characterId);
@@ -168,7 +193,7 @@ export const getAllLoreCharacters = (): LoreCharacter[] => {
 };
 
 export const getAllLoreLocations = (): LoreLocation[] => {
-  return [...loreLocations].sort((a, b) => a.name.localeCompare(b.name));
+  return getAllLocations();
 };
 
 export const getAllLoreSources = (): SourceRecord[] => {

@@ -111,7 +111,7 @@ export function LoreEventCard({
                 label="Locations"
                 items={locations.map((location) => ({
                   label: location.name,
-                  href: `/lore?location=${location.slug}`,
+                  href: `/lore/locations/${location.slug}`,
                 }))}
               />
             </div>

@@ -1,9 +1,13 @@
 import {
   getArchiveItems,
   getEventsForCharacter,
+  getEventsForLocation,
   getSourcesForEvent,
   getAllLoreCharacters,
+  getAllLoreLocations,
   getCharacterConnections,
+  getLocationById,
+  getLocationBySlug,
   loreEvents,
   parseLoreArchiveFilters,
   validateLoreArchive,
@@ -41,6 +45,27 @@ describe('lore domain', () => {
       'searing-rite',
     ]);
     expect(getSourcesForEvent(appearances[0]).map((source) => source.id)).toContain('source-official-genesis-tweet');
+  });
+
+  it('resolves locations and returns sorted events for a location', () => {
+    const locations = getAllLoreLocations();
+    const location = getLocationBySlug('blackened-citadel');
+
+    expect(locations.map((item) => item.slug)).toContain('blackened-citadel');
+    expect(location?.id).toBe('location-blackened-citadel');
+    expect(getLocationById('location-blackened-citadel')?.slug).toBe('blackened-citadel');
+    expect(getLocationBySlug('not-real')).toBeUndefined();
+
+    const events = getEventsForLocation('location-blackened-citadel');
+
+    expect(events.map((event) => event.slug)).toEqual([
+      'first-citadel-march',
+      'searing-rite',
+      'pilgrims-of-the-ashen-road',
+      'rumor-beneath-the-citadel',
+    ]);
+    expect(events.every((event) => event.locationIds.includes('location-blackened-citadel'))).toBe(true);
+    expect(getEventsForLocation('location-missing')).toEqual([]);
   });
 
   it('keeps the event-character graph populated enough to show the whole picture', () => {
@@ -93,6 +118,28 @@ describe('lore domain', () => {
         'Event event-broken-references references missing character: character-missing',
         'Event event-broken-references references missing location: location-missing',
         'Event event-broken-references canon step 1 references missing source: source-step-missing',
+      ]),
+    );
+  });
+
+
+  it('reports duplicate location slugs and missing location media/source references', () => {
+    const [location] = getAllLoreLocations();
+    const brokenLocation = {
+      ...location,
+      id: 'location-broken',
+      imageId: 'media-missing',
+      sourceIds: ['source-missing'],
+    };
+
+    const result = validateLoreArchive({ locations: [...getAllLoreLocations(), brokenLocation] });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        `Duplicate location slug: ${location.slug}`,
+        'Location location-broken references missing image media: media-missing',
+        'Location location-broken references missing source: source-missing',
       ]),
     );
   });

@@ -137,6 +137,18 @@ export const validateLoreArchive = (
     }
   });
 
+  locations.forEach((location) => {
+    if (location.imageId && !hasKnownId(mediaIds, location.imageId)) {
+      errors.push(`Location ${location.id} references missing image media: ${location.imageId}`);
+    }
+
+    location.sourceIds?.forEach((sourceId) => {
+      if (!hasKnownId(sourceIds, sourceId)) {
+        errors.push(`Location ${location.id} references missing source: ${sourceId}`);
+      }
+    });
+  });
+
   sources.forEach((source) => {
     source.mediaIds?.forEach((mediaId) => {
       if (!hasKnownId(mediaIds, mediaId)) {

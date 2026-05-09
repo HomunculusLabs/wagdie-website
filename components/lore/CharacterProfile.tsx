@@ -141,7 +141,7 @@ export function CharacterProfile({
             label="Locations"
             items={associatedLocations.map((location) => ({
               label: location.name,
-              href: `/lore?location=${location.slug}`,
+              href: `/lore/locations/${location.slug}`,
             }))}
             emptyLabel="No associated locations"
           />

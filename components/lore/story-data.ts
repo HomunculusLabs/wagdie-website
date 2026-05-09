@@ -9,7 +9,7 @@ import {
   getSourcesForEvent,
   loreSeasons,
 } from '@/lib/lore';
-import type { LoreCharacter } from '@/lib/lore/types';
+import type { LoreCharacter, LoreLocation } from '@/lib/lore/types';
 
 const officialEvent = getOfficialEvents()[0];
 const communityCanonizingEvent = getCommunityEvents().find((event) => event.canon.status === 'canonizing')!;
@@ -40,4 +40,15 @@ export const characterWithNoAppearances: LoreCharacter = {
   aliases: ['The Silent Ledger'],
   summary: 'A placeholder archivist profile used to exercise empty appearance states.',
   tags: ['archive', 'observer'],
+};
+
+
+export const locationWithNoEvents: LoreLocation = {
+  id: 'location-silent-barrow',
+  slug: 'silent-barrow',
+  name: 'Silent Barrow',
+  aliases: ['The Unrecorded Mound'],
+  summary: 'A story fixture for a location with no linked archive records.',
+  description: 'The Silent Barrow exists only in Storybook to verify the location empty state.',
+  tags: ['fixture', 'empty'],
 };

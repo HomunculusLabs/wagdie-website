@@ -91,7 +91,7 @@ export function AppearedInTimeline({ events, seasons, locations }: AppearedInTim
                   {eventLocations.map((location) => (
                     <Link
                       key={location.id}
-                      href={`/lore?location=${location.slug}`}
+                      href={`/lore/locations/${location.slug}`}
                       className="border border-midnight-light/60 px-2 py-1 text-sm font-serif text-neutral-200 transition-colors hover:border-soul-accent/50 hover:text-soul-accent"
                     >
                       {location.name}
