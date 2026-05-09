@@ -6,6 +6,7 @@ import { eventMatchesLoreArchiveFilters } from './filters';
 import type {
   LoreArchiveFilters,
   LoreCharacter,
+  LoreCharacterConnection,
   LoreEvent,
   LoreLocation,
   LoreMedia,
@@ -64,6 +65,42 @@ export const getLocationBySlug = (slug: string): LoreLocation | undefined => {
 
 export const getEventsForCharacter = (characterId: string): LoreEvent[] => {
   return getAllLoreEvents().filter((event) => event.characterIds.includes(characterId));
+};
+
+
+export const getCharacterConnections = (characterId: string): LoreCharacterConnection[] => {
+  const appearances = getEventsForCharacter(characterId);
+  const sharedEventIdsByCharacter = new Map<string, Set<string>>();
+
+  appearances.forEach((event) => {
+    event.characterIds.forEach((coCharacterId) => {
+      if (coCharacterId === characterId) {
+        return;
+      }
+
+      const sharedEventIds = sharedEventIdsByCharacter.get(coCharacterId) ?? new Set<string>();
+      sharedEventIds.add(event.id);
+      sharedEventIdsByCharacter.set(coCharacterId, sharedEventIds);
+    });
+  });
+
+  return [...sharedEventIdsByCharacter.entries()]
+    .map(([coCharacterId, sharedEventIds]) => {
+      const character = loreCharacters.find((item) => item.id === coCharacterId);
+
+      if (!character) {
+        return undefined;
+      }
+
+      return {
+        character,
+        sharedEvents: appearances.filter((event) => sharedEventIds.has(event.id)),
+      } satisfies LoreCharacterConnection;
+    })
+    .filter((connection): connection is LoreCharacterConnection => Boolean(connection))
+    .sort((a, b) => (
+      b.sharedEvents.length - a.sharedEvents.length || a.character.name.localeCompare(b.character.name)
+    ));
 };
 
 export const getArchiveItems = (filters: LoreArchiveFilters = {}): LoreEvent[] => {
