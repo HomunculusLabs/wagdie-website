@@ -39,13 +39,13 @@
 /* Custom font faces */
 @font-face {
   font-family: 'Wagdie Fraktur';
-  src: url('/fonts/HoldMoney-Regular.ttf') format('truetype');
+  src: url('/fonts/HoldMoney-Regular.ttf?v=opensea-cors-20260509') format('truetype');
   font-display: swap;
 }
 
 @font-face {
   font-family: 'Eskapade Fraktur';
-  src: url('/fonts/EskapadeFraktur-Black.ttf') format('truetype');
+  src: url('/fonts/EskapadeFraktur-Black.ttf?v=opensea-cors-20260509') format('truetype');
   font-display: swap;
 }
 

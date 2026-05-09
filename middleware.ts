@@ -75,6 +75,13 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // Public NFT animation pages are embedded by marketplaces in sandboxed,
+  // cross-site iframes. Setting SameSite=Lax cookies there is rejected by
+  // browsers and is unnecessary because the page does not perform mutations.
+  if (/^\/characters\/[^/]+\/animated\/?$/.test(request.nextUrl.pathname)) {
+    return response
+  }
+
   // Check if CSRF token cookie exists
   const existingToken = request.cookies.get(CSRF_COOKIE_NAME)
 

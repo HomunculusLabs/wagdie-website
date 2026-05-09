@@ -84,6 +84,33 @@ const nextConfig = {
     return config
   },
 
+  async headers() {
+    return [
+      {
+        source: '/fonts/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
+        ],
+      },
+      {
+        source: '/characters/:tokenId/animated',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
+        ],
+      },
+      {
+        source: '/api/characters/metadata/:tokenId',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
+        ],
+      },
+    ]
+  },
+
   // Add rewrites to handle WebP requests for map icons by serving PNG versions.
   // `/api/*` remote dev proxying is handled in `middleware.ts` so it can run
   // before App Router API route handlers.
