@@ -8,6 +8,7 @@ import {
   getAllLoreLocations,
   getCharacterBySlug,
   getEventsForCharacter,
+  getCharacterConnections,
   getSourcesForEvent,
   loreMedia,
   loreSeasons,
@@ -34,6 +35,7 @@ const resolveCharacterPageData = (slug: string) => {
     const location = locationById.get(locationId);
     return location ? [location] : [];
   });
+  const characterConnections = getCharacterConnections(character.id);
   const firstAppearance = character.firstAppearanceEventId
     ? getAllLoreEvents().find((event) => event.id === character.firstAppearanceEventId)
     : appearedInEvents[0];
@@ -52,6 +54,7 @@ const resolveCharacterPageData = (slug: string) => {
     appearedInEvents,
     firstAppearance,
     associatedLocations,
+    characterConnections,
     allLocations,
     sources: [...sourceById.values()],
   };
@@ -97,6 +100,7 @@ export default async function LoreCharacterPage({ params }: LoreCharacterPagePro
         appearedInEvents={data.appearedInEvents}
         firstAppearance={data.firstAppearance}
         associatedLocations={data.associatedLocations}
+        characterConnections={data.characterConnections}
         seasons={loreSeasons}
         allLocations={data.allLocations}
         sources={data.sources}

@@ -3,6 +3,7 @@ import {
   getEventsForCharacter,
   getSourcesForEvent,
   getAllLoreCharacters,
+  getCharacterConnections,
   loreEvents,
   parseLoreArchiveFilters,
   validateLoreArchive,
@@ -49,6 +50,17 @@ describe('lore domain', () => {
     expect(characters.length).toBeGreaterThanOrEqual(12);
     expect(loreEvents.every((event) => event.characterIds.length >= 5)).toBe(true);
     expect(characters.every((character) => referencedCharacterIds.has(character.id))).toBe(true);
+  });
+
+
+  it('derives co-appearing character connections for character profiles', () => {
+    const connections = getCharacterConnections('character-5');
+
+    expect(connections.length).toBeGreaterThan(0);
+    expect(connections.map((connection) => connection.character.id)).toEqual(
+      expect.arrayContaining(['character-3015', 'character-1780']),
+    );
+    expect(connections.every((connection) => connection.sharedEvents.length > 0)).toBe(true);
   });
 
   it('reports duplicate ids/slugs and missing references', () => {

@@ -91,6 +91,11 @@ export interface LoreCharacter {
   tags: string[];
 }
 
+export interface LoreCharacterConnection {
+  character: LoreCharacter;
+  sharedEvents: LoreEvent[];
+}
+
 export interface LoreMedia {
   id: string;
   kind: Extract<SourceKind, 'image' | 'video'>;

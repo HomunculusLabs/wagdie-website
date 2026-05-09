@@ -2,10 +2,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui';
 import { AppearedInTimeline } from './AppearedInTimeline';
+import { CharacterPortrait } from './CharacterPortrait';
 import { EntityChips } from './EntityChips';
 import { MediaGallery } from './MediaGallery';
 import { SourceList } from './SourceList';
 import type {
+  LoreCharacterConnection,
   LoreCharacter,
   LoreEvent,
   LoreLocation,
@@ -20,6 +22,7 @@ interface CharacterProfileProps {
   appearedInEvents: LoreEvent[];
   firstAppearance?: LoreEvent;
   associatedLocations: LoreLocation[];
+  characterConnections: LoreCharacterConnection[];
   seasons: LoreSeason[];
   allLocations: LoreLocation[];
   sources: SourceRecord[];
@@ -37,6 +40,7 @@ export function CharacterProfile({
   appearedInEvents,
   firstAppearance,
   associatedLocations,
+  characterConnections,
   seasons,
   allLocations,
   sources,
@@ -141,7 +145,30 @@ export function CharacterProfile({
             }))}
             emptyLabel="No associated locations"
           />
-          <p className="text-sm font-eskapade leading-relaxed text-neutral-300">
+
+          <div>
+            <p className="text-sm font-serif uppercase tracking-[0.06em] text-soul-accent">
+              Appears with
+            </p>
+            <div className="mt-3 grid gap-3">
+              {characterConnections.length > 0 ? characterConnections.slice(0, 8).map((connection) => (
+                <div key={connection.character.id} className="space-y-2">
+                  <CharacterPortrait
+                    character={connection.character}
+                    href={`/lore/characters/${connection.character.slug}`}
+                    size="sm"
+                  />
+                  <p className="pl-1 font-serif text-sm text-neutral-200">
+                    Shares {connection.sharedEvents.length} {connection.sharedEvents.length === 1 ? 'record' : 'records'} with {character.name}.
+                  </p>
+                </div>
+              )) : (
+                <p className="font-serif text-base text-neutral-200">No co-appearing characters are linked yet.</p>
+              )}
+            </div>
+          </div>
+
+          <p className="font-serif text-base leading-7 text-neutral-200">
             This profile gathers every official and community event that references {character.name}, ordered by the shared lore timeline.
           </p>
         </aside>
