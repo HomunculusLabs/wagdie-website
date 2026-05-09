@@ -3,10 +3,12 @@ import { LoreArchive } from '@/components/lore/LoreArchive';
 import {
   getAllLoreCharacters,
   getAllLoreLocations,
-  getArchiveItems,
   loreSeasons,
   parseLoreArchiveFilters,
 } from '@/lib/lore';
+import { getEffectiveArchiveItems } from '@/lib/lore/effective-query';
+
+export const dynamic = 'force-dynamic';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -17,7 +19,7 @@ interface LorePageProps {
 export default async function LorePage({ searchParams }: LorePageProps) {
   const resolvedSearchParams = await searchParams;
   const filters = parseLoreArchiveFilters(resolvedSearchParams);
-  const items = getArchiveItems(filters);
+  const items = await getEffectiveArchiveItems(filters);
 
   return (
     <div className="min-h-screen bg-soul-950">

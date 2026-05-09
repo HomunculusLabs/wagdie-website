@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LoreFilterBar } from './LoreFilterBar';
 import { LoreTimeline } from './LoreTimeline';
-import { canonStatusLabels } from './CanonStatusBadge';
+import { canonStatusLabels, getCanonizationStageDefinition } from '@/lib/lore/canonization';
 import type {
   LoreArchiveFilters,
   LoreCharacter,
@@ -19,7 +19,7 @@ interface LoreArchiveProps {
 }
 
 const hasActiveFilters = (filters: LoreArchiveFilters) => {
-  return Boolean(filters.season || filters.location || filters.character || filters.keyword || filters.canonStatus);
+  return Boolean(filters.season || filters.location || filters.character || filters.keyword || filters.canonStatus || filters.canonStage);
 };
 
 const buildActiveFilterLabels = (
@@ -51,6 +51,10 @@ const buildActiveFilterLabels = (
 
   if (filters.canonStatus) {
     labels.push(`Canon: ${canonStatusLabels[filters.canonStatus]}`);
+  }
+
+  if (filters.canonStage) {
+    labels.push(`Stage: ${getCanonizationStageDefinition(filters.canonStage).label}`);
   }
 
   return labels;

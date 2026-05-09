@@ -4,28 +4,33 @@ import { BannerHeader } from '@/components/shared/BannerHeader';
 import { CharacterProfile } from '@/components/lore/CharacterProfile';
 import {
   getAllLoreCharacters,
-  getAllLoreEvents,
   getAllLoreLocations,
   getCharacterBySlug,
-  getEventsForCharacter,
-  getCharacterConnections,
-  getSourcesForEvent,
   loreMedia,
   loreSeasons,
 } from '@/lib/lore';
+import {
+  getAllEffectiveLoreEvents,
+  getEffectiveCharacterConnections,
+  getEffectiveEventsForCharacter,
+  getEffectiveSourcesForEvent,
+} from '@/lib/lore/effective-query';
+
+export const dynamic = 'force-dynamic';
 
 interface LoreCharacterPageProps {
   params: Promise<{ slug: string }>;
 }
 
-const resolveCharacterPageData = (slug: string) => {
+const resolveCharacterPageData = async (slug: string) => {
   const character = getCharacterBySlug(slug);
 
   if (!character) {
     return undefined;
   }
 
-  const appearedInEvents = getEventsForCharacter(character.id).sort((a, b) => (
+  const allEffectiveEvents = await getAllEffectiveLoreEvents();
+  const appearedInEvents = (await getEffectiveEventsForCharacter(character.id)).sort((a, b) => (
     a.timelineOrder - b.timelineOrder || a.title.localeCompare(b.title)
   ));
   const allLocations = getAllLoreLocations();
@@ -35,18 +40,17 @@ const resolveCharacterPageData = (slug: string) => {
     const location = locationById.get(locationId);
     return location ? [location] : [];
   });
-  const characterConnections = getCharacterConnections(character.id);
+  const characterConnections = await getEffectiveCharacterConnections(character.id);
   const firstAppearance = character.firstAppearanceEventId
-    ? getAllLoreEvents().find((event) => event.id === character.firstAppearanceEventId)
+    ? allEffectiveEvents.find((event) => event.id === character.firstAppearanceEventId)
     : appearedInEvents[0];
   const image = character.imageId
     ? loreMedia.find((media) => media.id === character.imageId)
     : undefined;
-  const sourceById = new Map(
-    appearedInEvents
-      .flatMap((event) => getSourcesForEvent(event))
-      .map((source) => [source.id, source]),
-  );
+  const appearedInSources = (await Promise.all(
+    appearedInEvents.map((event) => getEffectiveSourcesForEvent(event)),
+  )).flat();
+  const sourceById = new Map(appearedInSources.map((source) => [source.id, source]));
 
   return {
     character,
@@ -60,9 +64,6 @@ const resolveCharacterPageData = (slug: string) => {
   };
 };
 
-export function generateStaticParams() {
-  return getAllLoreCharacters().map((character) => ({ slug: character.slug }));
-}
 
 export async function generateMetadata({ params }: LoreCharacterPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -82,7 +83,7 @@ export async function generateMetadata({ params }: LoreCharacterPageProps): Prom
 
 export default async function LoreCharacterPage({ params }: LoreCharacterPageProps) {
   const { slug } = await params;
-  const data = resolveCharacterPageData(slug);
+  const data = await resolveCharacterPageData(slug);
 
   if (!data) {
     notFound();

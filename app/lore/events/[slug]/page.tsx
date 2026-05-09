@@ -4,23 +4,26 @@ import { BannerHeader } from '@/components/shared/BannerHeader';
 import { LoreEventDetail } from '@/components/lore/LoreEventDetail';
 import {
   getAllLoreCharacters,
-  getAllLoreEvents,
   getAllLoreLocations,
-  getMediaForEvent,
-  getOfficialEventBySlug,
-  getOfficialEvents,
   getRelatedEntitiesForEvent,
-  getSourcesForEvent,
   loreSeasons,
 } from '@/lib/lore';
+import {
+  getAllEffectiveLoreEvents,
+  getEffectiveMediaForEvent,
+  getEffectiveOfficialEventBySlug,
+  getEffectiveSourcesForEvent,
+} from '@/lib/lore/effective-query';
 import type { LoreEvent } from '@/lib/lore/types';
+
+export const dynamic = 'force-dynamic';
 
 interface LoreEventPageProps {
   params: Promise<{ slug: string }>;
 }
 
-const getRelatedEvents = (event: LoreEvent) => {
-  return getAllLoreEvents()
+const getRelatedEvents = (event: LoreEvent, allEvents: LoreEvent[]) => {
+  return allEvents
     .filter((candidate) => candidate.id !== event.id)
     .filter((candidate) => (
       candidate.characterIds.some((characterId) => event.characterIds.includes(characterId)) ||
@@ -29,8 +32,9 @@ const getRelatedEvents = (event: LoreEvent) => {
     .slice(0, 4);
 };
 
-const resolveEventPageData = (slug: string) => {
-  const event = getOfficialEventBySlug(slug);
+const resolveEventPageData = async (slug: string) => {
+  const allEvents = await getAllEffectiveLoreEvents();
+  const event = allEvents.find((candidate) => candidate.slug === slug && candidate.kind === 'official');
 
   if (!event) {
     return undefined;
@@ -54,19 +58,16 @@ const resolveEventPageData = (slug: string) => {
     }),
     season: event.seasonId ? loreSeasons.find((season) => season.id === event.seasonId) : undefined,
     relatedEntities: getRelatedEntitiesForEvent(event),
-    sources: getSourcesForEvent(event),
-    media: getMediaForEvent(event),
-    relatedEvents: getRelatedEvents(event),
+    sources: await getEffectiveSourcesForEvent(event),
+    media: await getEffectiveMediaForEvent(event),
+    relatedEvents: getRelatedEvents(event, allEvents),
   };
 };
 
-export function generateStaticParams() {
-  return getOfficialEvents().map((event) => ({ slug: event.slug }));
-}
 
 export async function generateMetadata({ params }: LoreEventPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const event = getOfficialEventBySlug(slug);
+  const event = await getEffectiveOfficialEventBySlug(slug);
 
   if (!event) {
     return {
@@ -82,7 +83,7 @@ export async function generateMetadata({ params }: LoreEventPageProps): Promise<
 
 export default async function OfficialLoreEventPage({ params }: LoreEventPageProps) {
   const { slug } = await params;
-  const data = resolveEventPageData(slug);
+  const data = await resolveEventPageData(slug);
 
   if (!data) {
     notFound();

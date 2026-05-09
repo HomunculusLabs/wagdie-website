@@ -13,6 +13,7 @@ import type { LoreCharacter, LoreLocation } from '@/lib/lore/types';
 
 const officialEvent = getOfficialEvents()[0];
 const communityCanonizingEvent = getCommunityEvents().find((event) => event.canon.status === 'canonizing')!;
+const communityRecordedEvent = getCommunityEvents().find((event) => event.canon.status === 'community')!;
 const disputedEvent = getCommunityEvents().find((event) => event.canon.status === 'disputed')!;
 
 export const loreStoryData = {
@@ -22,9 +23,11 @@ export const loreStoryData = {
   allSources: getAllLoreSources(),
   officialEvent,
   communityCanonizingEvent,
+  communityRecordedEvent,
   disputedEvent,
   officialEventSources: getSourcesForEvent(officialEvent),
   communityCanonizingSources: getSourcesForEvent(communityCanonizingEvent),
+  communityRecordedSources: getSourcesForEvent(communityRecordedEvent),
   disputedSources: getSourcesForEvent(disputedEvent),
   officialEventMedia: getMediaForEvent(officialEvent),
   communityCanonizingMedia: getMediaForEvent(communityCanonizingEvent),

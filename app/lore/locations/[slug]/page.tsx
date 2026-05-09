@@ -5,18 +5,20 @@ import { LocationProfile } from '@/components/lore/LocationProfile';
 import {
   getAllLoreCharacters,
   getAllLoreLocations,
-  getEventsForLocation,
   getLocationBySlug,
   getMediaForLocation,
   getSourcesForLocation,
   loreSeasons,
 } from '@/lib/lore';
+import { getEffectiveEventsForLocation } from '@/lib/lore/effective-query';
+
+export const dynamic = 'force-dynamic';
 
 interface LoreLocationPageProps {
   params: Promise<{ slug: string }>;
 }
 
-const resolveLocationPageData = (slug: string) => {
+const resolveLocationPageData = async (slug: string) => {
   const location = getLocationBySlug(slug);
 
   if (!location) {
@@ -25,7 +27,7 @@ const resolveLocationPageData = (slug: string) => {
 
   return {
     location,
-    events: getEventsForLocation(location.id),
+    events: await getEffectiveEventsForLocation(location.id),
     allLocations: getAllLoreLocations(),
     characters: getAllLoreCharacters(),
     media: getMediaForLocation(location),
@@ -33,9 +35,6 @@ const resolveLocationPageData = (slug: string) => {
   };
 };
 
-export function generateStaticParams() {
-  return getAllLoreLocations().map((location) => ({ slug: location.slug }));
-}
 
 export async function generateMetadata({ params }: LoreLocationPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -55,7 +54,7 @@ export async function generateMetadata({ params }: LoreLocationPageProps): Promi
 
 export default async function LoreLocationPage({ params }: LoreLocationPageProps) {
   const { slug } = await params;
-  const data = resolveLocationPageData(slug);
+  const data = await resolveLocationPageData(slug);
 
   if (!data) {
     notFound();

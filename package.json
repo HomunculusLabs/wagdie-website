@@ -42,10 +42,14 @@
     "react-dom": "^18.3.0",
     "react-hot-toast": "^2.6.0",
     "react-intersection-observer": "^10.0.0",
+    "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
     "siwe": "^2.1.4",
     "viem": "^2.0.0",
-    "wagmi": "^2.0.0"
+    "wagmi": "^2.0.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^29.0.0",

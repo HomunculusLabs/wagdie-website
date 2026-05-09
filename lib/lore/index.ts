@@ -1,5 +1,7 @@
 export * from './types';
 export * from './filters';
+export * from './canonization';
+export * from './canonization-overrides';
 export * from './query';
 export * from './validate';
 

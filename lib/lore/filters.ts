@@ -1,6 +1,7 @@
 import { loreCharacters } from './data/characters';
 import { loreLocations } from './data/locations';
 import { loreSeasons } from './data/seasons';
+import { isCanonizationStageId } from './canonization';
 import { canonStatuses } from './types';
 import type { CanonStatus, LoreArchiveFilters, LoreEvent } from './types';
 
@@ -38,6 +39,7 @@ const getParam = (input: FilterInput, key: keyof LoreArchiveFilters): string | u
 
 export const parseLoreArchiveFilters = (input: FilterInput): LoreArchiveFilters => {
   const canonStatus = getParam(input, 'canonStatus');
+  const canonStage = getParam(input, 'canonStage');
 
   return {
     season: getParam(input, 'season'),
@@ -45,6 +47,7 @@ export const parseLoreArchiveFilters = (input: FilterInput): LoreArchiveFilters 
     character: getParam(input, 'character'),
     keyword: getParam(input, 'keyword'),
     canonStatus: canonStatus && isCanonStatus(canonStatus) ? canonStatus : undefined,
+    canonStage: canonStage && isCanonizationStageId(canonStage) ? canonStage : undefined,
   };
 };
 
@@ -72,8 +75,10 @@ const eventMatchesKeyword = (event: LoreEvent, keyword: string): boolean => {
     event.title,
     event.summary,
     event.body,
+    event.canon.stageId,
     ...event.tags,
     ...event.keywords,
+    ...event.canon.path.flatMap((step) => [step.label, step.stageId, step.note]),
     ...characters.flatMap((character) => [character.name, ...character.aliases, character.summary]),
     ...locations.flatMap((location) => [location.name, location.summary, ...location.tags]),
   ].some((value) => includesToken(value, token));
@@ -102,6 +107,10 @@ export const eventMatchesLoreArchiveFilters = (
   }
 
   if (filters.canonStatus && event.canon.status !== filters.canonStatus) {
+    return false;
+  }
+
+  if (filters.canonStage && event.canon.stageId !== filters.canonStage) {
     return false;
   }
 

@@ -11,6 +11,18 @@ export const canonStatuses = [
 ] as const;
 export type CanonStatus = (typeof canonStatuses)[number];
 
+export const canonizationStageIds = [
+  'archived',
+  'community_recorded',
+  'source_attributed',
+  'continuity_review',
+  'canon_candidate',
+  'canonized',
+  'disputed',
+  'rejected',
+] as const;
+export type CanonizationStageId = (typeof canonizationStageIds)[number];
+
 export const sourceKinds = [
   'tweet',
   'website',
@@ -30,19 +42,23 @@ export const loreEntityKinds = [
 ] as const;
 export type LoreEntityKind = (typeof loreEntityKinds)[number];
 
-export type CanonizationStepStatus = 'complete' | 'current' | 'blocked' | 'not_started';
+export type CanonizationStepStatus = 'complete' | 'current' | 'blocked' | 'not_started' | 'skipped';
 
 export interface CanonizationStep {
-  label: string;
+  stageId: CanonizationStageId;
+  label?: string;
   status: CanonizationStepStatus;
   date?: string;
   sourceIds?: string[];
+  note?: string;
 }
 
 export interface Canonization {
   status: CanonStatus;
+  stageId: CanonizationStageId;
   path: CanonizationStep[];
   note?: string;
+  updatedAt?: string;
 }
 
 export interface LoreEntityRef {
@@ -152,6 +168,7 @@ export interface LoreArchiveFilters {
   character?: string;
   keyword?: string;
   canonStatus?: CanonStatus;
+  canonStage?: CanonizationStageId;
 }
 
 export interface LoreArchiveValidationResult {
