@@ -167,7 +167,7 @@ services:
       elizaos-db:
         condition: service_healthy
     ports:
-      - "3001:3001"
+      - "${ELIZAOS_HOST_PORT:-3001}:3001"
     environment:
       NODE_ENV: production
       ELIZAOS_ENV: ${ELIZAOS_ENV:-production}
