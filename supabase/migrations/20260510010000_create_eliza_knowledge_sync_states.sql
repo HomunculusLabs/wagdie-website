@@ -39,6 +39,15 @@ CREATE INDEX IF NOT EXISTS idx_eliza_knowledge_sync_states_status_updated
 ALTER TABLE eliza_knowledge_sync_states ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE eliza_knowledge_sync_states FROM anon, authenticated;
+GRANT ALL ON TABLE eliza_knowledge_sync_states TO service_role;
+
+DROP POLICY IF EXISTS service_role_all_eliza_knowledge_sync_states ON eliza_knowledge_sync_states;
+CREATE POLICY service_role_all_eliza_knowledge_sync_states
+  ON eliza_knowledge_sync_states
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
 
 DROP TRIGGER IF EXISTS update_eliza_knowledge_sync_states_updated_at ON eliza_knowledge_sync_states;
 CREATE TRIGGER update_eliza_knowledge_sync_states_updated_at
