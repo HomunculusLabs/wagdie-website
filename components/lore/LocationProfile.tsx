@@ -21,6 +21,7 @@ interface LocationProfileProps {
   characters: LoreCharacter[];
   media?: LoreMedia[];
   sources?: SourceRecord[];
+  sourcesByEventId?: Record<string, SourceRecord[]>;
 }
 
 export function LocationProfile({
@@ -31,6 +32,7 @@ export function LocationProfile({
   characters,
   media = [],
   sources = [],
+  sourcesByEventId = {},
 }: LocationProfileProps) {
   const officialCount = events.filter((event) => event.kind === 'official').length;
   const communityCount = events.length - officialCount;
@@ -125,6 +127,7 @@ export function LocationProfile({
               seasons={seasons}
               locations={allLocations}
               characters={characters}
+              sourcesByEventId={sourcesByEventId}
             />
           ) : (
             <div className="border border-midnight-light/50 bg-black/20 p-6 font-serif text-base text-neutral-200">

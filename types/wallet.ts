@@ -93,6 +93,10 @@ export interface UserSession {
       expiresAt: number
       /** Optional refresh token for future token refresh support */
       refreshToken?: string
+      /** Auth token source. Official mode tokens are WAGDIE app gates, not ElizaOS credentials. */
+      mode?: 'legacy' | 'official'
+      /** Server-side ElizaOS user id derived from the authenticated wallet. */
+      officialUserId?: string
     }
   }
 

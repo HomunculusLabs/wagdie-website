@@ -3,8 +3,7 @@ import {
   isCanonizationStageId,
   isValidCanonizationStageForStatus,
 } from './canonization';
-import { loreEvents } from './data/events';
-import { loreSources } from './data/sources';
+import { getStaticLoreBaseDataset, type LoreBaseDataset } from './base-dataset';
 import {
   canonStatuses,
   type CanonStatus,
@@ -56,8 +55,14 @@ const canonizationStepStatuses: readonly CanonizationStepStatus[] = [
   'skipped',
 ];
 
-const eventIds = new Set(loreEvents.map((event) => event.id));
-const sourceIds = new Set(loreSources.map((source) => source.id));
+export interface LoreCanonizationValidationOptions {
+  dataset?: LoreBaseDataset;
+  validate?: boolean;
+}
+
+const getValidationDataset = (dataset?: LoreBaseDataset): LoreBaseDataset => {
+  return dataset ?? getStaticLoreBaseDataset();
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -137,11 +142,14 @@ const parsePath = (value: unknown, errors: string[]): CanonizationStep[] => {
 
 export const validateLoreCanonizationOverride = (
   input: LoreCanonizationOverrideInput,
+  dataset?: LoreBaseDataset,
 ): string[] => {
   const errors: string[] = [];
+  const validationDataset = getValidationDataset(dataset);
+  const { eventsById, sourcesById } = validationDataset.indexes;
 
-  if (!eventIds.has(input.eventId)) {
-    errors.push(`event_id does not match a static lore event: ${input.eventId}`);
+  if (!eventsById.has(input.eventId)) {
+    errors.push(`event_id does not match an active lore event: ${input.eventId}`);
   }
 
   if (!isValidCanonizationStageForStatus(input.status, input.stageId)) {
@@ -186,7 +194,7 @@ export const validateLoreCanonizationOverride = (
     seenStageIds.add(step.stageId);
 
     step.sourceIds?.forEach((sourceId) => {
-      if (!sourceIds.has(sourceId)) {
+      if (!sourcesById.has(sourceId)) {
         errors.push(`${pathLabel}.sourceIds references missing source: ${sourceId}`);
       }
     });
@@ -198,6 +206,7 @@ export const validateLoreCanonizationOverride = (
 export const parseLoreCanonizationOverrideInput = (
   body: unknown,
   routeEventId?: string,
+  options: LoreCanonizationValidationOptions = {},
 ): LoreCanonizationOverrideParseResult => {
   const errors: string[] = [];
 
@@ -242,9 +251,11 @@ export const parseLoreCanonizationOverrideInput = (
     path,
   } satisfies LoreCanonizationOverrideInput;
 
-  const validationErrors = validateLoreCanonizationOverride(input);
-  if (validationErrors.length > 0) {
-    return { ok: false, errors: validationErrors };
+  if (options.validate !== false) {
+    const validationErrors = validateLoreCanonizationOverride(input, options.dataset);
+    if (validationErrors.length > 0) {
+      return { ok: false, errors: validationErrors };
+    }
   }
 
   return { ok: true, input };

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useOwnedCharacters } from '@/hooks/useOwnedCharacters';
+import type { LoreLocation } from '@/lib/lore/types';
 import type { LoreSubmissionDetailDto, LoreSubmissionLink } from '@/types/lore-submission';
 import { MarkdownEditor } from './MarkdownEditor';
 import {
@@ -26,6 +27,7 @@ export interface LoreSubmissionFormInitialValues {
   summary?: string;
   bodyMarkdown?: string;
   tags?: string[];
+  locationId?: string;
   links?: EditableSubmissionLink[];
 }
 
@@ -33,6 +35,7 @@ export interface LoreSubmissionFormProps {
   mode?: 'create' | 'revise';
   submissionId?: string;
   initialValues?: LoreSubmissionFormInitialValues;
+  locationOptions?: LoreLocation[];
   onSubmitted?: (detail: LoreSubmissionDetailDto) => void;
 }
 
@@ -53,7 +56,7 @@ export function linksToEditableLinks(links: LoreSubmissionLink[]): EditableSubmi
     attribution: link.attribution ?? '',
   }));
 
-  return editable.length > 0 ? editable : [defaultLink()];
+  return editable;
 }
 
 function tagsFromText(value: string): string[] {
@@ -101,6 +104,7 @@ export function LoreSubmissionForm({
   mode = 'create',
   submissionId,
   initialValues,
+  locationOptions = [],
   onSubmitted,
 }: LoreSubmissionFormProps) {
   const auth = useAuth();
@@ -115,7 +119,8 @@ export function LoreSubmissionForm({
   const [summary, setSummary] = useState(initialValues?.summary ?? '');
   const [bodyMarkdown, setBodyMarkdown] = useState(initialValues?.bodyMarkdown ?? '');
   const [tagsText, setTagsText] = useState((initialValues?.tags ?? []).join(', '));
-  const [links, setLinks] = useState<EditableSubmissionLink[]>(initialValues?.links ?? [defaultLink()]);
+  const [locationId, setLocationId] = useState(initialValues?.locationId ?? '');
+  const [links, setLinks] = useState<EditableSubmissionLink[]>(initialValues?.links ?? []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -128,8 +133,13 @@ export function LoreSubmissionForm({
   const ownedTokenIds = useMemo(() => (
     ownedCharacters.characters.map((character) => String(character.token_id))
   ), [ownedCharacters.characters]);
+  const tokenOptions = useMemo(() => (
+    tokenId && !ownedTokenIds.includes(tokenId)
+      ? [tokenId, ...ownedTokenIds]
+      : ownedTokenIds
+  ), [ownedTokenIds, tokenId]);
 
-  const submitLabel = mode === 'revise' ? 'Resubmit changes' : 'Submit lore';
+  const submitLabel = mode === 'revise' ? 'Republish changes' : 'Publish community lore';
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -156,6 +166,7 @@ export function LoreSubmissionForm({
           summary: summary.trim(),
           bodyMarkdown,
           tags: tagsFromText(tagsText),
+          locationIds: locationId ? [locationId] : [],
           links: cleanLinks(links),
         }),
       });
@@ -166,8 +177,8 @@ export function LoreSubmissionForm({
       );
 
       setSuccessMessage(mode === 'revise'
-        ? 'Changes resubmitted for admin review.'
-        : 'Lore submitted for admin review.');
+        ? 'Changes republished as community lore.'
+        : 'Lore published as community lore.');
       onSubmitted?.(detail);
 
       if (mode === 'create') {
@@ -175,7 +186,8 @@ export function LoreSubmissionForm({
         setSummary('');
         setBodyMarkdown('');
         setTagsText('');
-        setLinks([defaultLink()]);
+        setLocationId('');
+        setLinks([]);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to submit lore.');
@@ -243,14 +255,14 @@ export function LoreSubmissionForm({
       <div className="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
         <label className="space-y-1 text-sm text-soul-mist">
           <span className="font-display uppercase tracking-wide">Token ID</span>
-          {ownedTokenIds.length > 0 ? (
+          {tokenOptions.length > 0 ? (
             <select
               value={tokenId}
               onChange={(event) => setTokenId(event.target.value)}
               disabled={isSubmitting || mode === 'revise'}
               className="w-full rounded border border-soul-accent/20 bg-abyss/60 px-3 py-2 text-soul-bone focus:border-soul-accent focus:outline-none"
             >
-              {ownedTokenIds.map((id) => (
+              {tokenOptions.map((id) => (
                 <option key={id} value={id}>Token #{id}</option>
               ))}
             </select>
@@ -278,6 +290,23 @@ export function LoreSubmissionForm({
           />
         </label>
       </div>
+
+      {locationOptions.length > 0 && (
+        <label className="block space-y-1 text-sm text-soul-mist">
+          <span className="font-display uppercase tracking-wide">Location <span className="text-soul-mist/60">optional</span></span>
+          <select
+            value={locationId}
+            onChange={(event) => setLocationId(event.target.value)}
+            disabled={isSubmitting}
+            className="w-full rounded border border-soul-accent/20 bg-abyss/60 px-3 py-2 text-soul-bone focus:border-soul-accent focus:outline-none"
+          >
+            <option value="">No specific location</option>
+            {locationOptions.map((location) => (
+              <option key={location.id} value={location.id}>{location.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="block space-y-1 text-sm text-soul-mist">
         <span className="font-display uppercase tracking-wide">Summary</span>
@@ -308,7 +337,7 @@ export function LoreSubmissionForm({
       <SourceUrlListEditor links={links} onChange={setLinks} disabled={isSubmitting} />
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-soul-accent/10 pt-4">
-        <Button type="submit" isLoading={isSubmitting} disabled={cleanLinks(links).length === 0}>
+        <Button type="submit" isLoading={isSubmitting}>
           {submitLabel}
         </Button>
       </div>

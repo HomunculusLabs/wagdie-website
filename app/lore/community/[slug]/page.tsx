@@ -3,15 +3,14 @@ import { notFound, redirect } from 'next/navigation';
 import { BannerHeader } from '@/components/shared/BannerHeader';
 import { CommunityEventDetail } from '@/components/lore/CommunityEventDetail';
 import {
-  getAllLoreCharacters,
-  getAllLoreLocations,
-  getRelatedEntitiesForEvent,
-  loreSeasons,
-} from '@/lib/lore';
-import {
+  getAllEffectiveLoreCharacters,
   getAllEffectiveLoreEvents,
+  getAllEffectiveLoreLocations,
+  getAllEffectiveLoreSeasons,
   getEffectiveCommunityEventBySlug,
   getEffectiveMediaForEvent,
+  getEffectiveOfficialEventBySlug,
+  getEffectiveRelatedEntitiesForEvent,
   getEffectiveSourcesForEvent,
 } from '@/lib/lore/effective-query';
 import type { LoreEvent } from '@/lib/lore/types';
@@ -33,15 +32,18 @@ const getRelatedEvents = (event: LoreEvent, allEvents: LoreEvent[]) => {
 };
 
 const resolveEventPageData = async (slug: string) => {
-  const allEvents = await getAllEffectiveLoreEvents();
-  const event = allEvents.find((candidate) => candidate.slug === slug && candidate.kind === 'community');
+  const [event, allEvents, allCharacters, allLocations, seasons] = await Promise.all([
+    getEffectiveCommunityEventBySlug(slug),
+    getAllEffectiveLoreEvents(),
+    getAllEffectiveLoreCharacters(),
+    getAllEffectiveLoreLocations(),
+    getAllEffectiveLoreSeasons(),
+  ]);
 
   if (!event) {
     return undefined;
   }
 
-  const allCharacters = getAllLoreCharacters();
-  const allLocations = getAllLoreLocations();
   const characterById = new Map(allCharacters.map((character) => [character.id, character]));
   const locationById = new Map(allLocations.map((location) => [location.id, location]));
 
@@ -56,14 +58,14 @@ const resolveEventPageData = async (slug: string) => {
       const character = characterById.get(characterId);
       return character ? [character] : [];
     }),
-    season: event.seasonId ? loreSeasons.find((season) => season.id === event.seasonId) : undefined,
-    relatedEntities: getRelatedEntitiesForEvent(event),
+    season: event.seasonId ? seasons.find((season) => season.id === event.seasonId) : undefined,
+    relatedEntities: await getEffectiveRelatedEntitiesForEvent(event),
     sources: await getEffectiveSourcesForEvent(event),
     media: await getEffectiveMediaForEvent(event),
     relatedEvents: getRelatedEvents(event, allEvents),
+    seasons,
   };
 };
-
 
 export async function generateMetadata({ params }: CommunityLoreEventPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -86,8 +88,7 @@ export default async function CommunityLoreEventPage({ params }: CommunityLoreEv
   const data = await resolveEventPageData(slug);
 
   if (!data) {
-    const officialEvent = (await getAllEffectiveLoreEvents())
-      .find((candidate) => candidate.slug === slug && candidate.kind === 'official');
+    const officialEvent = await getEffectiveOfficialEventBySlug(slug);
 
     if (officialEvent) {
       redirect(`/lore/events/${slug}`);
@@ -111,7 +112,7 @@ export default async function CommunityLoreEventPage({ params }: CommunityLoreEv
         sources={data.sources}
         media={data.media}
         relatedEvents={data.relatedEvents}
-        seasons={loreSeasons}
+        seasons={data.seasons}
         allLocations={data.allLocations}
       />
     </div>

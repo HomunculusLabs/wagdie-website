@@ -12,12 +12,21 @@ const formatDate = (dateString?: string) => {
     return undefined;
   }
 
+  const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+    ? `${dateString}T00:00:00.000Z`
+    : dateString;
+  const date = new Date(normalizedDate);
+
+  if (!Number.isFinite(date.getTime())) {
+    return undefined;
+  }
+
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(`${dateString}T00:00:00.000Z`));
+  }).format(date);
 };
 
 export function CanonWorkflowSummary({ canon, variant = 'card' }: CanonWorkflowSummaryProps) {

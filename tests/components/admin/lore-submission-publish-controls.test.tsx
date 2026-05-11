@@ -73,10 +73,10 @@ describe('LoreSubmissionPublishControls', () => {
     expect(onUpdated).toHaveBeenCalledWith(makeDetail('canonized'));
   });
 
-  it('disables publish-only actions when status does not allow them', () => {
+  it('only enables canonization controls for already-public community lore', () => {
     render(<LoreSubmissionPublishControls detail={makeDetail('submitted')} onUpdated={jest.fn()} />);
 
-    expect(screen.getByRole('button', { name: /publish community lore/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /publish community lore/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^canonize$/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /decanonize/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /unpublish/i })).toBeDisabled();

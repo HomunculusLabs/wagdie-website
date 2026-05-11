@@ -109,6 +109,21 @@ export function CharacterProfile({
                 />
               </div>
 
+              <div className="flex flex-wrap gap-3">
+                {character.tokenId ? (
+                  <Link
+                    href={`/lore/submit?tokenId=${encodeURIComponent(String(character.tokenId))}`}
+                    className="inline-flex items-center justify-center rounded border border-soul-accent/50 bg-soul-accent/10 px-4 py-2 font-display text-sm uppercase tracking-[0.16em] text-soul-accent transition-colors hover:border-soul-accent hover:bg-soul-accent/20 hover:text-soul-bone"
+                  >
+                    Add a story for WAGDIE #{character.tokenId}
+                  </Link>
+                ) : (
+                  <p className="text-sm font-serif text-neutral-300">
+                    Community stories can be submitted for token-linked characters.
+                  </p>
+                )}
+              </div>
+
               {firstAppearance && (
                 <div className="border border-midnight-light/50 bg-black/20 p-4">
                   <p className="text-sm font-serif uppercase tracking-[0.22em] text-neutral-300">

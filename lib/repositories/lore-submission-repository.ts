@@ -201,6 +201,8 @@ export class LoreSubmissionRepository {
         summary: input.summary,
         body_markdown: input.bodyMarkdown,
         tags: input.tags,
+        character_ids: input.characterIds,
+        location_ids: input.locationIds,
         submitted_at: now,
       })
       .select(SUBMISSION_COLUMNS)
@@ -429,6 +431,8 @@ export class LoreSubmissionRepository {
         summary: input.summary,
         body_markdown: input.bodyMarkdown,
         tags: input.tags,
+        character_ids: input.characterIds,
+        location_ids: input.locationIds,
         status: 'submitted',
         visibility: 'pending',
         review_note: null,

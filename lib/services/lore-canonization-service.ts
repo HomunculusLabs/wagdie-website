@@ -1,4 +1,5 @@
-import { loreEvents } from '@/lib/lore/data/events';
+import { getActiveLoreBaseDataset } from '@/lib/lore/base-query';
+import type { LoreBaseDataset } from '@/lib/lore/base-dataset';
 import {
   parseLoreCanonizationOverrideInput,
   validateLoreCanonizationOverride,
@@ -38,20 +39,25 @@ export class LoreCanonizationNotFoundError extends Error {
   }
 }
 
-const eventById = new Map(loreEvents.map((event) => [event.id, event]));
+export type LoreCanonizationBaseDatasetLoader = () => Promise<LoreBaseDataset>;
 
 export class LoreCanonizationService {
-  constructor(private repository: LoreCanonizationRepository = loreCanonizationRepository) {}
+  constructor(
+    private repository: LoreCanonizationRepository = loreCanonizationRepository,
+    private loadBaseDataset: LoreCanonizationBaseDatasetLoader = getActiveLoreBaseDataset,
+  ) {}
 
   async listAdminRecords(): Promise<LoreCanonizationAdminRecord[]> {
     const overrideSets = await this.repository.findAll();
     const overridesByEventId = new Map(overrideSets.map((overrideSet) => [overrideSet.eventId, overrideSet]));
 
-    return loreEvents.map((event) => this.toAdminRecord(event, overridesByEventId.get(event.id)));
+    const dataset = await this.loadBaseDataset();
+    return dataset.events.map((event) => this.toAdminRecord(event, overridesByEventId.get(event.id)));
   }
 
   async getAdminRecord(eventId: string): Promise<LoreCanonizationAdminRecord> {
-    const event = eventById.get(eventId);
+    const dataset = await this.loadBaseDataset();
+    const event = dataset.indexes.eventsById.get(eventId);
     if (!event) {
       throw new LoreCanonizationNotFoundError(`Lore event '${eventId}' not found`);
     }
@@ -65,13 +71,14 @@ export class LoreCanonizationService {
     body: unknown,
     adminAddress: string,
   ): Promise<LoreCanonizationAdminRecord> {
-    const parsed = parseLoreCanonizationOverrideInput(body, eventId);
+    const dataset = await this.loadBaseDataset();
+    const parsed = parseLoreCanonizationOverrideInput(body, eventId, { dataset });
     if (!parsed.ok) {
       throw new LoreCanonizationValidationError('Invalid canonization override', parsed.errors);
     }
 
     const overrideSet = await this.repository.upsertDraft(parsed.input, adminAddress);
-    const event = eventById.get(eventId);
+    const event = dataset.indexes.eventsById.get(eventId);
     if (!event) {
       throw new LoreCanonizationNotFoundError(`Lore event '${eventId}' not found`);
     }
@@ -80,7 +87,8 @@ export class LoreCanonizationService {
   }
 
   async publishDraft(eventId: string, adminAddress: string): Promise<LoreCanonizationAdminRecord> {
-    const event = eventById.get(eventId);
+    const dataset = await this.loadBaseDataset();
+    const event = dataset.indexes.eventsById.get(eventId);
     if (!event) {
       throw new LoreCanonizationNotFoundError(`Lore event '${eventId}' not found`);
     }
@@ -99,7 +107,7 @@ export class LoreCanonizationService {
       note: existing.draftOverride.canon.note,
       path: existing.draftOverride.canon.path,
     };
-    const errors = validateLoreCanonizationOverride(validationInput);
+    const errors = validateLoreCanonizationOverride(validationInput, dataset);
     if (errors.length > 0) {
       throw new LoreCanonizationValidationError('Invalid canonization override', errors);
     }
@@ -109,7 +117,8 @@ export class LoreCanonizationService {
   }
 
   async resetOverride(eventId: string): Promise<LoreCanonizationAdminRecord> {
-    const event = eventById.get(eventId);
+    const dataset = await this.loadBaseDataset();
+    const event = dataset.indexes.eventsById.get(eventId);
     if (!event) {
       throw new LoreCanonizationNotFoundError(`Lore event '${eventId}' not found`);
     }

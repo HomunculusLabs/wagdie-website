@@ -1,12 +1,13 @@
 import { BannerHeader } from '@/components/shared/BannerHeader';
 import { LoreArchive } from '@/components/lore/LoreArchive';
+import { parseLoreArchiveFilters } from '@/lib/lore/archive-filter-params';
 import {
-  getAllLoreCharacters,
-  getAllLoreLocations,
-  loreSeasons,
-  parseLoreArchiveFilters,
-} from '@/lib/lore';
-import { getEffectiveArchiveItems } from '@/lib/lore/effective-query';
+  getAllEffectiveLoreCharacters,
+  getAllEffectiveLoreLocations,
+  getAllEffectiveLoreSeasons,
+  getEffectiveArchiveItems,
+  getEffectiveSourcesByEventId,
+} from '@/lib/lore/effective-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,13 @@ interface LorePageProps {
 export default async function LorePage({ searchParams }: LorePageProps) {
   const resolvedSearchParams = await searchParams;
   const filters = parseLoreArchiveFilters(resolvedSearchParams);
-  const items = await getEffectiveArchiveItems(filters);
+  const [items, seasons, locations, characters] = await Promise.all([
+    getEffectiveArchiveItems(filters),
+    getAllEffectiveLoreSeasons(),
+    getAllEffectiveLoreLocations(),
+    getAllEffectiveLoreCharacters(),
+  ]);
+  const sourcesByEventId = await getEffectiveSourcesByEventId(items);
 
   return (
     <div className="min-h-screen bg-soul-950">
@@ -31,9 +38,10 @@ export default async function LorePage({ searchParams }: LorePageProps) {
       <LoreArchive
         items={items}
         filters={filters}
-        seasons={loreSeasons}
-        locations={getAllLoreLocations()}
-        characters={getAllLoreCharacters()}
+        seasons={seasons}
+        locations={locations}
+        characters={characters}
+        sourcesByEventId={sourcesByEventId}
       />
     </div>
   );

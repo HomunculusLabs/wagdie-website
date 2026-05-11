@@ -4,11 +4,31 @@ import {
   type LoreCanonizationOverride,
   type LoreCanonizationOverrideInput,
 } from '@/lib/lore/canonization-overrides';
+import { createLoreBaseDataset, getStaticLoreBaseDataset } from '@/lib/lore/base-dataset';
 import {
   LoreCanonizationService,
   LoreCanonizationValidationError,
 } from '@/lib/services/lore-canonization-service';
 import type { LoreCanonizationRepository } from '@/lib/repositories/lore-canonization-repository';
+
+const staticDataset = getStaticLoreBaseDataset();
+const dbOnlyEvent = {
+  ...staticDataset.events[0],
+  id: 'event-db-only-canonization',
+  slug: 'db-only-canonization',
+  title: 'DB Only Canonization',
+};
+const dbDataset = createLoreBaseDataset({
+  source: 'database',
+  events: [dbOnlyEvent],
+  characters: staticDataset.characters,
+  locations: staticDataset.locations,
+  seasons: staticDataset.seasons,
+  sources: staticDataset.sources,
+  media: staticDataset.media,
+});
+const loadDbDataset = jest.fn(async () => dbDataset);
+const loadStaticDataset = jest.fn(async () => staticDataset);
 
 const validOverride = {
   status: 'canonizing',
@@ -76,7 +96,7 @@ describe('lore canonization overrides', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors).toEqual(expect.arrayContaining([
-      'event_id does not match a static lore event: event-missing',
+      'event_id does not match an active lore event: event-missing',
       'canon status canon is incompatible with stage continuity_review',
       'path must include exactly one current step',
       'path[0].sourceIds references missing source: source-missing',
@@ -96,6 +116,37 @@ describe('lore canonization overrides', () => {
     expect(errors).toContain('current step stage canon_candidate does not match stage continuity_review');
   });
 
+  it('validates canonization overrides against a supplied active base dataset', () => {
+    const result = parseLoreCanonizationOverrideInput(validOverride, dbOnlyEvent.id, { dataset: dbDataset });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.input.eventId).toBe(dbOnlyEvent.id);
+  });
+
+  it('saves drafts for DB-only active base events through the service', async () => {
+    let stored: LoreCanonizationOverride | null = null;
+    const repository = {
+      findAll: jest.fn().mockResolvedValue([]),
+      findByEventId: jest.fn(async () => null),
+      upsertDraft: jest.fn(async (input: LoreCanonizationOverrideInput) => {
+        stored = makeOverride(input, 'draft');
+        return { eventId: stored.eventId, draftOverride: stored, override: stored };
+      }),
+      publish: jest.fn(),
+      delete: jest.fn(async () => undefined),
+    } as unknown as LoreCanonizationRepository;
+    const service = new LoreCanonizationService(repository, loadDbDataset);
+
+    const draft = await service.saveDraft(dbOnlyEvent.id, validOverride, '0xAdmin');
+
+    expect(draft.event.id).toBe(dbOnlyEvent.id);
+    expect(repository.upsertDraft).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: dbOnlyEvent.id,
+      status: 'canonizing',
+    }), '0xAdmin');
+  });
+
   it('saves drafts and publishes only current draft overrides through the service', async () => {
     let stored: LoreCanonizationOverride | null = null;
     const repository = {
@@ -112,7 +163,7 @@ describe('lore canonization overrides', () => {
       }),
       delete: jest.fn(async () => undefined),
     } as unknown as LoreCanonizationRepository;
-    const service = new LoreCanonizationService(repository);
+    const service = new LoreCanonizationService(repository, loadStaticDataset);
 
     const draft = await service.saveDraft('event-pilgrims-ashen-road', validOverride, '0xAdmin');
     expect(draft.draftOverride?.eventId).toBe('event-pilgrims-ashen-road');
@@ -141,7 +192,7 @@ describe('lore canonization overrides', () => {
       publish: jest.fn(),
       delete: jest.fn(),
     } as unknown as LoreCanonizationRepository;
-    const service = new LoreCanonizationService(repository);
+    const service = new LoreCanonizationService(repository, loadStaticDataset);
 
     await expect(service.publishDraft('event-pilgrims-ashen-road', '0xAdmin')).rejects.toBeInstanceOf(
       LoreCanonizationValidationError,

@@ -1,11 +1,13 @@
 import { z } from 'zod';
 import { isAdmin } from '@/lib/auth/admin';
-import { loreEvents } from '@/lib/lore/data/events';
+import { getActiveLoreBaseDataset } from '@/lib/lore/base-query';
+import type { LoreBaseDataset } from '@/lib/lore/base-dataset';
 import {
   normalizeLoreSubmissionWalletAddress,
   verifyLoreSubmissionTokenOwnership,
   type VerifyTokenOwnershipOptions,
 } from '@/lib/lore/submissions/ownership';
+import { loreSubmissionSourceId } from '@/lib/lore/submissions/adapter';
 import { parseLoreSubmissionCreateInput } from '@/lib/lore/submissions/validation';
 import {
   loreSubmissionRepository,
@@ -21,7 +23,7 @@ import type {
   LoreSubmissionListItemDto,
 } from '@/types/lore-submission';
 import type { Json } from '@/lib/database.types';
-import type { CanonizationStep } from '@/lib/lore/types';
+import { canonizationStageIds, type CanonizationStep } from '@/lib/lore/types';
 
 export class LoreSubmissionValidationError extends Error {
   details: string[];
@@ -65,6 +67,7 @@ export interface LoreSubmissionServiceOptions {
   maxSubmissionsPerWindow?: number;
   submissionWindowMs?: number;
   ownershipVerifier?: (options: VerifyTokenOwnershipOptions) => Promise<{ owns: boolean; reason: string }>;
+  loreBaseDatasetLoader?: () => Promise<LoreBaseDataset>;
 }
 
 export interface LoreSubmissionReviewBody {
@@ -74,10 +77,18 @@ export interface LoreSubmissionReviewBody {
 
 const DEFAULT_MAX_SUBMISSIONS_PER_WINDOW = 5;
 const DEFAULT_SUBMISSION_WINDOW_MS = 60 * 60 * 1000;
-const STATIC_EVENT_SLUGS = new Set(loreEvents.map((event) => event.slug));
 
 const nullableTrimmedString = z.union([z.string().trim().min(1), z.null()]).optional();
 const optionalTextArray = z.array(z.string().trim().min(1).max(120)).max(50).optional();
+const canonizationStepStatusSchema = z.enum(['complete', 'current', 'blocked', 'not_started', 'skipped']);
+const canonizationStepSchema = z.object({
+  stageId: z.enum(canonizationStageIds),
+  label: z.string().trim().min(1).max(120).optional(),
+  status: canonizationStepStatusSchema,
+  date: z.string().trim().min(1).max(64).optional(),
+  sourceIds: optionalTextArray,
+  note: z.string().trim().min(1).max(2000).optional(),
+}).strict();
 
 const curationSchema = z.object({
   curatedTitle: nullableTrimmedString,
@@ -88,7 +99,7 @@ const curationSchema = z.object({
   characterIds: optionalTextArray,
   locationIds: optionalTextArray,
   canonNote: nullableTrimmedString,
-  canonPath: z.array(z.unknown()).max(20).optional(),
+  canonPath: z.array(canonizationStepSchema).max(20).optional(),
 }).strict();
 
 const reviewSchema = z.object({
@@ -125,6 +136,90 @@ function parseCreateInput(body: unknown): CreateLoreSubmissionInput {
 function dedupeStrings(values: string[] | undefined): string[] | undefined {
   if (!values) return undefined;
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function getSubmissionSourceIds(detail: LoreSubmissionDetailDto | undefined): Set<string> {
+  return new Set((detail?.links ?? []).flatMap((link) => (
+    link.role === 'source' || link.role === 'source_media'
+      ? [loreSubmissionSourceId(detail!.submission.id, link.id)]
+      : []
+  )));
+}
+
+function getCharacterIdsForTokenId(dataset: LoreBaseDataset, tokenId: string): string[] {
+  const parsedTokenId = Number(tokenId);
+  if (!Number.isInteger(parsedTokenId)) return [];
+
+  const datasetCharacterIds = dataset.characters
+    .filter((character) => character.tokenId === parsedTokenId)
+    .map((character) => character.id);
+
+  return datasetCharacterIds.length > 0 ? datasetCharacterIds : [`character-${tokenId}`];
+}
+
+function enrichCreateInputWithLoreRefs(input: CreateLoreSubmissionInput, dataset: LoreBaseDataset): CreateLoreSubmissionInput {
+  const tokenCharacterIds = getCharacterIdsForTokenId(dataset, input.tokenId);
+
+  return {
+    ...input,
+    characterIds: [...new Set([...input.characterIds, ...tokenCharacterIds])],
+    locationIds: [...new Set(input.locationIds)],
+  };
+}
+
+function validateCanonPathSourceReferences(
+  canonPath: CanonizationStep[] | undefined,
+  dataset: LoreBaseDataset,
+  fieldPrefix: string,
+  submissionSourceIds: Set<string> = new Set(),
+): string[] {
+  const errors: string[] = [];
+
+  (canonPath ?? []).forEach((step, index) => {
+    step.sourceIds?.forEach((sourceId) => {
+      if (!dataset.indexes.sourcesById.has(sourceId) && !submissionSourceIds.has(sourceId)) {
+        errors.push(`${fieldPrefix}[${index}].sourceIds references missing source: ${sourceId}`);
+      }
+    });
+  });
+
+  return errors;
+}
+
+function isSubmissionTokenCharacterId(characterId: string): boolean {
+  return /^character-[1-9]\d*$/.test(characterId);
+}
+
+function validateLoreReferenceIds(
+  dataset: LoreBaseDataset,
+  refs: {
+    seasonId?: string | null;
+    characterIds?: string[] | null;
+    locationIds?: string[] | null;
+    canonPath?: CanonizationStep[];
+  },
+  submissionSourceIds: Set<string> = new Set(),
+): string[] {
+  const errors: string[] = [];
+
+  if (refs.seasonId && !dataset.indexes.seasonsById.has(refs.seasonId)) {
+    errors.push(`seasonId references missing season: ${refs.seasonId}`);
+  }
+
+  (refs.characterIds ?? []).forEach((characterId) => {
+    if (!dataset.indexes.charactersById.has(characterId) && !isSubmissionTokenCharacterId(characterId)) {
+      errors.push(`characterIds references missing character: ${characterId}`);
+    }
+  });
+
+  (refs.locationIds ?? []).forEach((locationId) => {
+    if (!dataset.indexes.locationsById.has(locationId)) {
+      errors.push(`locationIds references missing location: ${locationId}`);
+    }
+  });
+
+  errors.push(...validateCanonPathSourceReferences(refs.canonPath, dataset, 'canonPath', submissionSourceIds));
+  return errors;
 }
 
 function toListItem(submission: LoreSubmission): LoreSubmissionListItemDto {
@@ -200,6 +295,7 @@ export class LoreSubmissionService {
   private readonly maxSubmissionsPerWindow: number;
   private readonly submissionWindowMs: number;
   private readonly ownershipVerifier: LoreSubmissionServiceOptions['ownershipVerifier'];
+  private readonly loadBaseDataset: () => Promise<LoreBaseDataset>;
 
   constructor(
     private repository: LoreSubmissionRepository = loreSubmissionRepository,
@@ -208,6 +304,7 @@ export class LoreSubmissionService {
     this.maxSubmissionsPerWindow = options.maxSubmissionsPerWindow ?? DEFAULT_MAX_SUBMISSIONS_PER_WINDOW;
     this.submissionWindowMs = options.submissionWindowMs ?? DEFAULT_SUBMISSION_WINDOW_MS;
     this.ownershipVerifier = options.ownershipVerifier ?? verifyLoreSubmissionTokenOwnership;
+    this.loadBaseDataset = options.loreBaseDatasetLoader ?? getActiveLoreBaseDataset;
   }
 
   async createSubmission(body: unknown, walletAddress: string): Promise<LoreSubmissionDetailDto> {
@@ -216,7 +313,21 @@ export class LoreSubmissionService {
     await this.ensureTokenOwnership(input.tokenId, submitterAddress);
     await this.ensureCreateAbuseControls(input, submitterAddress);
 
-    return this.repository.createSubmission(input, submitterAddress);
+    const dataset = await this.loadBaseDataset();
+    const enrichedInput = enrichCreateInputWithLoreRefs(input, dataset);
+    const referenceErrors = validateLoreReferenceIds(dataset, {
+      characterIds: enrichedInput.characterIds,
+      locationIds: enrichedInput.locationIds,
+    });
+    if (referenceErrors.length > 0) {
+      throw new LoreSubmissionValidationError('Invalid lore references', referenceErrors);
+    }
+
+    const detail = await this.repository.createSubmission(enrichedInput, submitterAddress);
+    return this.publishCommunitySubmission(detail, submitterAddress, undefined, {
+      lastAdminAddress: null,
+      reviewedAt: null,
+    });
   }
 
   async listForSubmitter(walletAddress: string): Promise<LoreSubmissionListItemDto[]> {
@@ -254,9 +365,23 @@ export class LoreSubmissionService {
     }
 
     await this.ensureTokenOwnership(input.tokenId, submitterAddress);
-    const detail = await this.repository.reviseSubmission(submissionId, input, submitterAddress);
+
+    const dataset = await this.loadBaseDataset();
+    const enrichedInput = enrichCreateInputWithLoreRefs(input, dataset);
+    const referenceErrors = validateLoreReferenceIds(dataset, {
+      characterIds: enrichedInput.characterIds,
+      locationIds: enrichedInput.locationIds,
+    });
+    if (referenceErrors.length > 0) {
+      throw new LoreSubmissionValidationError('Invalid lore references', referenceErrors);
+    }
+
+    const detail = await this.repository.reviseSubmission(submissionId, enrichedInput, submitterAddress);
     if (!detail) throw new LoreSubmissionConflictError('Submission was changed before revision could be saved');
-    return detail;
+    return this.publishCommunitySubmission(detail, submitterAddress, undefined, {
+      lastAdminAddress: null,
+      reviewedAt: null,
+    });
   }
 
   async listAdmin(filters: Partial<LoreSubmissionAdminListFilters>): Promise<LoreSubmissionAdminListResult> {
@@ -291,8 +416,23 @@ export class LoreSubmissionService {
       character_ids: dedupeStrings(parsed.data.characterIds),
       location_ids: dedupeStrings(parsed.data.locationIds),
       canon_note: parsed.data.canonNote ?? undefined,
-      canon_path: parsed.data.canonPath as CanonizationStep[] | undefined,
+      canon_path: parsed.data.canonPath,
     };
+
+    const [dataset, existingDetail] = await Promise.all([
+      this.loadBaseDataset(),
+      this.repository.findDetail(submissionId),
+    ]);
+    if (!existingDetail) throw new LoreSubmissionNotFoundError();
+    const referenceErrors = validateLoreReferenceIds(dataset, {
+      seasonId: updates.season_id,
+      characterIds: updates.character_ids,
+      locationIds: updates.location_ids,
+      canonPath: updates.canon_path,
+    }, getSubmissionSourceIds(existingDetail));
+    if (referenceErrors.length > 0) {
+      throw new LoreSubmissionValidationError('Invalid lore references', referenceErrors);
+    }
 
     const detail = await this.repository.updateCuration(submissionId, updates, admin);
     if (!detail) throw new LoreSubmissionNotFoundError();
@@ -327,30 +467,10 @@ export class LoreSubmissionService {
       throw new LoreSubmissionConflictError('Only submitted lore can be published');
     }
 
-    const slug = await this.ensurePublicationSlug(detail.submission);
-    const now = new Date().toISOString();
-    const result = await this.repository.updateStatusConditional(
-      submissionId,
-      ['submitted'],
-      {
-        status: 'public',
-        visibility: 'public',
-        published_kind: 'community',
-        published_slug: slug,
-        canon_status: 'community',
-        canon_stage_id: 'community_recorded',
-        publication_snapshot: buildPublicationSnapshot(detail),
-        review_note: note ?? null,
-        status_reason: null,
-        last_admin_address: admin,
-        reviewed_at: now,
-        published_at: now,
-      },
-      { actorAddress: admin, action: 'publish', note: note ?? null },
-    );
-
-    if (!result) throw new LoreSubmissionConflictError('Submission was changed before it could be published');
-    return result;
+    return this.publishCommunitySubmission(detail, admin, note, {
+      lastAdminAddress: admin,
+      reviewedAt: new Date().toISOString(),
+    });
   }
 
   async canonizeSubmission(submissionId: string, adminAddress: string, note?: string): Promise<LoreSubmissionDetailDto> {
@@ -483,6 +603,52 @@ export class LoreSubmissionService {
     return this.getAdminDetail(submissionId);
   }
 
+  private async publishCommunitySubmission(
+    detail: LoreSubmissionDetailDto,
+    actorAddress: string,
+    note?: string,
+    options: { lastAdminAddress: string | null; reviewedAt: string | null } = {
+      lastAdminAddress: null,
+      reviewedAt: null,
+    },
+  ): Promise<LoreSubmissionDetailDto> {
+    const dataset = await this.loadBaseDataset();
+    const referenceErrors = validateLoreReferenceIds(dataset, {
+      seasonId: detail.submission.season_id,
+      characterIds: detail.submission.character_ids,
+      locationIds: detail.submission.location_ids,
+      canonPath: detail.submission.canon_path,
+    }, getSubmissionSourceIds(detail));
+    if (referenceErrors.length > 0) {
+      throw new LoreSubmissionValidationError('Invalid lore references', referenceErrors);
+    }
+
+    const slug = await this.ensurePublicationSlug(detail.submission, dataset);
+    const now = new Date().toISOString();
+    const result = await this.repository.updateStatusConditional(
+      detail.submission.id,
+      ['submitted'],
+      {
+        status: 'public',
+        visibility: 'public',
+        published_kind: 'community',
+        published_slug: slug,
+        canon_status: 'community',
+        canon_stage_id: 'community_recorded',
+        publication_snapshot: buildPublicationSnapshot(detail),
+        review_note: note ?? null,
+        status_reason: null,
+        last_admin_address: options.lastAdminAddress,
+        reviewed_at: options.reviewedAt,
+        published_at: now,
+      },
+      { actorAddress, action: 'publish', note: note ?? null },
+    );
+
+    if (!result) throw new LoreSubmissionConflictError('Submission was changed before it could be published');
+    return result;
+  }
+
   private async ensureTokenOwnership(tokenId: string, walletAddress: string): Promise<void> {
     const ownership = await this.ownershipVerifier!({ tokenId, walletAddress });
     if (!ownership.owns) {
@@ -503,14 +669,17 @@ export class LoreSubmissionService {
     }
   }
 
-  private async ensurePublicationSlug(submission: LoreSubmission): Promise<string> {
+  private async ensurePublicationSlug(
+    submission: LoreSubmission,
+    dataset: LoreBaseDataset,
+  ): Promise<string> {
     const baseSlug = slugifyTitle(publicTitle(submission));
-    if (!STATIC_EVENT_SLUGS.has(baseSlug) && !await this.repository.slugExists(baseSlug, submission.id)) {
+    if (!dataset.indexes.eventsBySlug.has(baseSlug) && !await this.repository.slugExists(baseSlug, submission.id)) {
       return baseSlug;
     }
 
     const suffixed = `${baseSlug}-${idSuffix(submission.id)}`;
-    if (!STATIC_EVENT_SLUGS.has(suffixed) && !await this.repository.slugExists(suffixed, submission.id)) {
+    if (!dataset.indexes.eventsBySlug.has(suffixed) && !await this.repository.slugExists(suffixed, submission.id)) {
       return suffixed;
     }
 

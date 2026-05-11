@@ -11,7 +11,7 @@ interface ApiResponse<T> {
   details?: string | string[];
 }
 
-type ReviewAction = 'request_changes' | 'approve' | 'reject' | 'admin_note';
+type ReviewAction = 'request_changes' | 'reject' | 'admin_note';
 
 export interface LoreSubmissionReviewPanelProps {
   detail: LoreSubmissionDetailDto;
@@ -29,7 +29,6 @@ async function readApiData<T>(response: Response, fallback: string): Promise<T> 
 
 const actionLabels: Record<ReviewAction, string> = {
   request_changes: 'Request changes',
-  approve: 'Approve via review',
   reject: 'Close / reject',
   admin_note: 'Add admin note',
 };
@@ -68,7 +67,7 @@ export function LoreSubmissionReviewPanel({ detail, onUpdated }: LoreSubmissionR
       <div>
         <h2 className="font-display text-xl text-soul-accent">Review actions</h2>
         <p className="mt-1 text-sm text-soul-mist/70">
-          Request submitter changes, approve into public community lore, reject/close, or append an audit note.
+Public submissions are already community lore. Use this panel to request changes, close/reject, or append an audit note.
         </p>
       </div>
 
@@ -87,9 +86,6 @@ export function LoreSubmissionReviewPanel({ detail, onUpdated }: LoreSubmissionR
       <div className="grid gap-2 sm:grid-cols-2">
         <Button type="button" variant="secondary" onClick={() => submitReview('request_changes')} disabled={!canReviewSubmitted} isLoading={busyAction === 'request_changes'}>
           Request changes
-        </Button>
-        <Button type="button" onClick={() => submitReview('approve')} disabled={!canReviewSubmitted} isLoading={busyAction === 'approve'}>
-          Approve / publish
         </Button>
         <Button type="button" variant="danger" onClick={() => submitReview('reject')} disabled={!canClose} isLoading={busyAction === 'reject'}>
           Close / reject

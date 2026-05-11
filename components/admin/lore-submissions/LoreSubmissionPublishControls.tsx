@@ -11,7 +11,7 @@ interface ApiResponse<T> {
   details?: string | string[];
 }
 
-type PublishAction = 'publish' | 'canonize' | 'decanonize' | 'unpublish';
+type PublishAction = 'canonize' | 'decanonize' | 'unpublish';
 
 export interface LoreSubmissionPublishControlsProps {
   detail: LoreSubmissionDetailDto;
@@ -28,7 +28,6 @@ async function readApiData<T>(response: Response, fallback: string): Promise<T> 
 }
 
 const labels: Record<PublishAction, string> = {
-  publish: 'Publish community lore',
   canonize: 'Canonize',
   decanonize: 'Decanonize',
   unpublish: 'Unpublish / hide',
@@ -66,7 +65,7 @@ export function LoreSubmissionPublishControls({ detail, onUpdated }: LoreSubmiss
       <div>
         <h2 className="font-display text-xl text-soul-accent">Publication controls</h2>
         <p className="mt-1 text-sm text-soul-mist/70">
-          Publish to community lore, promote to canon, decanonize back to community, or hide public community lore.
+          Promote public community lore to canon, decanonize it back to community, or hide public community lore.
         </p>
       </div>
 
@@ -83,9 +82,6 @@ export function LoreSubmissionPublishControls({ detail, onUpdated }: LoreSubmiss
       </label>
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <Button type="button" onClick={() => submitAction('publish')} disabled={status !== 'submitted'} isLoading={busyAction === 'publish'}>
-          Publish community lore
-        </Button>
         <Button type="button" onClick={() => submitAction('canonize')} disabled={status !== 'public'} isLoading={busyAction === 'canonize'}>
           Canonize
         </Button>

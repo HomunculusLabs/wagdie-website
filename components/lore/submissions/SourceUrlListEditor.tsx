@@ -57,9 +57,9 @@ export function SourceUrlListEditor({
     <section className="space-y-3" aria-label="Source and media URLs">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-display text-lg text-soul-bone">Sources and media</h3>
+          <h3 className="font-display text-lg text-soul-bone">Sources and media <span className="text-sm text-soul-mist/60">optional</span></h3>
           <p className="text-sm text-soul-mist/70">
-            Add Twitter/X, YouTube, or source URLs. At least one unique link is required.
+            Add Twitter/X, YouTube, or supporting source URLs when they help verify or enrich the story.
           </p>
         </div>
         <Button
@@ -111,7 +111,7 @@ export function SourceUrlListEditor({
                   size="sm"
                   variant="danger"
                   onClick={() => removeLink(index)}
-                  disabled={disabled || links.length <= 1}
+                  disabled={disabled}
                 >
                   Remove
                 </Button>

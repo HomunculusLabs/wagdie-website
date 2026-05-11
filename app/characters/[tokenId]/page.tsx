@@ -250,6 +250,16 @@ export default function CharacterDetailPage() {
               <div className="mb-6">
                 <DerivedStatsEditor stats={isEditMode ? editor.state.derivedStats : { hp: character.hp ?? null, max_hp: character.max_hp ?? null, ac: character.ac ?? null, speed: character.speed ?? null }} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setDerivedStats} />
                 {!isEditMode && <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3"><Card className="bg-midnight/50"><CardContent className="p-3 text-center"><p className="text-[20px] font-display tracking-widest text-mist mb-1 lowercase">token</p><p className="text-2xl font-display text-bone">#{tokenId}</p></CardContent></Card></div>}
+                {!isEditMode && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => router.push(`/lore/submit?tokenId=${tokenId}`)}
+                    className="mt-4"
+                  >
+                    Add community story
+                  </Button>
+                )}
               </div>
 
               {(hasCharacterSheet || (isOwner && isEditMode)) && <CoreStatsEditor stats={isEditMode ? editor.state.coreStats : attrs} isOwner={isOwner} isEditMode={isEditMode} onChange={editor.setCoreStats} />}

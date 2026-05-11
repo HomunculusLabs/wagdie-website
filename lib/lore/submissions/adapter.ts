@@ -53,6 +53,10 @@ const stringArrayOr = (value: unknown, fallback: string[]): string[] => (
   Array.isArray(value) && value.every((item) => typeof item === 'string') ? value : fallback
 );
 
+const withTokenCharacterFallback = (characterIds: string[], tokenId: string): string[] => {
+  if (characterIds.length > 0 || !/^[1-9]\d*$/.test(tokenId)) return characterIds;
+  return [`character-${tokenId}`];
+};
 
 const stringOrNull = (value: unknown): string | null => (
   typeof value === 'string' && value.trim() ? value : null
@@ -171,7 +175,10 @@ export function adaptLoreSubmissionToEffectiveLore(detail: LoreSubmissionDetailD
   const summary = stringOr(snapshotValue(snapshot, 'summary'), submission.curated_summary ?? submission.summary);
   const body = stringOr(snapshotValue(snapshot, 'bodyMarkdown'), submission.curated_body_markdown ?? submission.body_markdown);
   const tags = stringArrayOr(snapshotValue(snapshot, 'tags'), submission.curated_tags ?? submission.tags);
-  const characterIds = stringArrayOr(snapshotValue(snapshot, 'characterIds'), submission.character_ids);
+  const characterIds = withTokenCharacterFallback(
+    stringArrayOr(snapshotValue(snapshot, 'characterIds'), submission.character_ids),
+    submission.token_id,
+  );
   const locationIds = stringArrayOr(snapshotValue(snapshot, 'locationIds'), submission.location_ids);
   const seasonId = optionalStringOr(snapshotValue(snapshot, 'seasonId'), submission.season_id ?? COMMUNITY_SEASON_ID);
   const effectiveLinks = snapshotLinksOrNull(snapshot, submission.id, submission.published_at ?? submission.updated_at) ?? links;

@@ -1,3 +1,5 @@
+// Static compatibility: Storybook fixtures intentionally exercise the checked-in
+// fallback archive without requiring a DB/effective-query context.
 import {
   getAllLoreCharacters,
   getAllLoreLocations,

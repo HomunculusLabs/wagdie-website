@@ -135,6 +135,8 @@ export interface CreateLoreSubmissionInput {
   summary: string;
   bodyMarkdown: string;
   tags: string[];
+  characterIds: string[];
+  locationIds: string[];
   links: NormalizedLoreSubmissionLinkInput[];
 }
 

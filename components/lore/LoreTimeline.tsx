@@ -1,15 +1,15 @@
 import { LoreEventCard } from './LoreEventCard';
-import { getSourcesForEvent } from '@/lib/lore';
-import type { LoreCharacter, LoreEvent, LoreLocation, LoreSeason } from '@/lib/lore/types';
+import type { LoreCharacter, LoreEvent, LoreLocation, LoreSeason, SourceRecord } from '@/lib/lore/types';
 
 interface LoreTimelineProps {
   items: LoreEvent[];
   seasons: LoreSeason[];
   locations: LoreLocation[];
   characters: LoreCharacter[];
+  sourcesByEventId?: Record<string, SourceRecord[]>;
 }
 
-export function LoreTimeline({ items, seasons, locations, characters }: LoreTimelineProps) {
+export function LoreTimeline({ items, seasons, locations, characters, sourcesByEventId = {} }: LoreTimelineProps) {
   const seasonsById = new Map(seasons.map((season) => [season.id, season]));
   const locationsById = new Map(locations.map((location) => [location.id, location]));
   const charactersById = new Map(characters.map((character) => [character.id, character]));
@@ -32,7 +32,7 @@ export function LoreTimeline({ items, seasons, locations, characters }: LoreTime
               const character = charactersById.get(characterId);
               return character ? [character] : [];
             })}
-            sources={getSourcesForEvent(event)}
+            sources={sourcesByEventId[event.id] ?? []}
           />
         </div>
       ))}

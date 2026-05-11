@@ -8,6 +8,7 @@ import type {
   LoreEvent,
   LoreLocation,
   LoreSeason,
+  SourceRecord,
 } from '@/lib/lore/types';
 
 interface LoreArchiveProps {
@@ -16,6 +17,7 @@ interface LoreArchiveProps {
   seasons: LoreSeason[];
   locations: LoreLocation[];
   characters: LoreCharacter[];
+  sourcesByEventId?: Record<string, SourceRecord[]>;
 }
 
 const hasActiveFilters = (filters: LoreArchiveFilters) => {
@@ -67,7 +69,7 @@ const summarizeByKind = (items: LoreEvent[]) => {
   return { official, community };
 };
 
-export function LoreArchive({ items, filters, seasons, locations, characters }: LoreArchiveProps) {
+export function LoreArchive({ items, filters, seasons, locations, characters, sourcesByEventId = {} }: LoreArchiveProps) {
   const activeFilters = buildActiveFilterLabels(filters, seasons, locations, characters);
   const active = hasActiveFilters(filters);
   const { official, community } = summarizeByKind(items);
@@ -143,6 +145,7 @@ export function LoreArchive({ items, filters, seasons, locations, characters }: 
           seasons={seasons}
           locations={locations}
           characters={characters}
+          sourcesByEventId={sourcesByEventId}
         />
       ) : (
         <section className="border border-midnight-light/50 bg-soul-900/50 p-8 text-center shadow-2xl md:p-12">

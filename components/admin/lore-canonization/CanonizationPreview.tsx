@@ -1,5 +1,7 @@
 import { CanonizationPath } from '@/components/lore/CanonizationPath';
 import { CanonWorkflowSummary } from '@/components/lore/CanonWorkflowSummary';
+// Static compatibility: this client-side admin preview renders unsaved editor state without
+// a server-loaded effective context. Public routes resolve sources through effective-query.
 import { loreSources } from '@/lib/lore/data/sources';
 import type { Canonization, LoreEvent } from '@/lib/lore/types';
 

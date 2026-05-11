@@ -3,14 +3,15 @@ import { notFound } from 'next/navigation';
 import { BannerHeader } from '@/components/shared/BannerHeader';
 import { LocationProfile } from '@/components/lore/LocationProfile';
 import {
-  getAllLoreCharacters,
-  getAllLoreLocations,
-  getLocationBySlug,
-  getMediaForLocation,
-  getSourcesForLocation,
-  loreSeasons,
-} from '@/lib/lore';
-import { getEffectiveEventsForLocation } from '@/lib/lore/effective-query';
+  getAllEffectiveLoreCharacters,
+  getAllEffectiveLoreLocations,
+  getAllEffectiveLoreSeasons,
+  getEffectiveEventsForLocation,
+  getEffectiveLocationBySlug,
+  getEffectiveMediaForLocation,
+  getEffectiveSourcesByEventId,
+  getEffectiveSourcesForLocation,
+} from '@/lib/lore/effective-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,26 +20,37 @@ interface LoreLocationPageProps {
 }
 
 const resolveLocationPageData = async (slug: string) => {
-  const location = getLocationBySlug(slug);
+  const location = await getEffectiveLocationBySlug(slug);
 
   if (!location) {
     return undefined;
   }
 
+  const [events, allLocations, characters, seasons, media, sources] = await Promise.all([
+    getEffectiveEventsForLocation(location.id),
+    getAllEffectiveLoreLocations(),
+    getAllEffectiveLoreCharacters(),
+    getAllEffectiveLoreSeasons(),
+    getEffectiveMediaForLocation(location),
+    getEffectiveSourcesForLocation(location),
+  ]);
+  const sourcesByEventId = await getEffectiveSourcesByEventId(events);
+
   return {
     location,
-    events: await getEffectiveEventsForLocation(location.id),
-    allLocations: getAllLoreLocations(),
-    characters: getAllLoreCharacters(),
-    media: getMediaForLocation(location),
-    sources: getSourcesForLocation(location),
+    events,
+    allLocations,
+    characters,
+    seasons,
+    media,
+    sources,
+    sourcesByEventId,
   };
 };
 
-
 export async function generateMetadata({ params }: LoreLocationPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const location = getLocationBySlug(slug);
+  const location = await getEffectiveLocationBySlug(slug);
 
   if (!location) {
     return {
@@ -69,11 +81,12 @@ export default async function LoreLocationPage({ params }: LoreLocationPageProps
       <LocationProfile
         location={data.location}
         events={data.events}
-        seasons={loreSeasons}
+        seasons={data.seasons}
         allLocations={data.allLocations}
         characters={data.characters}
         media={data.media}
         sources={data.sources}
+        sourcesByEventId={data.sourcesByEventId}
       />
     </div>
   );

@@ -15,7 +15,7 @@ export const LORE_SUBMISSION_LIMITS = {
   bodyMax: 50000,
   tagMax: 32,
   tagsMax: 10,
-  linksMin: 1,
+  linksMin: 0,
   linksMax: 10,
   urlMax: 2048,
 } as const;
@@ -229,6 +229,8 @@ export function normalizeAndDeduplicateLinks(
   return normalized;
 }
 
+const loreReferenceIdSchema = z.string().trim().min(1).max(120);
+
 const rawLinkSchema = z.object({
   url: z.string().trim().min(1).max(LORE_SUBMISSION_LIMITS.urlMax),
   role: z.enum(loreSubmissionLinkRoles).optional(),
@@ -257,9 +259,11 @@ export const loreSubmissionCreateSchema = z.object({
     }
     return normalized;
   }),
+  characterIds: z.array(loreReferenceIdSchema).max(10).default([]),
+  locationIds: z.array(loreReferenceIdSchema).max(10).default([]),
   links: z.array(rawLinkSchema)
-    .min(LORE_SUBMISSION_LIMITS.linksMin)
     .max(LORE_SUBMISSION_LIMITS.linksMax)
+    .default([])
     .transform((links, ctx) => {
       try {
         return normalizeAndDeduplicateLinks(links);
@@ -270,9 +274,6 @@ export const loreSubmissionCreateSchema = z.object({
         });
         return z.NEVER;
       }
-    })
-    .refine((links) => links.length >= LORE_SUBMISSION_LIMITS.linksMin, {
-      message: 'At least one unique link is required',
     }),
 });
 

@@ -1,7 +1,11 @@
 import { AdminGate } from '@/components/admin/AdminGate';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { LoreSubmissionAdminDetail } from '@/components/admin/lore-submissions/LoreSubmissionAdminDetail';
-import { getAllLoreCharacters, getAllLoreLocations, loreSeasons } from '@/lib/lore';
+import {
+  getAllEffectiveLoreCharacters,
+  getAllEffectiveLoreLocations,
+  getAllEffectiveLoreSeasons,
+} from '@/lib/lore/effective-query';
 
 interface LoreSubmissionAdminDetailPageProps {
   params: Promise<{ submissionId: string }>;
@@ -9,13 +13,18 @@ interface LoreSubmissionAdminDetailPageProps {
 
 export default async function LoreSubmissionAdminDetailPage({ params }: LoreSubmissionAdminDetailPageProps) {
   const { submissionId } = await params;
+  const [seasons, characters, locations] = await Promise.all([
+    getAllEffectiveLoreSeasons(),
+    getAllEffectiveLoreCharacters(),
+    getAllEffectiveLoreLocations(),
+  ]);
   const referenceOptions = {
-    seasons: loreSeasons.map((season) => ({ id: season.id, label: season.title })),
-    characters: getAllLoreCharacters().map((character) => ({
+    seasons: seasons.map((season) => ({ id: season.id, label: season.title })),
+    characters: characters.map((character) => ({
       id: character.id,
       label: `${character.name}${character.tokenId ? ` (#${character.tokenId})` : ''}`,
     })),
-    locations: getAllLoreLocations().map((location) => ({ id: location.id, label: location.name })),
+    locations: locations.map((location) => ({ id: location.id, label: location.name })),
   };
 
   return (

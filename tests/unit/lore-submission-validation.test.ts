@@ -90,6 +90,19 @@ describe('lore submission validation and URL normalization', () => {
     });
   });
 
+  it('allows create payloads without source or media links', () => {
+    const parsed = loreSubmissionCreateSchema.parse({
+      tokenId: '42',
+      title: 'A Fallen Bell Rings',
+      summary: 'A community account of a strange bell echoing after the searing.',
+      bodyMarkdown: '# Report\n\nA bell rang beneath the ash.',
+      tags: ['#Searing', 'searing', ' Bell '],
+    });
+
+    expect(parsed.tags).toEqual(['searing', 'bell']);
+    expect(parsed.links).toEqual([]);
+  });
+
   it('rejects non-canonical or out-of-range token ids', () => {
     for (const tokenId of ['0', '0001', '6667']) {
       const parsed = loreSubmissionCreateSchema.safeParse({
@@ -118,7 +131,7 @@ describe('lore submission validation and URL normalization', () => {
     expect(parsed.success).toBe(false);
     if (!parsed.success) {
       const fields = new Set(parsed.error.issues.map((issue) => issue.path[0]));
-      expect(fields).toEqual(new Set(['tokenId', 'title', 'summary', 'bodyMarkdown', 'tags', 'links']));
+      expect(fields).toEqual(new Set(['tokenId', 'title', 'summary', 'bodyMarkdown', 'tags']));
     }
   });
 });
