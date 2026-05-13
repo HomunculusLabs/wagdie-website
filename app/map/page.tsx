@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useRef, useState } from 'react';
 import { useAccount } from 'wagmi';
 import MapLayerControls from '@/components/map/MapLayerControls';
+import MapPageHud from '@/components/map/MapPageHud';
 import MapStakingSidebar from '@/components/map/MapStakingSidebar';
 import { Spinner } from '@/components/ui';
 import type { IRefPhaserGame } from '@/game/PhaserGame';
@@ -44,8 +45,16 @@ export default function MapPage() {
   const mapContentRef = useRef<HTMLDivElement>(null);
   const [mapReady, setMapReady] = useState(false);
 
-  const { address } = useAccount();
-  const { locations, stakedCharacters, isLoading, error, refetch } = useMapData();
+  const { address, isConnected } = useAccount();
+  const {
+    locations,
+    stakedCharacters,
+    isLoading,
+    error,
+    loadingProgress,
+    loadingStage,
+    refetch,
+  } = useMapData();
   const { layers, toggleLayer } = useMapLayers();
   const { characterMarkers, eventsPayload } = useMapPageMarkers(stakedCharacters, address);
   const {
@@ -88,7 +97,7 @@ export default function MapPage() {
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-soul-accent text-black font-eskapade  text-sm hover:bg-soul-accent/80 transition-colors"
           >
-            Retry
+            Reload map
           </button>
         </div>
       </div>
@@ -101,9 +110,17 @@ export default function MapPage() {
       <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-[#0a0a0a]">
         <div className="flex flex-col items-center gap-4">
           <Spinner size="lg" />
-          <p className="text-neutral-500 font-eskapade  tracking-widest text-sm">
-            Loading WAGDIE World
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-neutral-500 font-eskapade  tracking-widest text-sm">
+              {loadingStage || 'Loading WAGDIE World'}
+            </p>
+            <div className="h-1 w-48 overflow-hidden rounded-full bg-neutral-900">
+              <div
+                className="h-full rounded-full bg-soul-accent transition-[width] duration-300"
+                style={{ width: `${loadingProgress}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -131,9 +148,19 @@ export default function MapPage() {
 
         <MapLayerControls layers={layers} onToggleLayer={toggleLayer} />
 
+        <MapPageHud
+          mapReady={mapReady}
+          isSidebarOpen={isSidebarOpen}
+          isConnected={isConnected}
+          walletAddress={address}
+          locationsCount={locations.length}
+          stakedCount={stakedCharacters.length}
+          onOpenStaking={handleOpenStakingSidebar}
+        />
+
         {/* Instructions */}
         {mapReady && !selectedMarker && (
-          <div className="absolute bottom-4 left-4 z-30 hidden sm:block">
+          <div className="absolute bottom-4 right-4 z-30 hidden sm:block">
             <p className="text-xs text-neutral-600 font-eskapade">
               Scroll to zoom · Drag to pan
             </p>

@@ -1,0 +1,538 @@
+import { getSupabaseAdmin } from '@/lib/supabase'
+import {
+  createOfficialLocationRoomId,
+  createOfficialLocationServiceUserId,
+  createOfficialLocationWorldId,
+  normalizeOfficialLocationId,
+} from '@/lib/eliza/official/ids'
+import type {
+  LocationRoom,
+  LocationRoomLocation,
+  LocationRoomMessage,
+  LocationRoomTick,
+  LocationRoomTriggerType,
+  PaginatedLocationRoomMessages,
+} from './types'
+
+const ROOMS_TABLE = 'eliza_location_rooms'
+const MESSAGES_TABLE = 'eliza_location_room_messages'
+const TICKS_TABLE = 'eliza_location_room_ticks'
+
+const ROOM_COLUMNS =
+  'id, location_id, official_room_id, official_world_id, official_user_id, channel_id, tick_enabled, last_tick_at, next_tick_at, tick_count, last_error, created_at, updated_at'
+const MESSAGE_COLUMNS =
+  'id, room_id, location_id, tick_id, sequence, visibility, author_kind, token_id, official_agent_id, author_name, content, metadata, created_at'
+const TICK_COLUMNS =
+  'id, room_id, location_id, trigger_type, requested_by_wallet, requested_by_token_id, status, attempts, next_attempt_at, locked_at, locked_by, selected_token_id, started_at, completed_at, last_error, created_at, updated_at'
+const WORKER_LOCK_TTL_MS = 15 * 60_000
+
+type SupabaseError = { code?: string; message: string }
+type QueryResult<T> = { data: T | null; error: SupabaseError | null; count?: number | null }
+
+type RoomRow = {
+  id: string
+  location_id: string
+  official_room_id: string
+  official_world_id: string
+  official_user_id: string
+  channel_id: string
+  tick_enabled: boolean
+  last_tick_at: string | null
+  next_tick_at: string | null
+  tick_count: number
+  last_error: string | null
+  created_at: string
+  updated_at: string
+}
+
+type LocationRow = {
+  id: string
+  name: string
+}
+
+type MessageRow = {
+  id: string
+  room_id: string
+  location_id: string
+  tick_id: string | null
+  sequence: number
+  visibility: LocationRoomMessage['visibility']
+  author_kind: LocationRoomMessage['authorKind']
+  token_id: number | null
+  official_agent_id: string | null
+  author_name: string
+  content: string
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+type TickRow = {
+  id: string
+  room_id: string
+  location_id: string
+  trigger_type: LocationRoomTriggerType
+  requested_by_wallet: string | null
+  requested_by_token_id: number | null
+  status: LocationRoomTick['status']
+  attempts: number
+  next_attempt_at: string
+  locked_at: string | null
+  locked_by: string | null
+  selected_token_id: number | null
+  started_at: string | null
+  completed_at: string | null
+  last_error: string | null
+  created_at: string
+  updated_at: string
+}
+
+function getAdminClient() {
+  const client = getSupabaseAdmin()
+  if (!client) {
+    throw new Error('Supabase admin client not configured')
+  }
+
+  return client as any
+}
+
+function table(name: string): any {
+  return getAdminClient().from(name as never)
+}
+
+function mapRoom(row: RoomRow): LocationRoom {
+  return {
+    id: row.id,
+    locationId: row.location_id,
+    officialRoomId: row.official_room_id,
+    officialWorldId: row.official_world_id,
+    officialUserId: row.official_user_id,
+    channelId: row.channel_id,
+    tickEnabled: row.tick_enabled,
+    lastTickAt: row.last_tick_at,
+    nextTickAt: row.next_tick_at,
+    tickCount: row.tick_count,
+    lastError: row.last_error,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapMessage(row: MessageRow): LocationRoomMessage {
+  return {
+    id: row.id,
+    roomId: row.room_id,
+    locationId: row.location_id,
+    tickId: row.tick_id,
+    sequence: Number(row.sequence),
+    visibility: row.visibility,
+    authorKind: row.author_kind,
+    tokenId: row.token_id,
+    officialAgentId: row.official_agent_id,
+    authorName: row.author_name,
+    content: row.content,
+    metadata: row.metadata ?? {},
+    createdAt: row.created_at,
+  }
+}
+
+function mapTick(row: TickRow): LocationRoomTick {
+  return {
+    id: row.id,
+    roomId: row.room_id,
+    locationId: row.location_id,
+    triggerType: row.trigger_type,
+    requestedByWallet: row.requested_by_wallet,
+    requestedByTokenId: row.requested_by_token_id,
+    status: row.status,
+    attempts: row.attempts,
+    nextAttemptAt: row.next_attempt_at,
+    lockedAt: row.locked_at,
+    lockedBy: row.locked_by,
+    selectedTokenId: row.selected_token_id,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    lastError: row.last_error,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function isUniqueViolation(error: SupabaseError | null): boolean {
+  if (!error) return false
+  return error.code === '23505' || /duplicate key|unique constraint/i.test(error.message)
+}
+
+function addMinutes(date: Date, minutes: number): string {
+  return new Date(date.getTime() + minutes * 60_000).toISOString()
+}
+
+function buildRoomInsert(locationId: string) {
+  const normalizedLocationId = normalizeOfficialLocationId(locationId)
+  return {
+    location_id: locationId,
+    official_room_id: createOfficialLocationRoomId(locationId),
+    official_world_id: createOfficialLocationWorldId(locationId),
+    official_user_id: createOfficialLocationServiceUserId(locationId),
+    channel_id: `wagdie-location-${normalizedLocationId}`,
+    tick_enabled: true,
+  }
+}
+
+export type CreateLocationRoomMessageInput = {
+  roomId: string
+  locationId: string
+  tickId?: string | null
+  authorKind: LocationRoomMessage['authorKind']
+  tokenId?: number | null
+  officialAgentId?: string | null
+  authorName: string
+  content: string
+  visibility?: LocationRoomMessage['visibility']
+  metadata?: Record<string, unknown>
+}
+
+export interface LocationRoomRepository {
+  getLocation(locationId: string): Promise<LocationRoomLocation | null>
+  findRoomById(roomId: string): Promise<LocationRoom | null>
+  findRoomByLocationId(locationId: string): Promise<LocationRoom | null>
+  ensureRoomForLocation(locationId: string): Promise<LocationRoom>
+  listDueRooms(now: Date, limit: number): Promise<LocationRoom[]>
+  enqueueTick(input: {
+    room: LocationRoom
+    triggerType: LocationRoomTriggerType
+    requestedByWallet?: string | null
+    requestedByTokenId?: number | null
+  }): Promise<{ tick: LocationRoomTick | null; deduped: boolean }>
+  findRecentCompletedOwnerTick(params: { roomId: string; walletAddress: string; since: Date }): Promise<LocationRoomTick | null>
+  claimDueTicks(limit: number, workerId: string, now: Date): Promise<LocationRoomTick[]>
+  markTickSelected(tickId: string, tokenId: number): Promise<LocationRoomTick>
+  appendMessage(input: CreateLocationRoomMessageInput): Promise<LocationRoomMessage>
+  markTickCompleted(tickId: string): Promise<LocationRoomTick>
+  markTickSkipped(tickId: string, reason: string): Promise<LocationRoomTick>
+  markTickFailed(tickId: string, error: string, nextAttemptAt: string): Promise<LocationRoomTick>
+  markTickDead(tickId: string, error: string): Promise<LocationRoomTick>
+  updateRoomAfterProcessedTick(room: LocationRoom, params: { tickIntervalMinutes: number; now: Date }): Promise<LocationRoom>
+  recordRoomError(roomId: string, error: string): Promise<void>
+  listPublicMessages(params: { roomId: string; page: number; pageSize: number }): Promise<PaginatedLocationRoomMessages>
+  listRecentPublicMessages(roomId: string, limit: number): Promise<LocationRoomMessage[]>
+}
+
+export class SupabaseLocationRoomRepository implements LocationRoomRepository {
+  async getLocation(locationId: string): Promise<LocationRoomLocation | null> {
+    const { data, error } = (await table('locations')
+      .select('id, name')
+      .eq('id', locationId)
+      .maybeSingle()) as QueryResult<LocationRow>
+
+    if (error) throw new Error(error.message)
+    return data ? { id: data.id, name: data.name } : null
+  }
+
+  async findRoomById(roomId: string): Promise<LocationRoom | null> {
+    const { data, error } = (await table(ROOMS_TABLE)
+      .select(ROOM_COLUMNS)
+      .eq('id', roomId)
+      .maybeSingle()) as QueryResult<RoomRow>
+
+    if (error) throw new Error(error.message)
+    return data ? mapRoom(data) : null
+  }
+
+  async findRoomByLocationId(locationId: string): Promise<LocationRoom | null> {
+    const { data, error } = (await table(ROOMS_TABLE)
+      .select(ROOM_COLUMNS)
+      .eq('location_id', locationId)
+      .maybeSingle()) as QueryResult<RoomRow>
+
+    if (error) throw new Error(error.message)
+    return data ? mapRoom(data) : null
+  }
+
+  async ensureRoomForLocation(locationId: string): Promise<LocationRoom> {
+    const existing = await this.findRoomByLocationId(locationId)
+    if (existing) return existing
+
+    const { data, error } = (await table(ROOMS_TABLE)
+      .insert(buildRoomInsert(locationId))
+      .select(ROOM_COLUMNS)
+      .single()) as QueryResult<RoomRow>
+
+    if (isUniqueViolation(error)) {
+      const raced = await this.findRoomByLocationId(locationId)
+      if (raced) return raced
+    }
+
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Location room insert returned no row')
+    return mapRoom(data)
+  }
+
+  async listDueRooms(now: Date, limit: number): Promise<LocationRoom[]> {
+    const { data, error } = (await table(ROOMS_TABLE)
+      .select(ROOM_COLUMNS)
+      .eq('tick_enabled', true)
+      .or(`next_tick_at.is.null,next_tick_at.lte.${now.toISOString()}`)
+      .order('next_tick_at', { ascending: true, nullsFirst: true })
+      .limit(limit)) as QueryResult<RoomRow[]>
+
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(mapRoom)
+  }
+
+  async enqueueTick(input: {
+    room: LocationRoom
+    triggerType: LocationRoomTriggerType
+    requestedByWallet?: string | null
+    requestedByTokenId?: number | null
+  }): Promise<{ tick: LocationRoomTick | null; deduped: boolean }> {
+    const { data, error } = (await table(TICKS_TABLE)
+      .insert({
+        room_id: input.room.id,
+        location_id: input.room.locationId,
+        trigger_type: input.triggerType,
+        requested_by_wallet: input.requestedByWallet?.trim().toLowerCase() || null,
+        requested_by_token_id: input.requestedByTokenId ?? null,
+        status: 'pending',
+      })
+      .select(TICK_COLUMNS)
+      .single()) as QueryResult<TickRow>
+
+    if (isUniqueViolation(error)) return { tick: null, deduped: true }
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Location room tick insert returned no row')
+    return { tick: mapTick(data), deduped: false }
+  }
+
+  async findRecentCompletedOwnerTick(params: { roomId: string; walletAddress: string; since: Date }): Promise<LocationRoomTick | null> {
+    const normalizedWallet = params.walletAddress.trim().toLowerCase()
+    if (!normalizedWallet) return null
+
+    const { data, error } = (await table(TICKS_TABLE)
+      .select(TICK_COLUMNS)
+      .eq('room_id', params.roomId)
+      .eq('trigger_type', 'owner')
+      .eq('requested_by_wallet', normalizedWallet)
+      .gte('created_at', params.since.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5)) as QueryResult<TickRow[]>
+
+    if (error) throw new Error(error.message)
+
+    const recentCompleted = (data ?? []).find(
+      (row) => row.status !== 'pending' && row.status !== 'processing'
+    )
+
+    return recentCompleted ? mapTick(recentCompleted) : null
+  }
+
+  async claimDueTicks(limit: number, workerId: string, now: Date): Promise<LocationRoomTick[]> {
+    const { data, error } = (await table(TICKS_TABLE)
+      .select(TICK_COLUMNS)
+      .in('status', ['pending', 'failed'])
+      .lte('next_attempt_at', now.toISOString())
+      .order('created_at', { ascending: true })
+      .limit(limit)) as QueryResult<TickRow[]>
+
+    if (error) throw new Error(error.message)
+
+    const candidates = [...(data ?? [])]
+    const remaining = limit - candidates.length
+
+    if (remaining > 0) {
+      const staleBefore = new Date(now.getTime() - WORKER_LOCK_TTL_MS).toISOString()
+      const { data: staleData, error: staleError } = (await table(TICKS_TABLE)
+        .select(TICK_COLUMNS)
+        .eq('status', 'processing')
+        .lt('locked_at', staleBefore)
+        .order('locked_at', { ascending: true })
+        .limit(remaining)) as QueryResult<TickRow[]>
+
+      if (staleError) throw new Error(staleError.message)
+      candidates.push(...(staleData ?? []))
+    }
+
+    const claimed: LocationRoomTick[] = []
+    for (const row of candidates) {
+      let claimQuery = table(TICKS_TABLE)
+        .update({
+          status: 'processing',
+          attempts: row.attempts + 1,
+          locked_at: now.toISOString(),
+          locked_by: workerId,
+          started_at: row.started_at ?? now.toISOString(),
+          last_error: null,
+        })
+        .eq('id', row.id)
+        .eq('status', row.status)
+
+      if (row.status === 'processing') {
+        claimQuery = row.locked_at
+          ? claimQuery.eq('locked_at', row.locked_at)
+          : claimQuery.is('locked_at', null)
+      }
+
+      const { data: updated, error: updateError } = (await claimQuery
+        .select(TICK_COLUMNS)
+        .single()) as QueryResult<TickRow>
+
+      if (updateError || !updated) continue
+      claimed.push(mapTick(updated))
+    }
+
+    return claimed
+  }
+
+  async markTickSelected(tickId: string, tokenId: number): Promise<LocationRoomTick> {
+    return this.updateTick(tickId, { selected_token_id: tokenId })
+  }
+
+  async appendMessage(input: CreateLocationRoomMessageInput): Promise<LocationRoomMessage> {
+    if (input.tickId && input.visibility !== 'internal') {
+      const { data: existingRows, error: existingError } = (await table(MESSAGES_TABLE)
+        .select(MESSAGE_COLUMNS)
+        .eq('tick_id', input.tickId)
+        .eq('visibility', input.visibility ?? 'public')
+        .eq('author_kind', input.authorKind)
+        .order('sequence', { ascending: true })
+        .limit(1)) as QueryResult<MessageRow[]>
+
+      if (existingError) throw new Error(existingError.message)
+      const existing = existingRows?.[0]
+      if (existing) return mapMessage(existing)
+    }
+
+    const { data, error } = (await table(MESSAGES_TABLE)
+      .insert({
+        room_id: input.roomId,
+        location_id: input.locationId,
+        tick_id: input.tickId ?? null,
+        visibility: input.visibility ?? 'public',
+        author_kind: input.authorKind,
+        token_id: input.tokenId ?? null,
+        official_agent_id: input.officialAgentId ?? null,
+        author_name: input.authorName,
+        content: input.content,
+        metadata: input.metadata ?? {},
+      })
+      .select(MESSAGE_COLUMNS)
+      .single()) as QueryResult<MessageRow>
+
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Location room message insert returned no row')
+    return mapMessage(data)
+  }
+
+  async markTickCompleted(tickId: string): Promise<LocationRoomTick> {
+    return this.updateTick(tickId, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      locked_at: null,
+      locked_by: null,
+      last_error: null,
+    })
+  }
+
+  async markTickSkipped(tickId: string, reason: string): Promise<LocationRoomTick> {
+    return this.updateTick(tickId, {
+      status: 'skipped',
+      completed_at: new Date().toISOString(),
+      locked_at: null,
+      locked_by: null,
+      last_error: reason,
+    })
+  }
+
+  async markTickFailed(tickId: string, error: string, nextAttemptAt: string): Promise<LocationRoomTick> {
+    return this.updateTick(tickId, {
+      status: 'failed',
+      next_attempt_at: nextAttemptAt,
+      locked_at: null,
+      locked_by: null,
+      last_error: error,
+    })
+  }
+
+  async markTickDead(tickId: string, error: string): Promise<LocationRoomTick> {
+    return this.updateTick(tickId, {
+      status: 'dead',
+      completed_at: new Date().toISOString(),
+      locked_at: null,
+      locked_by: null,
+      last_error: error,
+    })
+  }
+
+  async updateRoomAfterProcessedTick(room: LocationRoom, params: { tickIntervalMinutes: number; now: Date }): Promise<LocationRoom> {
+    const { data, error } = (await table(ROOMS_TABLE)
+      .update({
+        last_tick_at: params.now.toISOString(),
+        next_tick_at: addMinutes(params.now, params.tickIntervalMinutes),
+        tick_count: room.tickCount + 1,
+        last_error: null,
+      })
+      .eq('id', room.id)
+      .select(ROOM_COLUMNS)
+      .single()) as QueryResult<RoomRow>
+
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Location room update returned no row')
+    return mapRoom(data)
+  }
+
+  async recordRoomError(roomId: string, error: string): Promise<void> {
+    const { error: updateError } = (await table(ROOMS_TABLE)
+      .update({ last_error: error })
+      .eq('id', roomId)) as QueryResult<null>
+
+    if (updateError) throw new Error(updateError.message)
+  }
+
+  async listPublicMessages(params: { roomId: string; page: number; pageSize: number }): Promise<PaginatedLocationRoomMessages> {
+    const from = (params.page - 1) * params.pageSize
+    const to = from + params.pageSize - 1
+    const { data, error, count } = (await table(MESSAGES_TABLE)
+      .select(MESSAGE_COLUMNS, { count: 'exact' })
+      .eq('room_id', params.roomId)
+      .eq('visibility', 'public')
+      .order('sequence', { ascending: false })
+      .range(from, to)) as QueryResult<MessageRow[]>
+
+    if (error) throw new Error(error.message)
+    const total = count ?? data?.length ?? 0
+    const messages = (data ?? []).map(mapMessage).reverse()
+
+    return {
+      messages,
+      total,
+      page: params.page,
+      pageSize: params.pageSize,
+      hasMore: from + params.pageSize < total,
+    }
+  }
+
+  async listRecentPublicMessages(roomId: string, limit: number): Promise<LocationRoomMessage[]> {
+    const { data, error } = (await table(MESSAGES_TABLE)
+      .select(MESSAGE_COLUMNS)
+      .eq('room_id', roomId)
+      .eq('visibility', 'public')
+      .order('sequence', { ascending: false })
+      .limit(limit)) as QueryResult<MessageRow[]>
+
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(mapMessage).reverse()
+  }
+
+  private async updateTick(tickId: string, values: Record<string, unknown>): Promise<LocationRoomTick> {
+    const { data, error } = (await table(TICKS_TABLE)
+      .update(values)
+      .eq('id', tickId)
+      .select(TICK_COLUMNS)
+      .single()) as QueryResult<TickRow>
+
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Location room tick update returned no row')
+    return mapTick(data)
+  }
+}
+
+export const locationRoomRepository = new SupabaseLocationRoomRepository()

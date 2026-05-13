@@ -51,6 +51,23 @@ function optionalNumberInRange(
   return parsed
 }
 
+function optionalBoolean(value: string | undefined): boolean | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  const normalized = value.trim().toLowerCase()
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true
+  }
+
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false
+  }
+
+  return undefined
+}
+
 export const elizaConfig = {
   /**
    * Server-only mode flag for the Eliza gateway.
@@ -120,6 +137,29 @@ export const elizaConfig = {
     baseUrl: process.env.ELIZAOS_BASE_URL || '',
     apiKey: process.env.ELIZAOS_API_KEY || '',
     healthPath: process.env.ELIZAOS_HEALTH_PATH || '/api/server/health',
+  },
+
+  /**
+   * Public location-pin room settings for scheduled elizaOS character turns.
+   * Disabled by default until the room domain/API/UI rollout is complete.
+   */
+  locationRooms: {
+    enabled: optionalBoolean(process.env.ELIZA_LOCATION_ROOMS_ENABLED) ?? false,
+    tickIntervalMinutes:
+      optionalNumberInRange(process.env.ELIZA_LOCATION_ROOM_TICK_INTERVAL_MINUTES, {
+        min: 1,
+        integer: true,
+      }) ?? 360,
+    maxTicksPerRun:
+      optionalNumberInRange(process.env.ELIZA_LOCATION_ROOM_MAX_TICKS_PER_RUN, {
+        min: 1,
+        integer: true,
+      }) ?? 5,
+    transcriptWindow:
+      optionalNumberInRange(process.env.ELIZA_LOCATION_ROOM_TRANSCRIPT_WINDOW, {
+        min: 1,
+        integer: true,
+      }) ?? 20,
   },
 
   /**

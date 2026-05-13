@@ -37,3 +37,34 @@ export function createOfficialWalletUserId(address: string): string {
 export function createOfficialServiceUserId(value = 'wagdie-service-user'): string {
   return createDeterministicOfficialUuid('user', value)
 }
+
+export function normalizeOfficialLocationId(locationId: string): string {
+  const normalized = locationId.trim().toLowerCase()
+
+  if (!normalized) {
+    throw new Error('Location id is required for official ElizaOS room ids')
+  }
+
+  return normalized
+}
+
+export function createOfficialLocationRoomId(locationId: string): string {
+  return createDeterministicOfficialUuid(
+    'location-room',
+    normalizeOfficialLocationId(locationId)
+  )
+}
+
+export function createOfficialLocationWorldId(locationId: string): string {
+  return createDeterministicOfficialUuid(
+    'location-world',
+    normalizeOfficialLocationId(locationId)
+  )
+}
+
+export function createOfficialLocationServiceUserId(locationId: string): string {
+  return createDeterministicOfficialUuid(
+    'location-service-user',
+    normalizeOfficialLocationId(locationId)
+  )
+}

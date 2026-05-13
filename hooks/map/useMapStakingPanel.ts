@@ -14,7 +14,7 @@ import { STAKING_CHAIN_ERROR, STAKING_CHAIN_ID } from '@/lib/contracts/staking-c
 
 export type ApprovalState = 'idle' | 'checking' | 'approved' | 'not_approved' | 'error';
 
-export type LocationTab = 'staked-here' | 'your-characters';
+export type LocationTab = 'staked-here' | 'your-characters' | 'room';
 
 export type StakableCharacter = Character & {
   isStaked: boolean;

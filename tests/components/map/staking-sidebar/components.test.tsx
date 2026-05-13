@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { ApprovalBanner, ApprovalReadyBanner } from '@/components/map/staking-sidebar/ApprovalBanner';
 import { LocationDetailsCard } from '@/components/map/staking-sidebar/LocationDetailsCard';
 import { LocationTabs } from '@/components/map/staking-sidebar/LocationTabs';
+import { LocationRoomPanel } from '@/components/map/staking-sidebar/LocationRoomPanel';
 import { PaginationControls } from '@/components/map/staking-sidebar/PaginationControls';
 import { WalletGate } from '@/components/map/staking-sidebar/WalletGate';
 import { CharacterStakeList } from '@/components/map/staking-sidebar/CharacterStakeList';
@@ -77,11 +78,131 @@ describe('staking-sidebar presentational components', () => {
     );
 
     expect(screen.getByRole('button', { name: /Staked Here\s*3/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Room/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Your Characters\s*12/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Staked Here/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Room/i }));
 
     expect(setActiveTab).toHaveBeenCalledWith('staked-here');
+    expect(setActiveTab).toHaveBeenCalledWith('room');
+  });
+
+  it('renders public room transcript and hides trigger controls from ineligible visitors', () => {
+    render(
+      <LocationRoomPanel
+        roomData={{
+          room: {
+            id: 'room-1',
+            locationId: 'loc-1',
+            locationName: 'The Abyss',
+            tickEnabled: true,
+            lastTickAt: null,
+            nextTickAt: null,
+            tickCount: 1,
+            createdAt: '2026-05-11T12:00:00.000Z',
+            updatedAt: '2026-05-11T12:00:00.000Z',
+          },
+          participants: [{ tokenId: 7, name: 'Wagdie #7', imageUrl: null }],
+          messages: [{
+            id: 'msg-1',
+            sequence: 1,
+            authorKind: 'agent',
+            tokenId: 7,
+            authorName: 'Wagdie #7',
+            content: 'The bell tolls beneath the ash.',
+            createdAt: '2026-05-11T12:00:00.000Z',
+          }],
+          pagination: { page: 1, pageSize: 20, total: 1, hasMore: false },
+        }}
+        isLoading={false}
+        error={null}
+        canTriggerAsOwner={false}
+        isTriggering={false}
+        triggerState="idle"
+        triggerError={null}
+        onTrigger={jest.fn()}
+        onRetry={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Room Transcript')).toBeInTheDocument();
+    expect(screen.getByText('The bell tolls beneath the ash.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Stir the Room/i })).not.toBeInTheDocument();
+  });
+
+  it('shows owner trigger controls only for eligible owners and disables them when too few participants remain', () => {
+    render(
+      <LocationRoomPanel
+        roomData={{
+          room: {
+            id: 'room-1',
+            locationId: 'loc-1',
+            locationName: 'The Abyss',
+            tickEnabled: true,
+            lastTickAt: null,
+            nextTickAt: null,
+            tickCount: 0,
+            createdAt: '2026-05-11T12:00:00.000Z',
+            updatedAt: '2026-05-11T12:00:00.000Z',
+          },
+          participants: [{ tokenId: 7, name: 'Wagdie #7', imageUrl: null }],
+          messages: [],
+          pagination: { page: 1, pageSize: 20, total: 0, hasMore: false },
+        }}
+        isLoading={false}
+        error={null}
+        canTriggerAsOwner
+        isTriggering={false}
+        triggerState="idle"
+        triggerError={null}
+        onTrigger={jest.fn()}
+        onRetry={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /Stir the Room/i })).toBeDisabled();
+    expect(screen.getByText('At least two eligible participants are required.')).toBeInTheDocument();
+  });
+
+  it('calls the room trigger action for eligible owners', () => {
+    const onTrigger = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <LocationRoomPanel
+        roomData={{
+          room: {
+            id: 'room-1',
+            locationId: 'loc-1',
+            locationName: 'The Abyss',
+            tickEnabled: true,
+            lastTickAt: null,
+            nextTickAt: null,
+            tickCount: 0,
+            createdAt: '2026-05-11T12:00:00.000Z',
+            updatedAt: '2026-05-11T12:00:00.000Z',
+          },
+          participants: [
+            { tokenId: 7, name: 'Wagdie #7', imageUrl: null },
+            { tokenId: 8, name: 'Wagdie #8', imageUrl: null },
+          ],
+          messages: [],
+          pagination: { page: 1, pageSize: 20, total: 0, hasMore: false },
+        }}
+        isLoading={false}
+        error={null}
+        canTriggerAsOwner
+        isTriggering={false}
+        triggerState="idle"
+        triggerError={null}
+        onTrigger={onTrigger}
+        onRetry={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Stir the Room/i }));
+
+    expect(onTrigger).toHaveBeenCalledTimes(1);
   });
 
   it('updates pagination with functional page setters and honors disabled states', () => {

@@ -7,30 +7,35 @@ const layerConfigs = [
   {
     key: 'locations',
     label: 'Locations',
+    description: 'Places you can inspect.',
     iconOn: '/images/legendicons/legend_icon_location_on.png',
     iconOff: '/images/legendicons/legend_icon_location_off.png',
   },
   {
     key: 'characters',
-    label: 'Characters',
+    label: 'Your Characters',
+    description: 'Only visible when connected.',
     iconOn: '/images/legendicons/legend_icon_location_on.png',
     iconOff: '/images/legendicons/legend_icon_location_off.png',
   },
   {
     key: 'burns',
     label: 'Burns',
+    description: 'Burn events and searing traces.',
     iconOn: '/images/legendicons/legend_icon_burn_on.png',
     iconOff: '/images/legendicons/legend_icon_burn_off.png',
   },
   {
     key: 'deaths',
     label: 'Deaths',
+    description: 'Fallen warriors.',
     iconOn: '/images/legendicons/legend_icon_death_on.png',
     iconOff: '/images/legendicons/legend_icon_death_off.png',
   },
   {
     key: 'fights',
     label: 'Fights',
+    description: 'Recorded battles.',
     iconOn: '/images/legendicons/legend_icon_fight_on.png',
     iconOff: '/images/legendicons/legend_icon_fight_off.png',
   },
@@ -93,12 +98,17 @@ export function MapLayerControls({ layers, onToggleLayer }: MapLayerControlsProp
                     : 'grayscale(100%) opacity(0.4)',
                 }}
               />
-              <span
-                className={`font-eskapade text-sm ${
-                  layers[config.key] ? 'text-neutral-200' : 'text-neutral-500'
-                }`}
-              >
-                {config.label}
+              <span className="min-w-0 flex-1 text-left">
+                <span
+                  className={`block font-eskapade text-sm ${
+                    layers[config.key] ? 'text-neutral-200' : 'text-neutral-500'
+                  }`}
+                >
+                  {config.label}
+                </span>
+                <span className="block text-xs leading-snug text-neutral-600 font-eskapade">
+                  {config.description}
+                </span>
               </span>
               <div
                 className={`ml-auto w-3 h-3 rounded-full transition-all ${

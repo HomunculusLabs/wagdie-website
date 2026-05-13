@@ -8,7 +8,6 @@ import type {
   GatewayChatSendInput,
   GatewayConversationDetail,
   GatewayConversationSummary,
-  GatewayPaginatedResponse,
   GatewayPaginationParams,
   StreamCallbacks,
   WagdieElizaClient,
@@ -17,7 +16,10 @@ import type { WagdieElizaClientConfig } from '@/lib/eliza/gateway/types'
 import { createOfficialAgentId } from './ids'
 import { WagdieElizaError } from '@/lib/eliza/gateway/errors'
 import { normalizeOfficialElizaError, unsupportedOfficialFeature } from './errors'
-import { streamOfficialElizaSse } from './stream'
+import {
+  createOfficialElizaMessagingClient,
+  type OfficialElizaMessagingClient,
+} from './messaging'
 import {
   officialConversationRepository,
   type OfficialConversationLink,
@@ -45,8 +47,6 @@ type OfficialSessionMessage = {
   createdAt?: string | Date | number
   metadata?: Record<string, unknown>
 }
-
-const DEFAULT_PAGE_SIZE = 20
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -172,21 +172,6 @@ function toCharacterRecord(agent: OfficialAgentCreateResponse): CharacterRecord 
   }
 }
 
-function paginate<T>(items: T[], params: GatewayPaginationParams = {}): GatewayPaginatedResponse<T> {
-  const page = params.page ?? 1
-  const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE
-  const start = Math.max(0, (page - 1) * pageSize)
-  const paged = items.slice(start, start + pageSize)
-
-  return {
-    items: paged,
-    total: items.length,
-    page,
-    pageSize,
-    hasMore: start + pageSize < items.length,
-  }
-}
-
 function getOfficialChatUserId(input: GatewayChatSendInput, configuredUserId?: string): string {
   const userId = input.userId ?? configuredUserId
 
@@ -229,6 +214,7 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
   private readonly walletAddress?: string
   private readonly timeout: number
   private readonly conversationRepository: OfficialConversationRepository
+  private readonly messaging: OfficialElizaMessagingClient
 
   constructor(config: OfficialClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '')
@@ -241,6 +227,12 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
       baseUrl: this.baseUrl,
       apiKey: config.apiKey,
       timeout: this.timeout,
+    })
+    this.messaging = createOfficialElizaMessagingClient({
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey,
+      timeout: this.timeout,
+      client: this.client,
     })
   }
 
@@ -332,29 +324,11 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
       const walletAddress = normalizeWalletAddress(input.walletAddress ?? this.walletAddress)
 
       try {
-        const ensureOfficialAgentStarted = async () => {
-          const response = await fetch(`${this.baseUrl}/api/agents/${input.characterId}/start`, {
-            method: 'POST',
-            headers: {
-              ...(this.apiKey ? { 'X-API-KEY': this.apiKey } : {}),
-            },
-            signal: input.signal,
-          })
-
-          if (!response.ok) {
-            throw new WagdieElizaError('Failed to start official ElizaOS agent', {
-              code: response.status === 404 ? 'NOT_FOUND' : 'API_ERROR',
-              statusCode: response.status,
-              details: {
-                upstreamStatus: response.status,
-                upstreamBody: (await response.text().catch(() => '')).slice(0, 500),
-              },
-            })
-          }
-        }
+        const ensureOfficialAgentStarted = () =>
+          this.messaging.startAgent(input.characterId, { signal: input.signal })
 
         const createOfficialSession = () =>
-          this.client.sessions.createSession({
+          this.messaging.createSession({
             agentId: input.characterId,
             userId: officialUserId,
             metadata: {
@@ -383,28 +357,21 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
               officialSessionId: session.sessionId,
             })
           } catch (mappingError) {
-            await this.client.sessions.deleteSession(session.sessionId).catch(() => null)
+            await this.messaging.deleteSession(session.sessionId).catch(() => null)
             throw mappingError
           }
         }
 
         const sendToOfficialSession = (officialSessionId: string) =>
-          fetch(`${this.baseUrl}/api/messaging/sessions/${officialSessionId}/messages`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(this.apiKey ? { 'X-API-KEY': this.apiKey } : {}),
+          this.messaging.sendSessionMessage({
+            sessionId: officialSessionId,
+            content: input.message,
+            metadata: {
+              source: 'wagdie',
+              characterId: input.characterId,
+              tokenId: input.tokenId,
+              wagdieConversationId: link!.id,
             },
-            body: JSON.stringify({
-              content: input.message,
-              transport: 'sse',
-              metadata: {
-                source: 'wagdie',
-                characterId: input.characterId,
-                tokenId: input.tokenId,
-                wagdieConversationId: link!.id,
-              },
-            }),
             signal: input.signal,
           })
 
@@ -420,9 +387,9 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
           response = await sendToOfficialSession(link.officialSessionId)
         }
 
-        await streamOfficialElizaSse(
-          response,
-          {
+        await this.messaging.collectStreamedResponseText(response, {
+          conversationId: link.officialSessionId,
+          callbacks: {
             ...callbacks,
             onChunk: (chunk) => {
               firstTokenAt ??= Date.now()
@@ -456,8 +423,7 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
               callbacks.onError?.(error)
             },
           },
-          link.officialSessionId
-        )
+        })
       } catch (error) {
         if (link) {
           await this.conversationRepository.recordError(link.id, officialUserId, error).catch(() => null)

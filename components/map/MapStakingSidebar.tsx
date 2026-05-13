@@ -3,17 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MarkerPayload, MapLocationData } from '@/game/EventBus';
 import type { CharacterWithLocation } from '@/lib/repositories/character-repository';
+import { useLocationRoom } from '@/hooks/map/useLocationRoom';
 import { useMapStakingPanel, type SelectedStakingLocation } from '@/hooks/map/useMapStakingPanel';
 import { Alert, Spinner } from '@/components/ui';
 import { ApprovalBanner, ApprovalReadyBanner } from './staking-sidebar/ApprovalBanner';
 import { CharacterStakeList } from './staking-sidebar/CharacterStakeList';
 import { LocationDetailsCard } from './staking-sidebar/LocationDetailsCard';
+import { LocationRoomPanel } from './staking-sidebar/LocationRoomPanel';
 import { LocationTabs } from './staking-sidebar/LocationTabs';
 import { MarkerDetailsCard } from './staking-sidebar/MarkerDetailsCard';
 import { PaginationControls } from './staking-sidebar/PaginationControls';
 import { SidebarHeader } from './staking-sidebar/SidebarHeader';
 import { SidebarShell } from './staking-sidebar/SidebarShell';
 import { StakedHereList } from './staking-sidebar/StakedHereList';
+import { StakingGuideCard } from './staking-sidebar/StakingGuideCard';
 import { WalletGate } from './staking-sidebar/WalletGate';
 import { getMarkerTitle } from './staking-sidebar/utils';
 
@@ -41,6 +44,7 @@ export function MapStakingSidebar({
   onStakingChanged,
 }: MapStakingSidebarProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const lastLocationMarkerIdRef = useRef<string | null>(null);
   const [visible, setVisible] = useState(false);
 
   const panel = useMapStakingPanel({
@@ -73,11 +77,29 @@ export function MapStakingSidebar({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (selectedMarker?.type !== 'location') {
+      lastLocationMarkerIdRef.current = null;
+      return;
+    }
+    if (lastLocationMarkerIdRef.current === selectedMarker.id) return;
+
+    lastLocationMarkerIdRef.current = selectedMarker.id;
+    panel.setActiveTab('staked-here');
+  }, [panel, selectedMarker]);
+
   const headerTitle = getMarkerTitle(selectedMarker);
   const isLocationMarker = selectedMarker?.type === 'location';
   const locationData = isLocationMarker ? (selectedMarker.data as MapLocationData) : null;
   const locationSelectionError =
     isLocationMarker && selectedLocationError ? selectedLocationError : null;
+  const locationRoom = useLocationRoom({
+    locationId: selectedLocation?.location.id ?? null,
+    isActive: isOpen && isLocationMarker && panel.activeTab === 'room',
+    stakedHere,
+    walletAddress: panel.effectiveWallet,
+    isConnected: panel.isConnected,
+  });
 
   if (!visible && !isOpen) return null;
 
@@ -97,7 +119,7 @@ export function MapStakingSidebar({
               <svg className="w-4 h-4 text-soul-accent/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Select an unstaked character to stake at <span className="text-neutral-400">{selectedLocation.location.name}</span></span>
+              <span>Choose an unstaked character for <span className="text-neutral-400">{selectedLocation.location.name}</span></span>
             </div>
           </div>
         ) : null
@@ -151,8 +173,26 @@ export function MapStakingSidebar({
           </div>
         )}
 
+        {isLocationMarker && panel.activeTab === 'room' && (
+          <LocationRoomPanel
+            roomData={locationRoom.roomData}
+            isLoading={locationRoom.isLoading}
+            error={locationRoom.error}
+            canTriggerAsOwner={locationRoom.canTriggerAsOwner}
+            isTriggering={locationRoom.isTriggering}
+            triggerState={locationRoom.triggerState}
+            triggerError={locationRoom.triggerError}
+            onTrigger={locationRoom.triggerTick}
+            onRetry={locationRoom.refetch}
+          />
+        )}
+
         {(panel.activeTab === 'your-characters' || !isLocationMarker) && (
           <div className="space-y-3">
+            {!selectedMarker && !selectedLocation && (
+              <StakingGuideCard isConnected={panel.isConnected} />
+            )}
+
             {!panel.isConnected ? (
               <WalletGate />
             ) : (

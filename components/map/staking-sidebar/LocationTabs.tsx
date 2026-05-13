@@ -18,36 +18,39 @@ export function LocationTabs({
   totalCharacters,
   isConnected,
 }: LocationTabsProps) {
+  const tabClassName = (tab: LocationTab) => `
+    flex-1 px-3 py-2.5 rounded-md font-eskapade text-sm tracking-wide transition-all
+    ${activeTab === tab
+      ? 'bg-soul-accent/10 text-soul-accent border border-soul-accent/30'
+      : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
+    }
+  `;
+
   return (
     <div className="flex gap-1 p-1 bg-neutral-900/50 rounded-lg border border-neutral-800/50">
       <button
         type="button"
         onClick={() => setActiveTab('staked-here')}
-        className={`
-          flex-1 px-4 py-2.5 rounded-md font-eskapade text-sm tracking-wide transition-all
-          ${activeTab === 'staked-here'
-            ? 'bg-soul-accent/10 text-soul-accent border border-soul-accent/30'
-            : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
-          }
-        `}
+        className={tabClassName('staked-here')}
       >
-        Staked Here
+        At This Location
         <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0">
           {stakedCount}
         </Badge>
       </button>
       <button
         type="button"
-        onClick={() => setActiveTab('your-characters')}
-        className={`
-          flex-1 px-4 py-2.5 rounded-md font-eskapade text-sm tracking-wide transition-all
-          ${activeTab === 'your-characters'
-            ? 'bg-soul-accent/10 text-soul-accent border border-soul-accent/30'
-            : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
-          }
-        `}
+        onClick={() => setActiveTab('room')}
+        className={tabClassName('room')}
       >
-        Your Characters
+        Room
+      </button>
+      <button
+        type="button"
+        onClick={() => setActiveTab('your-characters')}
+        className={tabClassName('your-characters')}
+      >
+        Stake Here
         {isConnected && (
           <Badge variant="outline" className="ml-2 text-xs px-1.5 py-0">
             {totalCharacters}

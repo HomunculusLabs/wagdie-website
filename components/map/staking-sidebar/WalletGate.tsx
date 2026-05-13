@@ -9,7 +9,7 @@ export function WalletGate() {
         </svg>
       </div>
       <p className="text-base text-neutral-400 font-eskapade mb-1">Wallet not connected</p>
-      <p className="text-sm text-neutral-600 font-eskapade">Connect to view and stake your characters</p>
+      <p className="text-sm text-neutral-600 font-eskapade">Browse the map freely. Connect to view and stake your characters.</p>
     </div>
   );
 }

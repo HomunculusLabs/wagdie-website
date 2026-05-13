@@ -19,7 +19,7 @@ export function ApprovalReadyBanner() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-sm text-green-300 font-eskapade">Ready to stake</p>
+        <p className="text-sm text-green-300 font-eskapade">Wallet approved — choose an unstaked character.</p>
       </div>
     </div>
   );
@@ -51,13 +51,13 @@ export function ApprovalBanner({
           {(approvalState === 'idle' || approvalState === 'checking') && (
             <>
               <p className="text-base text-neutral-300 font-eskapade">Checking approval...</p>
-              <p className="text-sm text-neutral-500 font-eskapade mt-0.5">Verifying contract permissions</p>
+              <p className="text-sm text-neutral-500 font-eskapade mt-0.5">Verifying one-time staking permission</p>
             </>
           )}
           {approvalState === 'not_approved' && (
             <>
               <p className="text-base text-neutral-200 font-eskapade">Contract approval required</p>
-              <p className="text-sm text-neutral-500 font-eskapade mt-0.5">Approve once to enable staking</p>
+              <p className="text-sm text-neutral-500 font-eskapade mt-0.5">Approve once, then choose a character to stake here.</p>
             </>
           )}
           {approvalState === 'error' && (

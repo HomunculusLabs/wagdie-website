@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from 'next/server'
+import {
+  LocationRoomFeatureDisabledError,
+  LocationRoomOfficialServiceDisabledError,
+  locationRoomService,
+} from '@/lib/eliza/locationRooms/service'
+
+function verifyAuthorization(request: NextRequest): boolean {
+  const syncSecret = process.env.SYNC_SECRET_KEY
+  if (!syncSecret) {
+    console.error('SYNC_SECRET_KEY not configured')
+    return false
+  }
+
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.replace('Bearer ', '') === syncSecret) {
+    return true
+  }
+
+  return request.nextUrl.searchParams.get('secret') === syncSecret
+}
+
+export async function GET(request: NextRequest) {
+  return handleSync(request)
+}
+
+export async function POST(request: NextRequest) {
+  return handleSync(request)
+}
+
+async function handleSync(request: NextRequest) {
+  if (!verifyAuthorization(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const result = await locationRoomService.runScheduledWorker()
+    return NextResponse.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    if (error instanceof LocationRoomFeatureDisabledError) {
+      return NextResponse.json(
+        { success: false, error: 'Eliza location rooms are disabled' },
+        { status: 503 }
+      )
+    }
+
+    if (error instanceof LocationRoomOfficialServiceDisabledError) {
+      return NextResponse.json(
+        { success: false, error: 'Official ElizaOS service is not configured' },
+        { status: 503 }
+      )
+    }
+
+    console.error('[Eliza Location Rooms Sync] Error:', error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Eliza location room sync failed',
+        message: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    )
+  }
+}
