@@ -143,6 +143,8 @@ export interface CharacterFilters {
   search?: string
   // Character sheet filter
   hasSheet?: boolean
+  // ElizaOS profile/link filter
+  hasElizaProfile?: boolean
   // Origin/body type filter (Body trait)
   origin?: string
   // Alignment filter (D&D style)

@@ -9,11 +9,12 @@
 import React from 'react'
 import type { CharacterFilterTab } from '@/types/character'
 
-type FilterType = 'hasSheet' | 'origin' | 'alignment' | 'the17' | 'armor' | 'back' | 'mask' | 'search'
+type FilterType = 'hasSheet' | 'hasElizaProfile' | 'origin' | 'alignment' | 'the17' | 'armor' | 'back' | 'mask' | 'search'
 
 interface ActiveFiltersProps {
   filters: {
     hasSheet: boolean
+    hasElizaProfile: boolean
     origin: string | null
     alignment: string | null
     the17?: string | null
@@ -34,13 +35,14 @@ export function ActiveFilters({
 }: ActiveFiltersProps) {
   const activeCount = [
     filters.hasSheet,
-    filters.origin !== null,
-    filters.alignment !== null,
-    filters.the17 !== null,
-    filters.armor !== null,
-    filters.back !== null,
-    filters.mask !== null,
-    filters.search !== null && filters.search.length > 0
+    filters.hasElizaProfile,
+    Boolean(filters.origin),
+    Boolean(filters.alignment),
+    Boolean(filters.the17),
+    Boolean(filters.armor),
+    Boolean(filters.back),
+    Boolean(filters.mask),
+    Boolean(filters.search?.length)
   ].filter(Boolean).length
 
   if (activeCount === 0) return null
@@ -56,6 +58,14 @@ export function ActiveFilters({
         <FilterBadge
           label="Has Sheet"
           onRemove={() => onRemoveFilter('hasSheet')}
+        />
+      )}
+
+      {/* ElizaOS Profile Filter Badge */}
+      {filters.hasElizaProfile && (
+        <FilterBadge
+          label="ElizaOS Profile"
+          onRemove={() => onRemoveFilter('hasElizaProfile')}
         />
       )}
 

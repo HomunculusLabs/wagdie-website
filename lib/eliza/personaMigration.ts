@@ -92,6 +92,30 @@ export async function recordPersonaMigrationSuccess(
   }
 }
 
+export async function recordLegacyPersonaProfileLink(
+  params: {
+    tokenId: string
+    legacyCharacterId: string
+  },
+  repository: PersonaMigrationLinkRepository = personaMigrationLinkRepository
+): Promise<PersonaMigrationLink | null> {
+  try {
+    const existing = await repository.findByTokenId(params.tokenId)
+
+    return await repository.upsert({
+      tokenId: params.tokenId,
+      legacyCharacterId: params.legacyCharacterId,
+      officialAgentId: existing?.officialAgentId ?? null,
+      status: existing?.status ?? 'pending',
+      lastError: existing?.lastError ?? null,
+      lastSyncedAt: existing?.lastSyncedAt ?? null,
+    })
+  } catch (error) {
+    console.error('[Eliza Persona Migration] Failed to record legacy persona profile link:', error)
+    return null
+  }
+}
+
 export async function syncOfficialPersonaShadow(
   params: PersonaShadowSyncParams,
   deps: PersonaShadowSyncDeps = {}

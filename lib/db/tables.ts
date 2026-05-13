@@ -13,3 +13,5 @@ export const CHARACTERS_TABLE =
   process.env.CHARACTERS_TABLE ||
   'wagdie_characters'
 
+export const ELIZA_PERSONA_MIGRATION_LINKS_TABLE = 'eliza_persona_migration_links'
+

@@ -12,6 +12,8 @@ interface SheetToggleProps {
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
+  label?: string
+  title?: string
   className?: string
 }
 
@@ -19,6 +21,8 @@ export function SheetToggle({
   checked,
   onChange,
   disabled = false,
+  label = 'Has Sheet',
+  title = 'Show only characters with custom name, stats, level, or backstory',
   className = ''
 }: SheetToggleProps) {
   return (
@@ -28,7 +32,7 @@ export function SheetToggle({
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `}
-      title="Show only characters with custom name, stats, level, or backstory"
+      title={title}
     >
       <span className="relative">
         <input
@@ -57,7 +61,7 @@ export function SheetToggle({
       </span>
       {/* REPOMARK:SCOPE: 1 - Replace font-display with font-eskapade for SheetToggle label text (UI font contract) */}
       <span className="text-md font-eskapade  tracking-wider text-neutral-400">
-        Has Sheet
+        {label}
       </span>
     </label>
   )

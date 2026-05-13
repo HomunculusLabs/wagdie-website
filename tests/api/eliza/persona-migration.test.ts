@@ -7,11 +7,15 @@ jest.mock('@/lib/eliza/client', () => ({
 }))
 
 import { createOfficialServerClient } from '@/lib/eliza/client'
-import { recordPersonaMigrationSuccess, syncOfficialPersonaShadow } from '@/lib/eliza/personaMigration'
-import type { PersonaMigrationLinkRepository } from '@/lib/eliza/personaMigrationRepository'
+import {
+  recordLegacyPersonaProfileLink,
+  recordPersonaMigrationSuccess,
+  syncOfficialPersonaShadow,
+} from '@/lib/eliza/personaMigration'
+import type { PersonaMigrationLink, PersonaMigrationLinkRepository } from '@/lib/eliza/personaMigrationRepository'
 import type { WagdieElizaClient } from '@/lib/eliza/gateway/types'
 
-function createRepositoryMock(existing: any = null): jest.Mocked<PersonaMigrationLinkRepository> {
+function createRepositoryMock(existing: PersonaMigrationLink | null = null): jest.Mocked<PersonaMigrationLinkRepository> {
   return {
     findByTokenId: jest.fn().mockResolvedValue(existing),
     upsert: jest.fn(async (input) => ({
@@ -87,6 +91,51 @@ describe('persona migration shadow sync', () => {
         status: 'synced',
       })
     )
+  })
+
+  it('records a pending legacy profile link when no existing row exists', async () => {
+    const repository = createRepositoryMock(null)
+
+    await recordLegacyPersonaProfileLink(
+      { tokenId: '123', legacyCharacterId: 'legacy-123' },
+      repository
+    )
+
+    expect(repository.findByTokenId).toHaveBeenCalledWith('123')
+    expect(repository.upsert).toHaveBeenCalledWith({
+      tokenId: '123',
+      legacyCharacterId: 'legacy-123',
+      officialAgentId: null,
+      status: 'pending',
+      lastError: null,
+      lastSyncedAt: null,
+    })
+  })
+
+  it('preserves existing official link metadata when recording a legacy profile link', async () => {
+    const repository = createRepositoryMock({
+      tokenId: '123',
+      legacyCharacterId: null,
+      officialAgentId: 'official-123',
+      status: 'synced',
+      lastError: null,
+      lastSyncedAt: '2026-05-10T00:00:00.000Z',
+    })
+
+    await recordLegacyPersonaProfileLink(
+      { tokenId: '123', legacyCharacterId: 'legacy-123' },
+      repository
+    )
+
+    expect(repository.findByTokenId).toHaveBeenCalledWith('123')
+    expect(repository.upsert).toHaveBeenCalledWith({
+      tokenId: '123',
+      legacyCharacterId: 'legacy-123',
+      officialAgentId: 'official-123',
+      status: 'synced',
+      lastError: null,
+      lastSyncedAt: '2026-05-10T00:00:00.000Z',
+    })
   })
 
   it('uses an existing official link idempotently and records success', async () => {

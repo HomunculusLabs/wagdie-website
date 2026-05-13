@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
 import { elizaConfig } from '@/lib/eliza/config'
-import { recordPersonaMigrationSuccess, syncOfficialPersonaShadow } from '@/lib/eliza/personaMigration'
+import { recordLegacyPersonaProfileLink, recordPersonaMigrationSuccess, syncOfficialPersonaShadow } from '@/lib/eliza/personaMigration'
 import { authorizeElizaCharacterMutation } from '@/lib/eliza/routeAuth'
 import { getCharacterRecordByExternalId } from '@/lib/eliza/characterResolver'
 import {
@@ -169,6 +169,11 @@ export async function PUT(
       await recordPersonaMigrationSuccess({
         tokenId: externalTokenId,
         officialAgentId: record.id,
+      })
+    } else {
+      await recordLegacyPersonaProfileLink({
+        tokenId: externalTokenId,
+        legacyCharacterId: record.id,
       })
     }
 

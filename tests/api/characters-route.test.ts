@@ -95,4 +95,21 @@ describe('Characters API Route', () => {
       perPage: 25,
     }))
   })
+
+  it('forwards the ElizaOS profile filter to the character service', async () => {
+    const result = {
+      characters: [],
+      hasMore: false,
+      totalCount: 0,
+    }
+    ;(getCharacters as jest.Mock).mockResolvedValueOnce(result)
+
+    const response = await GET(createRequest('?hasElizaProfile=true'))
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual(result)
+    expect(getCharacters).toHaveBeenCalledWith(expect.objectContaining({
+      hasElizaProfile: true,
+    }))
+  })
 })

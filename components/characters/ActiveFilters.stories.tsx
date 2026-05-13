@@ -28,6 +28,7 @@ export const SingleFilter: Story = {
   args: {
     filters: {
       hasSheet: true,
+      hasElizaProfile: false,
       origin: null,
       alignment: null,
       armor: null,
@@ -44,6 +45,7 @@ export const MultipleFilters: Story = {
   args: {
     filters: {
       hasSheet: true,
+      hasElizaProfile: true,
       origin: 'Undead',
       alignment: 'Chaotic Evil',
       armor: null,
@@ -60,6 +62,7 @@ export const AllFiltersActive: Story = {
   args: {
     filters: {
       hasSheet: true,
+      hasElizaProfile: true,
       origin: 'Demon',
       alignment: 'Lawful Good',
       armor: 'Plate Mail',
@@ -76,6 +79,7 @@ export const SearchOnly: Story = {
   args: {
     filters: {
       hasSheet: false,
+      hasElizaProfile: false,
       origin: null,
       alignment: null,
       armor: null,
@@ -92,6 +96,7 @@ export const EquipmentFilters: Story = {
   args: {
     filters: {
       hasSheet: false,
+      hasElizaProfile: false,
       origin: null,
       alignment: null,
       armor: 'Chain Mail',
@@ -108,6 +113,7 @@ export const NoFilters: Story = {
   args: {
     filters: {
       hasSheet: false,
+      hasElizaProfile: false,
       origin: null,
       alignment: null,
       armor: null,

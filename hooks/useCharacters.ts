@@ -17,8 +17,9 @@ export interface UseCharactersOptions {
   page?: number
   perPage?: number
   search?: string
-  // Trait filter options
+  // Trait/profile filter options
   hasSheet?: boolean
+  hasElizaProfile?: boolean
   origin?: string
   alignment?: string
   the17?: string
@@ -36,12 +37,12 @@ export interface UseCharactersOptions {
 export function useCharacters(options: UseCharactersOptions) {
   const {
     tab, sort, wallet, page = 1, perPage = 50, search,
-    hasSheet, origin, alignment, the17, armor, back, mask,
+    hasSheet, hasElizaProfile, origin, alignment, the17, armor, back, mask,
     enabled = true
   } = options
 
   const query = useQuery({
-    queryKey: ['characters', tab, sort, wallet, page, perPage, search, hasSheet, origin, alignment, the17, armor, back, mask],
+    queryKey: ['characters', tab, sort, wallet, page, perPage, search, hasSheet, hasElizaProfile, origin, alignment, the17, armor, back, mask],
     queryFn: () =>
       api.characters.getCharacters({
         tab,
@@ -51,6 +52,7 @@ export function useCharacters(options: UseCharactersOptions) {
         perPage,
         search,
         hasSheet,
+        hasElizaProfile,
         origin,
         alignment,
         the17,

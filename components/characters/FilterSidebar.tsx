@@ -25,9 +25,11 @@ interface FilterSidebarProps {
   searchValue: string
   onSearchChange: (value: string) => void
   onClearSearch: () => void
-  // Sheet filter
+  // Sheet/profile filters
   hasSheetFilter: boolean
   onHasSheetChange: (hasSheet: boolean) => void
+  hasElizaProfileFilter: boolean
+  onHasElizaProfileChange: (hasElizaProfile: boolean) => void
   // Origin filter
   originFilter: string | null
   availableOrigins: OriginCount[]
@@ -82,6 +84,8 @@ export function FilterSidebar({
   onClearSearch,
   hasSheetFilter,
   onHasSheetChange,
+  hasElizaProfileFilter,
+  onHasElizaProfileChange,
   originFilter,
   availableOrigins,
   onOriginChange,
@@ -116,6 +120,7 @@ export function FilterSidebar({
   // Count active filters
   const activeFilterCount = [
     hasSheetFilter,
+    hasElizaProfileFilter,
     originFilter !== null,
     alignmentFilter !== null,
     the17Filter !== null,
@@ -311,6 +316,14 @@ export function FilterSidebar({
                 <SheetToggle
                   checked={hasSheetFilter}
                   onChange={onHasSheetChange}
+                />
+
+                {/* Has ElizaOS Profile Toggle */}
+                <SheetToggle
+                  checked={hasElizaProfileFilter}
+                  onChange={onHasElizaProfileChange}
+                  label="Has ElizaOS Profile"
+                  title="Show only characters with an ElizaOS profile"
                 />
 
                 {/* Origin Dropdown */}

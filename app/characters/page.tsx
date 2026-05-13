@@ -48,6 +48,7 @@ function CharactersPageContent() {
     page,
     searchQuery,
     hasSheet,
+    hasElizaProfile,
     origin,
     alignment,
     the17,
@@ -80,6 +81,7 @@ function CharactersPageContent() {
     perPage: ITEMS_PER_PAGE,
     search: searchQuery || undefined,
     hasSheet: hasSheet || undefined,
+    hasElizaProfile: hasElizaProfile || undefined,
     origin: origin || undefined,
     alignment: alignment || undefined,
     the17: the17 || undefined,
@@ -124,6 +126,8 @@ function CharactersPageContent() {
           onClearSearch={handlers.onClearSearch}
           hasSheetFilter={hasSheet}
           onHasSheetChange={handlers.onHasSheetChange}
+          hasElizaProfileFilter={hasElizaProfile}
+          onHasElizaProfileChange={handlers.onHasElizaProfileChange}
           originFilter={origin}
           availableOrigins={origins}
           onOriginChange={handlers.onOriginChange}
@@ -160,6 +164,7 @@ function CharactersPageContent() {
               <ActiveFilters
                 filters={{
                   hasSheet,
+                  hasElizaProfile,
                   origin,
                   alignment,
                   the17,

@@ -7,7 +7,13 @@
  * - resolveCharacterByTokenId(): lookup + auto-create default character if missing
  */
 
+import { elizaConfig } from '@/lib/eliza/config'
 import type { WagdieElizaClient } from '@/lib/eliza/gateway/types'
+import {
+  recordLegacyPersonaProfileLink,
+  recordPersonaMigrationSuccess,
+  syncOfficialPersonaShadow,
+} from '@/lib/eliza/personaMigration'
 import type { CharacterRecord, AgentCharacter } from '@/lib/eliza/sdkAdapter'
 import { toAgentCharacterFromAICharacter } from '@/lib/eliza/sdkAdapter'
 
@@ -117,6 +123,24 @@ export async function resolveCharacterByTokenId(params: {
     externalId: tokenId,
     character,
   })
+
+  if (elizaConfig.mode === 'dual') {
+    await syncOfficialPersonaShadow({
+      tokenId,
+      legacyCharacterId: created.id,
+      character: created.character,
+    })
+  } else if (elizaConfig.mode === 'official') {
+    await recordPersonaMigrationSuccess({
+      tokenId,
+      officialAgentId: created.id,
+    })
+  } else {
+    await recordLegacyPersonaProfileLink({
+      tokenId,
+      legacyCharacterId: created.id,
+    })
+  }
 
   return created
 }

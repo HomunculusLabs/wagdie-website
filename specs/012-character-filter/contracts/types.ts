@@ -32,6 +32,9 @@ export interface CharacterFilters {
   // NEW: Character sheet filter
   hasSheet?: boolean
 
+  // NEW: ElizaOS profile filter
+  hasElizaProfile?: boolean
+
   // NEW: Origin/body type filter
   origin?: string
 }
@@ -69,7 +72,8 @@ export interface CharacterPageParams {
   page?: string
   search?: string
   hasSheet?: 'true'  // Only present when true
-  origin?: string    // Origin value to filter by
+  hasElizaProfile?: 'true'  // Only present when true
+  origin?: string
 }
 
 // ============================================================================
@@ -87,9 +91,11 @@ export interface TokenFilterBarProps {
   onSortChange: (sort: SortOrder) => void
   className?: string
 
-  // NEW: Sheet filter
+  // NEW: Sheet/profile filters
   hasSheetFilter: boolean
   onHasSheetChange: (hasSheet: boolean) => void
+  hasElizaProfileFilter: boolean
+  onHasElizaProfileChange: (hasElizaProfile: boolean) => void
 
   // NEW: Origin filter
   originFilter: string | null
@@ -119,6 +125,8 @@ export interface SheetToggleProps {
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
+  label?: string
+  title?: string
   className?: string
 }
 
@@ -128,11 +136,12 @@ export interface SheetToggleProps {
 export interface ActiveFiltersProps {
   filters: {
     hasSheet: boolean
+    hasElizaProfile: boolean
     origin: string | null
     search: string | null
     tab: CharacterFilterTab
   }
-  onRemoveFilter: (filterType: 'hasSheet' | 'origin' | 'search') => void
+  onRemoveFilter: (filterType: 'hasSheet' | 'hasElizaProfile' | 'origin' | 'search') => void
   onClearAll: () => void
 }
 
@@ -153,6 +162,7 @@ export interface UseCharacterFiltersReturn {
   setPage: (page: number) => void
   setSearch: (search: string) => void
   setHasSheet: (hasSheet: boolean) => void
+  setHasElizaProfile: (hasElizaProfile: boolean) => void
   setOrigin: (origin: string | null) => void
 
   // Bulk operations

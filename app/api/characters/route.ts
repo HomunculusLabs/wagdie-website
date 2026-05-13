@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || undefined
     // Trait filter params
     const hasSheet = searchParams.get('hasSheet') === 'true'
+    const hasElizaProfile = searchParams.get('hasElizaProfile') === 'true'
     const origin = searchParams.get('origin') || undefined
     const alignment = searchParams.get('alignment') || undefined
     const the17 = searchParams.get('the17') || undefined
@@ -84,6 +85,7 @@ export async function GET(request: NextRequest) {
       perPage,
       search,
       hasSheet: hasSheet || undefined,
+      hasElizaProfile: hasElizaProfile || undefined,
       origin,
       alignment,
       the17,

@@ -1,4 +1,4 @@
-import { CHARACTERS_TABLE } from '@/lib/db/tables'
+import { CHARACTERS_TABLE, ELIZA_PERSONA_MIGRATION_LINKS_TABLE } from '@/lib/db/tables'
 import {
   type CharacterRuntimeAssets,
   type CharacterTraitFilters,
@@ -16,8 +16,28 @@ import type {
 } from '@/types/character'
 
 const TOKEN_ID_CHUNK_SIZE = 500
+const ELIZA_PROFILE_LINK_PAGE_SIZE = 1000
 
 type CharacterQueryBuilder = ReturnType<NonNullable<typeof supabase>['from']>
+
+type ElizaProfileLinkRow = {
+  token_id: string | number | null
+  legacy_character_id: string | null
+  official_agent_id: string | null
+}
+
+type ElizaProfileLinkQueryResult = Promise<{
+  data: ElizaProfileLinkRow[] | null
+  error: { message: string } | null
+}>
+
+type ElizaProfileLinkTable = {
+  select: (columns: string) => {
+    order: (column: string, options: { ascending: boolean }) => {
+      range: (from: number, to: number) => ElizaProfileLinkQueryResult
+    }
+  }
+}
 
 function hasTraitFilters(filters: CharacterFilters): boolean {
   return Boolean(
@@ -182,6 +202,32 @@ function chunkTokenIds(tokenIds: number[]): number[][] {
   return chunks
 }
 
+function hasLinkedElizaProfile(row: ElizaProfileLinkRow): boolean {
+  return Boolean(row.legacy_character_id?.trim() || row.official_agent_id?.trim())
+}
+
+function parseTokenId(value: string | number | null): number | null {
+  const tokenId = typeof value === 'number' ? value : parseInt(value ?? '', 10)
+  return Number.isInteger(tokenId) && tokenId >= 0 ? tokenId : null
+}
+
+function intersectTokenIdSets(tokenIdSets: Set<number>[]): Set<number> {
+  if (tokenIdSets.length === 0) {
+    return new Set<number>()
+  }
+
+  const [smallest, ...rest] = [...tokenIdSets].sort((left, right) => left.size - right.size)
+  const intersection = new Set<number>()
+
+  for (const tokenId of smallest) {
+    if (rest.every((set) => set.has(tokenId))) {
+      intersection.add(tokenId)
+    }
+  }
+
+  return intersection
+}
+
 /**
  * Handles core character listing, lookup, updates, and concord queries.
  */
@@ -190,15 +236,60 @@ export class CharacterQueryRepository {
     private readonly runtimeAssets: CharacterRuntimeAssets = noopCharacterRuntimeAssets
   ) {}
 
-  private async findManyByLocalTraitFilters(filters: CharacterFilters): Promise<CharactersResponse> {
-    const matchedTokenIds = await this.runtimeAssets.getTokenIdsForTraitFilters(toTraitFilters(filters))
-    if (!matchedTokenIds || matchedTokenIds.size === 0) {
+  private async getElizaProfileTokenIds(): Promise<Set<number>> {
+    const client = getSupabaseAdmin()
+    if (!client) {
+      throw new Error('Supabase admin client not configured')
+    }
+
+    const table = client.from(
+      ELIZA_PERSONA_MIGRATION_LINKS_TABLE as never
+    ) as unknown as ElizaProfileLinkTable
+    const tokenIds = new Set<number>()
+
+    for (let from = 0; ; from += ELIZA_PROFILE_LINK_PAGE_SIZE) {
+      const to = from + ELIZA_PROFILE_LINK_PAGE_SIZE - 1
+      const { data, error } = await table
+        .select('token_id, legacy_character_id, official_agent_id')
+        .order('token_id', { ascending: true })
+        .range(from, to)
+
+      if (error) {
+        console.error('Error fetching ElizaOS profile links:', error)
+        throw new Error(`Failed to fetch ElizaOS profile links: ${error.message}`)
+      }
+
+      for (const row of data || []) {
+        if (!hasLinkedElizaProfile(row)) {
+          continue
+        }
+
+        const tokenId = parseTokenId(row.token_id)
+        if (tokenId !== null) {
+          tokenIds.add(tokenId)
+        }
+      }
+
+      if (!data || data.length < ELIZA_PROFILE_LINK_PAGE_SIZE) {
+        break
+      }
+    }
+
+    return tokenIds
+  }
+
+  private async findManyByTokenIdConstraint(
+    filters: CharacterFilters,
+    tokenIds: Set<number>,
+    options: { applyMetadataTraitFilters: boolean }
+  ): Promise<CharactersResponse> {
+    if (tokenIds.size === 0) {
       return { characters: [], hasMore: false, totalCount: 0 }
     }
 
     const rows: Character[] = []
 
-    for (const tokenIdChunk of chunkTokenIds(Array.from(matchedTokenIds))) {
+    for (const tokenIdChunk of chunkTokenIds(Array.from(tokenIds))) {
       let query = supabase!
         .from(CHARACTERS_TABLE)
         .select('*')
@@ -206,9 +297,13 @@ export class CharacterQueryRepository {
 
       query = applyNonTraitFilters(query, filters)
 
+      if (options.applyMetadataTraitFilters) {
+        query = applyMetadataTraitFilters(query, filters)
+      }
+
       const { data, error } = await query
       if (error) {
-        console.error('Error fetching locally-filtered characters:', error)
+        console.error('Error fetching token-constrained characters:', error)
         throw new Error(`Failed to fetch characters: ${error.message}`)
       }
 
@@ -235,11 +330,35 @@ export class CharacterQueryRepository {
       return { characters: [], hasMore: false, totalCount: 0 }
     }
 
-    if (hasTraitFilters(filters)) {
-      const localTokenIds = await this.runtimeAssets.getTokenIdsForTraitFilters(toTraitFilters(filters))
-      if (localTokenIds) {
-        return this.findManyByLocalTraitFilters(filters)
+    const traitFiltersActive = hasTraitFilters(filters)
+    const localTraitTokenIds = traitFiltersActive
+      ? await this.runtimeAssets.getTokenIdsForTraitFilters(toTraitFilters(filters))
+      : null
+
+    const tokenIdConstraints: Set<number>[] = []
+
+    if (localTraitTokenIds) {
+      if (localTraitTokenIds.size === 0) {
+        return { characters: [], hasMore: false, totalCount: 0 }
       }
+
+      tokenIdConstraints.push(localTraitTokenIds)
+    }
+
+    if (filters.hasElizaProfile) {
+      const elizaProfileTokenIds = await this.getElizaProfileTokenIds()
+      if (elizaProfileTokenIds.size === 0) {
+        return { characters: [], hasMore: false, totalCount: 0 }
+      }
+
+      tokenIdConstraints.push(elizaProfileTokenIds)
+    }
+
+    if (tokenIdConstraints.length > 0) {
+      const constrainedTokenIds = intersectTokenIdSets(tokenIdConstraints)
+      return this.findManyByTokenIdConstraint(filters, constrainedTokenIds, {
+        applyMetadataTraitFilters: traitFiltersActive && !localTraitTokenIds,
+      })
     }
 
     let query = supabase!

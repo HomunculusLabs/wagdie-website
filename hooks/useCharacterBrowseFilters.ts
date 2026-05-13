@@ -12,6 +12,7 @@ export const CHARACTER_SEARCH_DEBOUNCE_MS = 400
 
 export type CharacterBrowseFilterType =
   | 'hasSheet'
+  | 'hasElizaProfile'
   | 'origin'
   | 'alignment'
   | 'the17'
@@ -26,6 +27,7 @@ export interface CharacterBrowseFilters {
   page: number
   searchQuery: string
   hasSheet: boolean
+  hasElizaProfile: boolean
   origin: string | null
   alignment: string | null
   the17: string | null
@@ -40,6 +42,7 @@ interface CharacterBrowseURLParams {
   page?: number
   search?: string
   hasSheet?: boolean
+  hasElizaProfile?: boolean
   origin?: string | null
   alignment?: string | null
   the17?: string | null
@@ -72,6 +75,7 @@ export function parseCharacterBrowseFilters(searchParams: SearchParamsReader): C
     page: parseInt(searchParams.get('page') || '1', 10),
     searchQuery: searchParams.get('search') || '',
     hasSheet: searchParams.get('hasSheet') === 'true',
+    hasElizaProfile: searchParams.get('hasElizaProfile') === 'true',
     origin: searchParams.get('origin') || null,
     alignment: searchParams.get('alignment') || null,
     the17: searchParams.get('the17') || null,
@@ -89,6 +93,7 @@ export function buildCharacterBrowsePath(params: CharacterBrowseURLParams): stri
   if (params.page && params.page > 1) urlParams.set('page', params.page.toString())
   if (params.search?.trim()) urlParams.set('search', params.search.trim())
   if (params.hasSheet) urlParams.set('hasSheet', 'true')
+  if (params.hasElizaProfile) urlParams.set('hasElizaProfile', 'true')
   if (params.origin) urlParams.set('origin', params.origin)
   if (params.alignment) urlParams.set('alignment', params.alignment)
   if (params.the17) urlParams.set('the17', params.the17)
@@ -101,7 +106,7 @@ export function buildCharacterBrowsePath(params: CharacterBrowseURLParams): stri
 }
 
 export function hasActiveCharacterBrowseFilters(filters: CharacterBrowseFilters): boolean {
-  return filters.hasSheet || filters.origin !== null || filters.alignment !== null ||
+  return filters.hasSheet || filters.hasElizaProfile || filters.origin !== null || filters.alignment !== null ||
     filters.the17 !== null || filters.armor !== null || filters.back !== null || filters.mask !== null ||
     filters.searchQuery.length > 0
 }
@@ -113,6 +118,7 @@ function toURLParams(filters: CharacterBrowseFilters): CharacterBrowseURLParams 
     page: filters.page,
     search: filters.searchQuery,
     hasSheet: filters.hasSheet,
+    hasElizaProfile: filters.hasElizaProfile,
     origin: filters.origin,
     alignment: filters.alignment,
     the17: filters.the17,
@@ -194,6 +200,10 @@ export function useCharacterBrowseFilters({
     updateFilters({ hasSheet })
   }, [updateFilters])
 
+  const handleHasElizaProfileChange = useCallback((hasElizaProfile: boolean) => {
+    updateFilters({ hasElizaProfile })
+  }, [updateFilters])
+
   const handleOriginChange = useCallback((origin: string | null) => {
     updateFilters({ origin })
   }, [updateFilters])
@@ -226,6 +236,7 @@ export function useCharacterBrowseFilters({
       page: 1,
       search: '',
       hasSheet: false,
+      hasElizaProfile: false,
       origin: null,
       alignment: null,
       the17: null,
@@ -239,6 +250,9 @@ export function useCharacterBrowseFilters({
     switch (filterType) {
       case 'hasSheet':
         updateFilters({ hasSheet: false })
+        break
+      case 'hasElizaProfile':
+        updateFilters({ hasElizaProfile: false })
         break
       case 'origin':
         updateFilters({ origin: null })
@@ -282,6 +296,7 @@ export function useCharacterBrowseFilters({
       onPageChange: handlePageChange,
       onClearSearch: handleClearSearch,
       onHasSheetChange: handleHasSheetChange,
+      onHasElizaProfileChange: handleHasElizaProfileChange,
       onOriginChange: handleOriginChange,
       onAlignmentChange: handleAlignmentChange,
       onThe17Change: handleThe17Change,

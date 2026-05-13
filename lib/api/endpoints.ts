@@ -26,6 +26,7 @@ export const characterApi = {
     if (params.search) searchParams.set('search', params.search)
     // Trait filters
     if (params.hasSheet) searchParams.set('hasSheet', 'true')
+    if (params.hasElizaProfile) searchParams.set('hasElizaProfile', 'true')
     if (params.origin) searchParams.set('origin', params.origin)
     if (params.alignment) searchParams.set('alignment', params.alignment)
     if (params.the17) searchParams.set('the17', params.the17)
