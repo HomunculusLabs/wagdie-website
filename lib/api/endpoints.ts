@@ -9,6 +9,10 @@ import type { Character, CharacterFilters, CharactersResponse, CharacterConcord,
 import type { Tweet, TweetFilters, TweetsResponse } from '@/types/tweet'
 import type { UserSession } from '@/types/wallet'
 
+type CharacterConcordsResponse = {
+  concords: Array<CharacterConcord & { concord: Concord }>
+}
+
 /**
  * Character API endpoints
  */
@@ -16,85 +20,73 @@ export const characterApi = {
   /**
    * Get characters with filters
    */
-  getCharacters: async (params: CharacterFilters): Promise<CharactersResponse> => {
-    const searchParams = new URLSearchParams()
-    searchParams.set('tab', params.tab)
-    searchParams.set('sort', params.sort)
-    searchParams.set('page', params.page.toString())
-    searchParams.set('perPage', params.perPage.toString())
-    if (params.wallet) searchParams.set('wallet', params.wallet)
-    if (params.search) searchParams.set('search', params.search)
-    // Trait filters
-    if (params.hasSheet) searchParams.set('hasSheet', 'true')
-    if (params.hasElizaProfile) searchParams.set('hasElizaProfile', 'true')
-    if (params.origin) searchParams.set('origin', params.origin)
-    if (params.alignment) searchParams.set('alignment', params.alignment)
-    if (params.the17) searchParams.set('the17', params.the17)
-    // Equipment filters
-    if (params.armor) searchParams.set('armor', params.armor)
-    if (params.back) searchParams.set('back', params.back)
-    if (params.mask) searchParams.set('mask', params.mask)
-
-    const url = `/api/characters?${searchParams}`
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch characters')
-    }
-
-    return response.json() as Promise<CharactersResponse>
-  },
+  getCharacters: (params: CharacterFilters): Promise<CharactersResponse> => apiClient.get<CharactersResponse>('/api/characters', {
+    params: {
+      tab: params.tab,
+      sort: params.sort,
+      page: params.page,
+      perPage: params.perPage,
+      wallet: params.wallet,
+      search: params.search,
+      hasSheet: params.hasSheet ? true : undefined,
+      hasElizaProfile: params.hasElizaProfile ? true : undefined,
+      origin: params.origin,
+      alignment: params.alignment,
+      the17: params.the17,
+      armor: params.armor,
+      back: params.back,
+      mask: params.mask,
+    },
+    fallbackMessage: 'Failed to fetch characters',
+  }),
 
   /**
    * Get available origins with counts
    */
-  getOrigins: async (): Promise<OriginsResponse> => {
-    const response = await fetch('/api/characters/origins')
-    if (!response.ok) {
-      throw new Error('Failed to fetch origins')
-    }
-    return response.json()
-  },
+  getOrigins: (): Promise<OriginsResponse> => apiClient.get<OriginsResponse>('/api/characters/origins', {
+    fallbackMessage: 'Failed to fetch origins',
+  }),
 
   /**
    * Get available alignments with counts
    */
-  getAlignments: async (): Promise<AlignmentsResponse> => {
-    const response = await fetch('/api/characters/alignments')
-    if (!response.ok) {
-      throw new Error('Failed to fetch alignments')
-    }
-    return response.json()
-  },
+  getAlignments: (): Promise<AlignmentsResponse> => apiClient.get<AlignmentsResponse>('/api/characters/alignments', {
+    fallbackMessage: 'Failed to fetch alignments',
+  }),
 
   /**
    * Get trait counts for a specific trait type (e.g., Armor, Back, Mask)
    */
-  getTraitCounts: async (traitType: string): Promise<TraitCountsResponse> => {
-    const response = await fetch(`/api/characters/traits/${encodeURIComponent(traitType)}`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${traitType} trait counts`)
-    }
-    return response.json()
-  },
+  getTraitCounts: (traitType: string): Promise<TraitCountsResponse> => apiClient.get<TraitCountsResponse>(
+    `/api/characters/traits/${encodeURIComponent(traitType)}`,
+    { fallbackMessage: `Failed to fetch ${traitType} trait counts` }
+  ),
 
   /**
    * Get single character by token ID
    */
   getCharacter: (tokenId: number) =>
-    apiClient.get<Character>(`/api/characters/${tokenId}`),
+    apiClient.get<Character>(`/api/characters/${tokenId}`, {
+      fallbackMessage: 'Failed to fetch character',
+    }),
 
   /**
    * Update character
    */
   updateCharacter: (tokenId: number, updates: Partial<Pick<Character, 'background_story' | 'equipment'>>) =>
-    apiClient.patch<Character>(`/api/characters/${tokenId}`, updates),
+    apiClient.patch<Character>(`/api/characters/${tokenId}`, updates, {
+      fallbackMessage: 'Failed to update character',
+    }),
 
   /**
    * Get character concords
    */
-  getCharacterConcords: (tokenId: number) =>
-    apiClient.get<Array<CharacterConcord & { concord: Concord }>>(`/api/characters/${tokenId}/concords`),
+  getCharacterConcords: async (tokenId: number): Promise<Array<CharacterConcord & { concord: Concord }>> => {
+    const response = await apiClient.get<CharacterConcordsResponse>(`/api/characters/${tokenId}/concords`, {
+      fallbackMessage: 'Failed to fetch character concords',
+    })
+    return response.concords
+  },
 }
 
 /**
@@ -123,25 +115,33 @@ export const authApi = {
    * Get nonce for SIWE
    */
   getNonce: (address: string) =>
-    apiClient.post<{ nonce: string }>('/api/auth/nonce', { address }),
+    apiClient.post<{ nonce: string }>('/api/auth/nonce', { address }, {
+      fallbackMessage: 'Failed to generate nonce',
+    }),
 
   /**
    * Verify SIWE signature
    */
   verify: (params: { address: string; signature: string; message: string }) =>
-    apiClient.post<{ success: boolean }>('/api/auth/verify', params),
+    apiClient.post<{ success: boolean }>('/api/auth/verify', params, {
+      fallbackMessage: 'Failed to verify signature',
+    }),
 
   /**
    * Get current session
    */
   getSession: () =>
-    apiClient.get<UserSession>('/api/auth/me'),
+    apiClient.get<UserSession>('/api/auth/me', {
+      fallbackMessage: 'Failed to fetch current session',
+    }),
 
   /**
    * Logout
    */
   logout: () =>
-    apiClient.post<{ success: boolean }>('/api/auth/logout'),
+    apiClient.post<{ success: boolean }>('/api/auth/logout', undefined, {
+      fallbackMessage: 'Logout failed',
+    }),
 }
 
 /**
