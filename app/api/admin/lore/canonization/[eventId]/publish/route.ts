@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { jsonRaw } from '@/lib/api/responses';
 import { requireAdmin, isAuthError } from '@/lib/api/auth';
 import { loreCanonizationService } from '@/lib/services/lore-canonization-service';
 import { handleLoreCanonizationApiError } from '../../shared';
@@ -15,7 +16,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
   try {
     const event = await loreCanonizationService.publishDraft(params.eventId, auth.address);
-    return NextResponse.json({ event });
+    return jsonRaw({ event });
   } catch (error) {
     return handleLoreCanonizationApiError(error, 'Failed to publish lore canonization override');
   }

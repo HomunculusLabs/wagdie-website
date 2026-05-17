@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { jsonRaw } from '@/lib/api/responses';
 import { requireAdmin, isAuthError } from '@/lib/api/auth';
 import { loreCanonizationService } from '@/lib/services/lore-canonization-service';
 import { handleLoreCanonizationApiError, readJsonBody } from '../shared';
@@ -21,7 +22,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   try {
     const event = await loreCanonizationService.saveDraft(eventId, body, auth.address);
-    return NextResponse.json({ event });
+    return jsonRaw({ event });
   } catch (error) {
     return handleLoreCanonizationApiError(error, 'Failed to save lore canonization override');
   }
@@ -35,7 +36,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   try {
     const event = await loreCanonizationService.resetOverride(eventId);
-    return NextResponse.json({ message: 'Lore canonization override reset successfully', event });
+    return jsonRaw({ message: 'Lore canonization override reset successfully', event });
   } catch (error) {
     return handleLoreCanonizationApiError(error, 'Failed to reset lore canonization override');
   }

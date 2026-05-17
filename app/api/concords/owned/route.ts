@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 import { createPublicClient, fallback, http, type Address } from 'viem'
 import { mainnet } from 'viem/chains'
 import { parseCsvNumberList } from '@/lib/api/params'
@@ -205,11 +206,11 @@ export async function GET(request: NextRequest) {
   const tokenIds = parseTokenIds(searchParams)
 
   if (!wallet) {
-    return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 })
+    return jsonRawError('Invalid wallet address', 400)
   }
 
   if (tokenIds && tokenIds.length === 0) {
-    return NextResponse.json({ error: 'Invalid token ID filter' }, { status: 400 })
+    return jsonRawError('Invalid token ID filter', 400)
   }
 
   try {
@@ -220,15 +221,12 @@ export async function GET(request: NextRequest) {
       ? indexedBalances
       : await fetchChainBalances(wallet, requestedTokenIds)
 
-    return NextResponse.json({
+    return jsonRaw({
       balances,
       count: balances.length,
     })
   } catch (error) {
     console.error('Failed to fetch owned Concord balances:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch owned Concord balances' },
-      { status: 500 }
-    )
+    return jsonRawError('Failed to fetch owned Concord balances', 500)
   }
 }

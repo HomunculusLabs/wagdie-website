@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 import {
   LocationRoomFeatureDisabledError,
   LocationRoomOfficialServiceDisabledError,
@@ -30,33 +31,33 @@ export async function POST(request: NextRequest) {
 
 async function handleSync(request: NextRequest) {
   if (!verifyAuthorization(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return jsonRawError('Unauthorized', 401)
   }
 
   try {
     const result = await locationRoomService.runScheduledWorker()
-    return NextResponse.json({
+    return jsonRaw({
       success: true,
       ...result,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
     if (error instanceof LocationRoomFeatureDisabledError) {
-      return NextResponse.json(
+      return jsonRaw(
         { success: false, error: 'Eliza location rooms are disabled' },
         { status: 503 }
       )
     }
 
     if (error instanceof LocationRoomOfficialServiceDisabledError) {
-      return NextResponse.json(
+      return jsonRaw(
         { success: false, error: 'Official ElizaOS service is not configured' },
         { status: 503 }
       )
     }
 
     console.error('[Eliza Location Rooms Sync] Error:', error)
-    return NextResponse.json(
+    return jsonRaw(
       {
         success: false,
         error: 'Eliza location room sync failed',

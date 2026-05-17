@@ -4,7 +4,8 @@
  * Can be triggered by Vercel cron or manually
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 import { createSupabaseAdminClient } from '@/lib/supabase'
 import { OwnershipSyncService } from '@/lib/services/sync/ownership-sync-service'
 
@@ -59,17 +60,14 @@ export async function POST(request: NextRequest) {
 async function handleSync(request: NextRequest) {
   // Verify authorization
   if (!verifyAuthorization(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return jsonRawError('Unauthorized', 401)
   }
 
   try {
     // Create admin client for database writes
     const supabaseAdmin = createSupabaseAdminClient()
     if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Supabase admin client not configured' },
-        { status: 500 }
-      )
+      return jsonRawError('Supabase admin client not configured', 500)
     }
 
     // Create sync service with admin client
@@ -86,7 +84,7 @@ async function handleSync(request: NextRequest) {
 
     // Return appropriate status based on result
     if (result.success) {
-      return NextResponse.json({
+      return jsonRaw({
         success: true,
         message: 'Ownership sync completed successfully',
         stats: {
@@ -97,7 +95,7 @@ async function handleSync(request: NextRequest) {
         timestamp: result.timestamp,
       })
     } else {
-      return NextResponse.json(
+      return jsonRaw(
         {
           success: false,
           message: 'Ownership sync completed with errors',
@@ -115,7 +113,7 @@ async function handleSync(request: NextRequest) {
     }
   } catch (error) {
     console.error('[Ownership Sync] Error:', error)
-    return NextResponse.json(
+    return jsonRaw(
       {
         error: 'Sync failed',
         message: error instanceof Error ? error.message : String(error),

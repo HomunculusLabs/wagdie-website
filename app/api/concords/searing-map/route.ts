@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 import { parseCsvNumberList, parseLimitOffsetParams, parseTokenIdParam } from '@/lib/api/params'
 import { requireAdmin, isAuthError } from '@/lib/api/auth'
 import { concordSearingMapService } from '@/lib/services/concord-searing-map-service'
@@ -32,10 +33,7 @@ export async function GET(request: NextRequest) {
   const concordTokenIds = parseConcordTokenIds(searchParams)
 
   if (concordTokenIds && concordTokenIds.length === 0) {
-    return NextResponse.json(
-      { error: 'Invalid concord token ID filter' },
-      { status: 400 }
-    )
+    return jsonRawError('Invalid concord token ID filter', 400)
   }
 
   const { limit, offset } = parseLimitOffsetParams(searchParams, {
@@ -52,7 +50,7 @@ export async function GET(request: NextRequest) {
       offset,
     })
 
-    return NextResponse.json({
+    return jsonRaw({
       searingMap: result.entries,
       total: result.total,
       count: result.entries.length,
@@ -61,10 +59,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Failed to fetch concord searing map:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch concord searing map' },
-      { status: 500 }
-    )
+    return jsonRawError('Failed to fetch concord searing map', 500)
   }
 }
 
@@ -74,17 +69,14 @@ export async function POST(request: NextRequest) {
 
   const parsed = parseConcordSearingMapUpsert(await readJson(request))
   if ('error' in parsed) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 })
+    return jsonRawError(parsed.error, 400)
   }
 
   try {
     const entry = await concordSearingMapService.upsertSearingMap(parsed.entry)
-    return NextResponse.json({ searingMap: entry }, { status: 201 })
+    return jsonRaw({ searingMap: entry }, { status: 201 })
   } catch (error) {
     console.error('Failed to save concord searing map:', error)
-    return NextResponse.json(
-      { error: 'Failed to save concord searing map' },
-      { status: 500 }
-    )
+    return jsonRawError('Failed to save concord searing map', 500)
   }
 }

@@ -3,7 +3,8 @@
  * GET handler for retrieving counts of a specific trait type (e.g., Armor, Back, Mask)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 import { serverCharacterRepository } from '@/lib/repositories/character-repository.server'
 
 export const runtime = 'nodejs'
@@ -12,7 +13,7 @@ export const runtime = 'nodejs'
 const VALID_TRAIT_TYPES = ['Armor', 'Back', 'Mask', 'Body', 'Hair', 'Background', 'Class', 'Health']
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ traitType: string }> }
 ) {
   try {
@@ -24,19 +25,13 @@ export async function GET(
     )
 
     if (!normalizedTraitType) {
-      return NextResponse.json(
-        { error: `Invalid trait type. Valid types: ${VALID_TRAIT_TYPES.join(', ')}` },
-        { status: 400 }
-      )
+      return jsonRawError(`Invalid trait type. Valid types: ${VALID_TRAIT_TYPES.join(', ')}`, 400)
     }
 
     const result = await serverCharacterRepository.getTraitCounts(normalizedTraitType)
-    return NextResponse.json(result)
+    return jsonRaw(result)
   } catch (error) {
     console.error('Error fetching trait counts:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch trait counts' },
-      { status: 500 }
-    )
+    return jsonRawError('Failed to fetch trait counts', 500)
   }
 }

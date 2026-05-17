@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { generateNonce } from '@/lib/auth/siwe'
 import { cookies } from 'next/headers'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 
 async function handleNonceRequest() {
   try {
@@ -16,13 +16,10 @@ async function handleNonceRequest() {
       path: '/',
     })
 
-    return NextResponse.json({ nonce })
+    return jsonRaw({ nonce })
   } catch (error) {
     console.error('Nonce generation error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate nonce' },
-      { status: 500 }
-    )
+    return jsonRawError('Failed to generate nonce', 500)
   }
 }
 

@@ -3,11 +3,32 @@
  * Standardized response helpers for Next.js API routes
  */
 
-import { NextResponse } from 'next/server'
+import type { NextResponse } from 'next/server'
 
 export type JsonInit = {
   status?: number
   headers?: HeadersInit
+}
+
+function jsonResponse<T>(body: T, init?: JsonInit): NextResponse<T> {
+  if (typeof Response !== 'undefined' && typeof Response.json === 'function') {
+    return Response.json(body, init) as NextResponse<T>
+  }
+
+  const bodyText = JSON.stringify(body)
+  const headers = new Headers(init?.headers)
+  if (!headers.has('content-type')) {
+    headers.set('content-type', 'application/json')
+  }
+
+  return {
+    status: init?.status ?? 200,
+    statusText: '',
+    ok: init?.status === undefined || (init.status >= 200 && init.status < 300),
+    headers,
+    json: async () => body,
+    text: async () => bodyText,
+  } as unknown as NextResponse<T>
 }
 
 export type JsonBodyParseResult<T> =
@@ -26,8 +47,13 @@ export interface ApiResponse<T = unknown> {
 // Success Responses
 // ============================================================================
 
+/**
+ * Raw helpers preserve an endpoint's domain-specific JSON shape.
+ * Use these for routes whose clients expect bodies like `{ characters }`,
+ * `{ error }`, or other non-envelope contracts.
+ */
 export function jsonRaw<T>(body: T, init?: JsonInit): NextResponse<T> {
-  return NextResponse.json(body, init)
+  return jsonResponse(body, init)
 }
 
 export function withNoStoreHeaders(headers?: HeadersInit): Headers {
@@ -59,16 +85,20 @@ export function jsonNoStoreError(
   return jsonNoStore({ error }, { ...init, status })
 }
 
+/**
+ * Envelope helpers return `{ success, data?, error?, details? }` and should
+ * only be used by routes whose public contract is already envelope-shaped.
+ */
 export function jsonOk<T>(data: T): NextResponse<ApiResponse<T>> {
-  return NextResponse.json({ success: true, data })
+  return jsonResponse({ success: true, data })
 }
 
 export function jsonCreated<T>(data: T): NextResponse<ApiResponse<T>> {
-  return NextResponse.json({ success: true, data }, { status: 201 })
+  return jsonResponse({ success: true, data }, { status: 201 })
 }
 
 export function jsonDeleted(message = 'Deleted successfully'): NextResponse<ApiResponse> {
-  return NextResponse.json({ success: true, message })
+  return jsonResponse({ success: true, message })
 }
 
 // ============================================================================
@@ -84,7 +114,7 @@ export function jsonError(
   if (details !== undefined) {
     body.details = details
   }
-  return NextResponse.json(body, { status })
+  return jsonResponse(body, { status })
 }
 
 export function jsonBadRequest(error: string, details?: string[]): NextResponse<ApiResponse> {

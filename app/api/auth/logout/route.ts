@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getSession } from '@/lib/auth/session'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 
 export async function POST() {
   try {
@@ -27,12 +27,9 @@ export async function POST() {
       path: '/',
     })
 
-    return NextResponse.json({ success: true })
+    return jsonRaw({ success: true })
   } catch (error) {
     console.error('Logout error:', error)
-    return NextResponse.json(
-      { error: 'Logout failed' },
-      { status: 500 }
-    )
+    return jsonRawError('Logout failed', 500)
   }
 }

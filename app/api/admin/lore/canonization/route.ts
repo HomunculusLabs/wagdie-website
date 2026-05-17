@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { jsonRaw } from '@/lib/api/responses';
 import { requireAdmin, isAuthError } from '@/lib/api/auth';
 import { loreCanonizationService } from '@/lib/services/lore-canonization-service';
 import { handleLoreCanonizationApiError } from './shared';
@@ -9,7 +10,7 @@ export async function GET(_request: NextRequest) {
 
   try {
     const events = await loreCanonizationService.listAdminRecords();
-    return NextResponse.json({ events, count: events.length });
+    return jsonRaw({ events, count: events.length });
   } catch (error) {
     return handleLoreCanonizationApiError(error, 'Failed to fetch lore canonization overrides');
   }

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { jsonNoStore, jsonNoStoreError } from '@/lib/api/responses'
 import { searingMaterializationService } from '@/lib/services/searing-materialization-service'
 
 export const runtime = 'nodejs'
@@ -7,10 +8,6 @@ export const dynamic = 'force-dynamic'
 const DEFAULT_LIMIT = 10
 const MAX_LIMIT = 50
 const MAX_TOKEN_IDS = 50
-
-const NO_STORE_HEADERS = {
-  'Cache-Control': 'no-store',
-} as const
 
 type BulkSyncBody = {
   limit?: unknown
@@ -58,7 +55,7 @@ function parseTokenIds(value: unknown): number[] | undefined {
 
 export async function POST(request: NextRequest) {
   if (!verifyAuthorization(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: NO_STORE_HEADERS })
+    return jsonNoStoreError('Unauthorized', 401)
   }
 
   let body: BulkSyncBody = {}
@@ -71,17 +68,11 @@ export async function POST(request: NextRequest) {
 
   const tokenIds = parseTokenIds(body.tokenIds)
   if (tokenIds && tokenIds.length === 0 && body.tokenIds !== undefined) {
-    return NextResponse.json(
-      { error: 'tokenIds must be an array of positive integers' },
-      { status: 400, headers: NO_STORE_HEADERS }
-    )
+    return jsonNoStoreError('tokenIds must be an array of positive integers', 400)
   }
 
   if (tokenIds && tokenIds.length > MAX_TOKEN_IDS) {
-    return NextResponse.json(
-      { error: `Maximum ${MAX_TOKEN_IDS} tokenIds per request` },
-      { status: 400, headers: NO_STORE_HEADERS }
-    )
+    return jsonNoStoreError(`Maximum ${MAX_TOKEN_IDS} tokenIds per request`, 400)
   }
 
   const limit = parseLimit(body.limit)
@@ -95,20 +86,14 @@ export async function POST(request: NextRequest) {
       tokenIds,
     })
 
-    return NextResponse.json(
-      {
-        success: results.every((result) => result.status !== 'failed'),
-        count: results.length,
-        limit,
-        includeFailed,
-        results,
-      },
-      { headers: NO_STORE_HEADERS }
-    )
+    return jsonNoStore({
+      success: results.every((result) => result.status !== 'failed'),
+      count: results.length,
+      limit,
+      includeFailed,
+      results,
+    })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to sync searing events' },
-      { status: 500, headers: NO_STORE_HEADERS }
-    )
+    return jsonNoStoreError(error instanceof Error ? error.message : 'Failed to sync searing events', 500)
   }
 }

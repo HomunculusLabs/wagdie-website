@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { parseLimitOffsetParams, parseTokenIdParam } from '@/lib/api/params'
+import { jsonRaw, jsonRawError } from '@/lib/api/responses'
 import { activityRepository } from '@/lib/repositories/activity-repository'
 
 export async function GET(
@@ -9,10 +9,7 @@ export async function GET(
   const { tokenId } = await params
   const tokenIdNum = parseTokenIdParam(tokenId, { min: 0 })
   if (tokenIdNum === null) {
-    return NextResponse.json(
-      { error: 'Invalid token ID' },
-      { status: 400 }
-    )
+    return jsonRawError('Invalid token ID', 400)
   }
 
   const url = new URL(request.url)
@@ -30,13 +27,10 @@ export async function GET(
     total = result.total
   } catch (error) {
     console.error('Failed to fetch concord transfers:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch concord transfers' },
-      { status: 500 }
-    )
+    return jsonRawError('Failed to fetch concord transfers', 500)
   }
 
-  return NextResponse.json({
+  return jsonRaw({
     tokenId: tokenIdNum,
     transfers,
     total,

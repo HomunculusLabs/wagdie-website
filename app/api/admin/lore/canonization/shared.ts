@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import type { NextResponse } from 'next/server';
+import { jsonRaw, jsonRawError } from '@/lib/api/responses';
 import {
   LoreCanonizationNotFoundError,
   LoreCanonizationValidationError,
@@ -17,16 +18,16 @@ export const handleLoreCanonizationApiError = (
   fallbackMessage: string,
 ): NextResponse => {
   if (error instanceof LoreCanonizationValidationError) {
-    return NextResponse.json(
+    return jsonRaw(
       { error: error.message, details: error.details },
       { status: 400 },
     );
   }
 
   if (error instanceof LoreCanonizationNotFoundError) {
-    return NextResponse.json({ error: error.message }, { status: 404 });
+    return jsonRawError(error.message, 404);
   }
 
   console.error(`${fallbackMessage}:`, error);
-  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+  return jsonRawError(fallbackMessage, 500);
 };
