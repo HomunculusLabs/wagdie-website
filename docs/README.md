@@ -21,6 +21,11 @@ docs/
 
 The rewrite plan that established this IA is `docs/plans/documentation-rewrite-2026-05-11.md`.
 
+Current maintained reference additions:
+
+- [`docs/reference/app-flows.html`](reference/app-flows.html) renders the main app user/system flows as a single-page reference.
+- [`docs/reference/app-flows.json`](reference/app-flows.json) is the structured flow data used by the HTML viewer.
+
 ## Lifecycle definitions
 
 - **Evergreen candidate**: Contains durable facts that may belong in onboarding, architecture, development, operations, or reference docs. Promote only after checking current code and canonical sources.

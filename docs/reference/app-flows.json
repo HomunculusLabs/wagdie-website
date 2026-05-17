@@ -1,0 +1,2358 @@
+{
+  "schemaVersion": "1.0",
+  "title": "WAGDIE App User and System Flows",
+  "reviewedAt": "2026-05-17",
+  "sourceOfTruth": {
+    "note": "Docs summarize current source; code and configuration remain authoritative. Route/API claims are grounded in app/, lib/, contexts/, hooks/, game/, and types/ files reviewed for this artifact.",
+    "docsPolicy": "docs/README.md",
+    "primarySources": [
+      "app/",
+      "app/api/",
+      "contexts/",
+      "hooks/",
+      "components/",
+      "game/",
+      "lib/services/",
+      "lib/domain/",
+      "lib/lore/",
+      "types/"
+    ]
+  },
+  "participants": [
+    {
+      "id": "visitor",
+      "label": "Visitor",
+      "kind": "user",
+      "description": "Unauthenticated reader exploring public pages, lore, map, videos, and character data."
+    },
+    {
+      "id": "wallet-user",
+      "label": "Wallet user",
+      "kind": "user",
+      "description": "Connected wallet holder who can sign in with Ethereum and use wallet-aware features."
+    },
+    {
+      "id": "token-owner",
+      "label": "Token owner",
+      "kind": "user",
+      "description": "Wallet user who owns WAGDIE characters or concord assets and can perform owner-gated actions."
+    },
+    {
+      "id": "admin",
+      "label": "Admin",
+      "kind": "user",
+      "description": "Authorized operator with access to admin review, canonization, map location, and searing-map tools."
+    },
+    {
+      "id": "next-app-router",
+      "label": "Next.js app router",
+      "kind": "page",
+      "description": "App Router pages in app/ provide public and admin entry points."
+    },
+    {
+      "id": "auth-context",
+      "label": "Auth context",
+      "kind": "client",
+      "description": "Client-side auth state and SIWE session hydration in contexts/AuthContext.tsx."
+    },
+    {
+      "id": "transaction-context",
+      "label": "Transaction context",
+      "kind": "client",
+      "description": "Client-side transaction status/toast state in contexts/TransactionContext.tsx."
+    },
+    {
+      "id": "api-routes",
+      "label": "Next API routes",
+      "kind": "api",
+      "description": "Route handlers under app/api that validate requests, enforce auth, and delegate to services."
+    },
+    {
+      "id": "services",
+      "label": "Service layer",
+      "kind": "service",
+      "description": "lib/services and lib/domain modules implementing business rules, validation, and composition."
+    },
+    {
+      "id": "supabase",
+      "label": "Supabase database",
+      "kind": "database",
+      "description": "Persistence layer reached through repositories/services for users, characters, lore, locations, and materialized state."
+    },
+    {
+      "id": "ethereum-contracts",
+      "label": "Ethereum contracts",
+      "kind": "blockchain",
+      "description": "WAGDIE, searing, spread, corpse, and concord contract ABIs used by wallet and sync flows."
+    },
+    {
+      "id": "phaser-map",
+      "label": "Phaser map runtime",
+      "kind": "client",
+      "description": "Game runtime bridged to React through game/PhaserGame.tsx, game/EventBus.ts, and map scene code."
+    },
+    {
+      "id": "eliza-service",
+      "label": "Eliza service",
+      "kind": "external",
+      "description": "AI chat, conversation, character, and location-room integration boundary exposed through app/api/eliza/*."
+    }
+  ],
+  "flows": [
+    {
+      "id": "home-navigation",
+      "title": "Home and feature navigation",
+      "category": "navigation",
+      "summary": "The landing page introduces the project and routes visitors into the core experiences: characters, map, searing, spread, videos, lore, and supporting content.",
+      "participants": [
+        "visitor",
+        "next-app-router"
+      ],
+      "entrypoints": [
+        {
+          "label": "Home",
+          "path": "/",
+          "file": "app/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/page.tsx",
+          "app/layout.tsx"
+        ],
+        "components": [
+          "components/home/HomeCard.tsx",
+          "components/home/HomeCardRow.tsx",
+          "components/layout/Header.tsx",
+          "components/layout/Navigation.tsx"
+        ],
+        "types": []
+      },
+      "dataFlow": [
+        "Static page content and card definitions present the major feature routes.",
+        "Navigation links hand off to App Router pages for each feature area.",
+        "Global layout/providers wrap pages with wallet, auth, query, and shared UI context where needed."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "visitor",
+          "action": "Arrives at / and scans project overview cards.",
+          "codeRefs": [
+            "app/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "visitor",
+          "action": "Chooses a feature card or navigation item.",
+          "codeRefs": [
+            "components/home/HomeCard.tsx",
+            "components/layout/Navigation.tsx"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "next-app-router",
+          "action": "Renders the selected feature route such as /characters, /map, /searing, /spread, /videos, or /lore.",
+          "codeRefs": [
+            "app/characters/page.tsx",
+            "app/map/page.tsx",
+            "app/searing/page.tsx",
+            "app/spread/page.tsx",
+            "app/lore/page.tsx"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Unknown route",
+          "behavior": "App Router renders the shared not-found boundary.",
+          "codeRefs": [
+            "app/not-found.tsx"
+          ]
+        },
+        {
+          "condition": "Runtime page error",
+          "behavior": "The app-level error boundary presents a controlled error state.",
+          "codeRefs": [
+            "app/error.tsx"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "character-browse",
+        "map-explore",
+        "lore-archive-effective-view",
+        "searing-concord",
+        "spread-infection-cure"
+      ]
+    },
+    {
+      "id": "wallet-siwe-auth",
+      "title": "Wallet connect and SIWE authentication",
+      "category": "auth",
+      "summary": "Wallet-aware features use Sign-In with Ethereum to create, hydrate, and clear a server-backed session while AuthContext exposes client auth state.",
+      "participants": [
+        "wallet-user",
+        "auth-context",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Wallet button / auth-aware UI",
+          "path": "global providers",
+          "file": "contexts/AuthContext.tsx"
+        }
+      ],
+      "codeRefs": {
+        "components": [
+          "components/wallet/WalletButton.tsx",
+          "components/wallet/UserDropdown.tsx"
+        ],
+        "hooks": [
+          "hooks/useAuth.ts",
+          "hooks/useWalletAuth.ts",
+          "hooks/useCurrentUser.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET/POST",
+            "path": "/api/auth/nonce",
+            "file": "app/api/auth/nonce/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/auth/verify",
+            "file": "app/api/auth/verify/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/auth/me",
+            "file": "app/api/auth/me/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/auth/logout",
+            "file": "app/api/auth/logout/route.ts"
+          }
+        ],
+        "services": [
+          "lib/auth/session.ts",
+          "lib/auth/siwe.ts",
+          "lib/api/auth.ts"
+        ]
+      },
+      "dataFlow": [
+        "Client requests a nonce and stores the nonce cookie.",
+        "Wallet signs a SIWE message; verify route validates nonce/signature and upserts the user.",
+        "Session cookie is read by /api/auth/me and helper functions for protected APIs.",
+        "Logout clears the session cookie and AuthContext resets client state."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "wallet-user",
+          "action": "Connects wallet and starts sign-in.",
+          "codeRefs": [
+            "contexts/AuthContext.tsx",
+            "hooks/useWalletAuth.ts"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "auth-context",
+          "action": "Requests /api/auth/nonce and prepares a SIWE message.",
+          "codeRefs": [
+            "app/api/auth/nonce/route.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "wallet-user",
+          "action": "Signs the SIWE message with the connected wallet."
+        },
+        {
+          "step": 4,
+          "actor": "api-routes",
+          "action": "Verifies signature and nonce, creates/updates user, and sets a session cookie.",
+          "codeRefs": [
+            "app/api/auth/verify/route.ts",
+            "lib/auth/siwe.ts",
+            "lib/auth/session.ts"
+          ]
+        },
+        {
+          "step": 5,
+          "actor": "auth-context",
+          "action": "Hydrates current user from /api/auth/me for owner/admin-aware UI.",
+          "codeRefs": [
+            "app/api/auth/me/route.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Missing or stale nonce",
+          "behavior": "Verification fails and no authenticated session is created.",
+          "codeRefs": [
+            "app/api/auth/verify/route.ts"
+          ]
+        },
+        {
+          "condition": "Unauthenticated protected request",
+          "behavior": "Auth helpers return an auth error for the route to translate into an HTTP error.",
+          "codeRefs": [
+            "lib/api/auth.ts"
+          ]
+        },
+        {
+          "condition": "User logs out",
+          "behavior": "Logout route clears session state and client auth resets.",
+          "codeRefs": [
+            "app/api/auth/logout/route.ts",
+            "contexts/AuthContext.tsx"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "character-detail-edit",
+        "lore-submission-create-revise",
+        "map-staking",
+        "admin-lore-submission-review"
+      ]
+    },
+    {
+      "id": "character-browse",
+      "title": "Character browsing and filtering",
+      "category": "characters",
+      "summary": "Visitors browse the WAGDIE character collection with search/filter state, trait endpoints, and cards linking into per-token detail pages.",
+      "participants": [
+        "visitor",
+        "next-app-router",
+        "api-routes",
+        "services"
+      ],
+      "entrypoints": [
+        {
+          "label": "Characters",
+          "path": "/characters",
+          "file": "app/characters/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/characters/page.tsx"
+        ],
+        "components": [
+          "components/characters/TokenFeed.tsx",
+          "components/characters/TokenFilterBar.tsx",
+          "components/characters/FilterSidebar.tsx",
+          "components/characters/CharacterCard.tsx"
+        ],
+        "hooks": [
+          "hooks/useCharacters.ts",
+          "hooks/useCharacterBrowseFilters.ts",
+          "hooks/useTraitCounts.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/characters",
+            "file": "app/api/characters/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/character",
+            "file": "app/api/character/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/origins",
+            "file": "app/api/characters/origins/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/alignments",
+            "file": "app/api/characters/alignments/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/traits/[traitType]",
+            "file": "app/api/characters/traits/[traitType]/route.ts"
+          }
+        ],
+        "types": [
+          "types/character.ts"
+        ]
+      },
+      "dataFlow": [
+        "URL/search state and filter controls drive character list query parameters.",
+        "Character APIs return list data and filter facets.",
+        "Cards link to /characters/[tokenId] for detail, edit, chat, staking, and searing-adjacent experiences."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "visitor",
+          "action": "Opens /characters and sees the token feed.",
+          "codeRefs": [
+            "app/characters/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "visitor",
+          "action": "Filters by origin, alignment, trait, or text search.",
+          "codeRefs": [
+            "hooks/useCharacterBrowseFilters.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "api-routes",
+          "action": "Returns matching character data and facet values.",
+          "codeRefs": [
+            "app/api/characters/route.ts",
+            "app/api/characters/traits/[traitType]/route.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "visitor",
+          "action": "Selects a character card to view the detail page.",
+          "codeRefs": [
+            "components/characters/CharacterCard.tsx"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "No matching filters",
+          "behavior": "Browse UI shows an empty/no-characters state instead of failing.",
+          "codeRefs": [
+            "components/characters/EmptyStatsPrompt.tsx"
+          ]
+        },
+        {
+          "condition": "Trait/facet API error",
+          "behavior": "Client hooks surface loading/error states while preserving the page shell.",
+          "codeRefs": [
+            "hooks/useTraitCounts.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "character-detail-edit",
+        "eliza-character-chat",
+        "searing-concord"
+      ]
+    },
+    {
+      "id": "character-detail-edit",
+      "title": "Character detail, ownership, and editing",
+      "category": "characters",
+      "summary": "A token detail page combines metadata, lore, ownership-aware edit controls, transaction history, searing status, and chat entry points.",
+      "participants": [
+        "visitor",
+        "token-owner",
+        "auth-context",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Character detail",
+          "path": "/characters/[tokenId]",
+          "file": "app/characters/[tokenId]/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/characters/[tokenId]/page.tsx"
+        ],
+        "components": [
+          "components/characters/detail/*",
+          "components/characters/SheetTitleAndAttributes.tsx",
+          "components/characters/SheetMenuBar.tsx"
+        ],
+        "hooks": [
+          "hooks/useCharacterDetail.ts",
+          "hooks/useCharacterDetailData.ts",
+          "hooks/useCharacterOwnership.ts",
+          "hooks/useCharacterSave.ts",
+          "hooks/useCharacterTxHistory.ts",
+          "hooks/useCharacterChat.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET/PATCH",
+            "path": "/api/characters/[tokenId]",
+            "file": "app/api/characters/[tokenId]/route.ts"
+          },
+          {
+            "method": "GET/PATCH",
+            "path": "/api/character/[tokenId]",
+            "file": "app/api/character/[tokenId]/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/[tokenId]/events",
+            "file": "app/api/characters/[tokenId]/events/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/[tokenId]/staking",
+            "file": "app/api/characters/[tokenId]/staking/route.ts"
+          }
+        ],
+        "services": [
+          "lib/auth/character-permissions.ts",
+          "lib/api/handlers/character-update.ts"
+        ],
+        "types": [
+          "types/character.ts"
+        ]
+      },
+      "dataFlow": [
+        "Route tokenId drives character detail fetches and derived metadata display.",
+        "Auth/session and ownership checks determine whether edit actions are enabled.",
+        "PATCH requests use character permission helpers before updating editable character fields.",
+        "Related endpoints provide events, staking status, concord/searing information, and chat context."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "visitor",
+          "action": "Opens a token detail page from browse, map, lore, or a direct URL.",
+          "codeRefs": [
+            "app/characters/[tokenId]/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "api-routes",
+          "action": "Loads character metadata and related status endpoints.",
+          "codeRefs": [
+            "app/api/characters/[tokenId]/route.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "auth-context",
+          "action": "Identifies whether the active wallet can edit the character.",
+          "codeRefs": [
+            "lib/auth/character-permissions.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "token-owner",
+          "action": "Edits allowed sheet fields and saves changes.",
+          "codeRefs": [
+            "hooks/useCharacterSave.ts",
+            "app/api/character/[tokenId]/route.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Invalid token id",
+          "behavior": "Route/API validation prevents loading or updating an invalid character.",
+          "codeRefs": [
+            "app/api/characters/[tokenId]/route.ts"
+          ]
+        },
+        {
+          "condition": "Wallet is not owner/admin",
+          "behavior": "Edit controls are hidden or disabled and PATCH requests are rejected.",
+          "codeRefs": [
+            "lib/auth/character-permissions.ts"
+          ]
+        },
+        {
+          "condition": "Image/metadata asset fails",
+          "behavior": "Character image display hook selects fallback behavior.",
+          "codeRefs": [
+            "hooks/useCharacterImageDisplay.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "wallet-siwe-auth",
+        "character-browse",
+        "eliza-character-chat",
+        "map-staking",
+        "searing-concord"
+      ]
+    },
+    {
+      "id": "eliza-character-chat",
+      "title": "Eliza character chat and conversations",
+      "category": "eliza",
+      "summary": "Character chat and conversation UI routes messages through authenticated Eliza API endpoints while preserving conversation history.",
+      "participants": [
+        "wallet-user",
+        "token-owner",
+        "api-routes",
+        "eliza-service",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Character chat dock / detail integration",
+          "path": "/characters/[tokenId]",
+          "file": "hooks/useCharacterChat.ts"
+        }
+      ],
+      "codeRefs": {
+        "components": [
+          "components/chat/ChatDock.tsx",
+          "components/chat/ChatMessages.tsx",
+          "components/chat/ChatSidebar.tsx"
+        ],
+        "hooks": [
+          "hooks/useCharacterChat.ts",
+          "hooks/useConversations.ts",
+          "hooks/useElizaAuth.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET/POST",
+            "path": "/api/eliza/auth/nonce",
+            "file": "app/api/eliza/auth/nonce/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/eliza/auth/verify",
+            "file": "app/api/eliza/auth/verify/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/eliza/auth",
+            "file": "app/api/eliza/auth/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/eliza/chat",
+            "file": "app/api/eliza/chat/route.ts"
+          },
+          {
+            "method": "GET/POST",
+            "path": "/api/eliza/conversations",
+            "file": "app/api/eliza/conversations/route.ts"
+          },
+          {
+            "method": "GET/PATCH/DELETE",
+            "path": "/api/eliza/conversations/[conversationId]",
+            "file": "app/api/eliza/conversations/[conversationId]/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/eliza/characters/[tokenId]",
+            "file": "app/api/eliza/characters/[tokenId]/route.ts"
+          }
+        ],
+        "services": [
+          "lib/eliza/routeAuth.ts",
+          "lib/eliza/client.ts",
+          "lib/eliza/sessionAuth.ts"
+        ],
+        "types": [
+          "types/eliza.ts"
+        ]
+      },
+      "dataFlow": [
+        "Eliza auth validates wallet/session context separately from normal app auth where required.",
+        "Conversation hooks create or load conversation records.",
+        "Chat messages POST to /api/eliza/chat and receive assistant responses from the Eliza integration boundary.",
+        "Conversation list/detail APIs persist titles, messages, and deletion/archive operations."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "wallet-user",
+          "action": "Opens chat from a character-aware UI.",
+          "codeRefs": [
+            "hooks/useCharacterChat.ts",
+            "components/chat/ChatDock.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "api-routes",
+          "action": "Verifies Eliza auth and conversation permissions.",
+          "codeRefs": [
+            "lib/eliza/routeAuth.ts",
+            "app/api/eliza/auth/route.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "wallet-user",
+          "action": "Sends a message in an existing or new conversation.",
+          "codeRefs": [
+            "app/api/eliza/chat/route.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "eliza-service",
+          "action": "Returns an assistant response that is displayed and stored with conversation context.",
+          "codeRefs": [
+            "hooks/useConversations.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Eliza auth/session missing",
+          "behavior": "Eliza routes reject the request before calling chat services.",
+          "codeRefs": [
+            "lib/eliza/routeAuth.ts"
+          ]
+        },
+        {
+          "condition": "Conversation not found or unauthorized",
+          "behavior": "Conversation route returns an error instead of leaking data.",
+          "codeRefs": [
+            "app/api/eliza/conversations/[conversationId]/route.ts"
+          ]
+        },
+        {
+          "condition": "Eliza backend unavailable",
+          "behavior": "Chat API reports failure and the client can keep the input context for retry.",
+          "codeRefs": [
+            "app/api/eliza/chat/route.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "character-detail-edit",
+        "location-room",
+        "wallet-siwe-auth"
+      ]
+    },
+    {
+      "id": "lore-archive-effective-view",
+      "title": "Lore archive and effective canon view",
+      "category": "lore",
+      "summary": "Lore pages render canon, community, character, event, location, and tweet-linked material through effective query helpers that combine base data and canonization overlays.",
+      "participants": [
+        "visitor",
+        "next-app-router",
+        "services"
+      ],
+      "entrypoints": [
+        {
+          "label": "Lore archive",
+          "path": "/lore",
+          "file": "app/lore/page.tsx"
+        },
+        {
+          "label": "Event detail",
+          "path": "/lore/events/[slug]",
+          "file": "app/lore/events/[slug]/page.tsx"
+        },
+        {
+          "label": "Community detail",
+          "path": "/lore/community/[slug]",
+          "file": "app/lore/community/[slug]/page.tsx"
+        },
+        {
+          "label": "Character lore detail",
+          "path": "/lore/characters/[slug]",
+          "file": "app/lore/characters/[slug]/page.tsx"
+        },
+        {
+          "label": "Location lore detail",
+          "path": "/lore/locations/[slug]",
+          "file": "app/lore/locations/[slug]/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/lore/page.tsx",
+          "app/lore/events/[slug]/page.tsx",
+          "app/lore/community/[slug]/page.tsx",
+          "app/lore/characters/[slug]/page.tsx",
+          "app/lore/locations/[slug]/page.tsx"
+        ],
+        "components": [
+          "components/lore/LoreArchive.tsx",
+          "components/lore/LoreTimeline.tsx",
+          "components/lore/LoreEventDetail.tsx",
+          "components/lore/CommunityEventDetail.tsx",
+          "components/lore/CharacterProfile.tsx",
+          "components/lore/LocationProfile.tsx"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/tweets",
+            "file": "app/api/tweets/route.ts"
+          }
+        ],
+        "services": [
+          "lib/lore/query.ts",
+          "lib/lore/effective-query.ts",
+          "lib/lore/canonization.ts"
+        ],
+        "types": [
+          "lib/lore/types.ts",
+          "types/tweet.ts"
+        ]
+      },
+      "dataFlow": [
+        "Page routes ask lore query helpers for archive or detail records by filter/slug.",
+        "Effective-query logic merges base lore data with community/canonization state.",
+        "Components render timelines, details, attribution, entity chips, media, and canon status.",
+        "Tweet API supports filtered tweet archive data where the lore UI needs external-source context."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "visitor",
+          "action": "Opens /lore or a lore detail route.",
+          "codeRefs": [
+            "app/lore/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "services",
+          "action": "Builds the effective lore dataset for archive filters or a slug lookup.",
+          "codeRefs": [
+            "lib/lore/effective-query.ts",
+            "lib/lore/query.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "next-app-router",
+          "action": "Renders archive/detail components with canonical/community status and source attribution.",
+          "codeRefs": [
+            "components/lore/LoreArchive.tsx",
+            "components/lore/SourceAttribution.tsx"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Unknown slug",
+          "behavior": "Detail page calls notFound rather than rendering an empty detail shell.",
+          "codeRefs": [
+            "app/lore/events/[slug]/page.tsx"
+          ]
+        },
+        {
+          "condition": "Canon/community overlays conflict",
+          "behavior": "Canonization helpers determine the effective view used by public pages.",
+          "codeRefs": [
+            "lib/lore/canonization.ts",
+            "lib/lore/effective-query.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "lore-submission-create-revise",
+        "admin-lore-submission-review",
+        "admin-lore-canonization"
+      ]
+    },
+    {
+      "id": "lore-submission-create-revise",
+      "title": "Community lore submission and revision",
+      "category": "lore",
+      "summary": "Token owners submit and revise community lore, with ownership checks, content validation, and lifecycle status managed by lore submission services.",
+      "participants": [
+        "token-owner",
+        "auth-context",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Submit lore",
+          "path": "/lore/submit",
+          "file": "app/lore/submit/page.tsx"
+        },
+        {
+          "label": "My submissions",
+          "path": "/lore/submissions",
+          "file": "app/lore/submissions/page.tsx"
+        },
+        {
+          "label": "Submission detail",
+          "path": "/lore/submissions/[submissionId]",
+          "file": "app/lore/submissions/[submissionId]/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/lore/submit/page.tsx",
+          "app/lore/submissions/page.tsx",
+          "app/lore/submissions/[submissionId]/page.tsx"
+        ],
+        "components": [
+          "components/lore/submissions/LoreSubmissionForm.tsx",
+          "components/lore/submissions/UserSubmissionsList.tsx"
+        ],
+        "apis": [
+          {
+            "method": "POST/GET",
+            "path": "/api/lore/submissions",
+            "file": "app/api/lore/submissions/route.ts"
+          },
+          {
+            "method": "GET/PATCH",
+            "path": "/api/lore/submissions/[submissionId]",
+            "file": "app/api/lore/submissions/[submissionId]/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/lore-submission-service.ts",
+          "lib/lore/submissions/ownership.ts",
+          "lib/lore/submissions/validation.ts"
+        ],
+        "types": [
+          "types/lore-submission.ts"
+        ]
+      },
+      "dataFlow": [
+        "Form captures Markdown/content, graph metadata, references, and submitter intent.",
+        "Public submission routes require an authenticated wallet and validate token ownership where applicable.",
+        "Validation normalizes content, metadata, and references before service-layer persistence.",
+        "Submitters can inspect and revise eligible submissions from their submission list/detail pages."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "token-owner",
+          "action": "Signs in and opens the lore submission form.",
+          "codeRefs": [
+            "app/lore/submit/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "token-owner",
+          "action": "Adds lore content, metadata, references, and associated entities.",
+          "codeRefs": [
+            "components/lore/submissions/LoreSubmissionForm.tsx"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "api-routes",
+          "action": "Validates auth, ownership, payload shape, and content constraints.",
+          "codeRefs": [
+            "app/api/lore/submissions/shared.ts",
+            "lib/lore/submissions/validation.ts",
+            "lib/lore/submissions/ownership.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "services",
+          "action": "Creates or revises the submission with lifecycle status for admin review.",
+          "codeRefs": [
+            "lib/services/lore-submission-service.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Unauthenticated submitter",
+          "behavior": "Submission APIs reject the request before validation/persistence.",
+          "codeRefs": [
+            "app/api/lore/submissions/shared.ts"
+          ]
+        },
+        {
+          "condition": "Submitter does not own referenced token",
+          "behavior": "Ownership helper blocks owner-gated submissions.",
+          "codeRefs": [
+            "lib/lore/submissions/ownership.ts"
+          ]
+        },
+        {
+          "condition": "Invalid Markdown/metadata/references",
+          "behavior": "Validation returns structured errors for the form to display.",
+          "codeRefs": [
+            "lib/lore/submissions/validation.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "wallet-siwe-auth",
+        "admin-lore-submission-review",
+        "lore-archive-effective-view"
+      ]
+    },
+    {
+      "id": "admin-lore-submission-review",
+      "title": "Admin lore submission review and publication",
+      "category": "admin",
+      "summary": "Admins review submitted lore, curate metadata, mark items in review, publish/unpublish community records, and promote/demote canon status.",
+      "participants": [
+        "admin",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Admin dashboard",
+          "path": "/admin",
+          "file": "app/admin/page.tsx"
+        },
+        {
+          "label": "Lore submissions queue",
+          "path": "/admin/lore/submissions",
+          "file": "app/admin/lore/submissions/page.tsx"
+        },
+        {
+          "label": "Submission review detail",
+          "path": "/admin/lore/submissions/[submissionId]",
+          "file": "app/admin/lore/submissions/[submissionId]/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/admin/page.tsx",
+          "app/admin/lore/submissions/page.tsx",
+          "app/admin/lore/submissions/[submissionId]/page.tsx"
+        ],
+        "components": [
+          "components/admin/AdminGate.tsx",
+          "components/admin/lore-submissions/LoreSubmissionsAdminQueue.tsx",
+          "components/admin/lore-submissions/LoreSubmissionAdminDetail.tsx"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/admin/lore/submissions",
+            "file": "app/api/admin/lore/submissions/route.ts"
+          },
+          {
+            "method": "GET/PATCH",
+            "path": "/api/admin/lore/submissions/[submissionId]",
+            "file": "app/api/admin/lore/submissions/[submissionId]/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/admin/lore/submissions/[submissionId]/review",
+            "file": "app/api/admin/lore/submissions/[submissionId]/review/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/admin/lore/submissions/[submissionId]/publish",
+            "file": "app/api/admin/lore/submissions/[submissionId]/publish/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/admin/lore/submissions/[submissionId]/unpublish",
+            "file": "app/api/admin/lore/submissions/[submissionId]/unpublish/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/admin/lore/submissions/[submissionId]/canonize",
+            "file": "app/api/admin/lore/submissions/[submissionId]/canonize/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/admin/lore/submissions/[submissionId]/decanonize",
+            "file": "app/api/admin/lore/submissions/[submissionId]/decanonize/route.ts"
+          }
+        ],
+        "services": [
+          "lib/api/auth.ts",
+          "lib/auth/admin.ts",
+          "lib/services/lore-submission-service.ts",
+          "lib/services/lore-submissions/transitions.ts",
+          "lib/services/lore-submissions/publication.ts",
+          "lib/services/lore-submissions/reference-validation.ts"
+        ]
+      },
+      "dataFlow": [
+        "Admin UI fetches queue/detail records through admin-only routes.",
+        "requireAdmin enforces operator permissions before action handlers execute.",
+        "Action routes share request parsing/error handling and delegate lifecycle transitions to loreSubmissionService.",
+        "Publication/canonization changes feed the public effective lore view."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "admin",
+          "action": "Opens the admin queue and filters submissions by status.",
+          "codeRefs": [
+            "app/admin/lore/submissions/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "admin",
+          "action": "Reviews detail, sanitized preview, references, and graph metadata.",
+          "codeRefs": [
+            "components/admin/lore-submissions/LoreSubmissionAdminDetail.tsx"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "api-routes",
+          "action": "Validates admin session and invokes review/publish/canonize action route.",
+          "codeRefs": [
+            "app/api/admin/lore/submissions/[submissionId]/action-route.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "services",
+          "action": "Applies lifecycle transition and publication/canon state updates.",
+          "codeRefs": [
+            "lib/services/lore-submission-service.ts",
+            "lib/services/lore-submissions/transitions.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Non-admin request",
+          "behavior": "Admin APIs return an auth error before exposing queue/detail data.",
+          "codeRefs": [
+            "lib/api/auth.ts",
+            "lib/auth/admin.ts"
+          ]
+        },
+        {
+          "condition": "Invalid lifecycle transition",
+          "behavior": "Transition helper rejects the operation and returns a validation error.",
+          "codeRefs": [
+            "lib/services/lore-submissions/transitions.ts"
+          ]
+        },
+        {
+          "condition": "Bad references during publication",
+          "behavior": "Reference validation blocks publication until corrected.",
+          "codeRefs": [
+            "lib/services/lore-submissions/reference-validation.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "lore-submission-create-revise",
+        "lore-archive-effective-view",
+        "admin-lore-canonization"
+      ]
+    },
+    {
+      "id": "admin-lore-canonization",
+      "title": "Admin lore canonization overrides",
+      "category": "admin",
+      "summary": "Admins manage drafted and published canonization overrides that affect how public lore resolves its effective canon/community state.",
+      "participants": [
+        "admin",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Canonization admin",
+          "path": "/admin/lore-canonization",
+          "file": "app/admin/lore-canonization/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/admin/lore-canonization/page.tsx"
+        ],
+        "components": [
+          "components/admin/lore-canonization/LoreCanonizationAdminContainer.tsx",
+          "components/admin/lore-canonization/CanonizationEditor.tsx",
+          "components/admin/lore-canonization/CanonizationEventList.tsx"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/admin/lore/canonization",
+            "file": "app/api/admin/lore/canonization/route.ts"
+          },
+          {
+            "method": "PATCH/DELETE",
+            "path": "/api/admin/lore/canonization/[eventId]",
+            "file": "app/api/admin/lore/canonization/[eventId]/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/admin/lore/canonization/[eventId]/publish",
+            "file": "app/api/admin/lore/canonization/[eventId]/publish/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/lore-canonization-service.ts",
+          "lib/lore/canonization.ts"
+        ]
+      },
+      "dataFlow": [
+        "Admin page lists canonization records and draft states.",
+        "Admin APIs require admin auth and delegate to loreCanonizationService.",
+        "Draft/save/publish/delete operations update override records.",
+        "Public lore effective-query helpers read canonization state when assembling the lore archive."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "admin",
+          "action": "Opens canonization admin and selects an event/record.",
+          "codeRefs": [
+            "app/admin/lore-canonization/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "admin",
+          "action": "Edits draft override state and saves it.",
+          "codeRefs": [
+            "app/api/admin/lore/canonization/[eventId]/route.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "admin",
+          "action": "Publishes the draft override.",
+          "codeRefs": [
+            "app/api/admin/lore/canonization/[eventId]/publish/route.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "services",
+          "action": "Public lore views reflect the updated canonization result.",
+          "codeRefs": [
+            "lib/services/lore-canonization-service.ts",
+            "lib/lore/effective-query.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Missing canonization event",
+          "behavior": "Admin route maps not-found service errors to HTTP errors.",
+          "codeRefs": [
+            "app/api/admin/lore/canonization/shared.ts"
+          ]
+        },
+        {
+          "condition": "Invalid override payload",
+          "behavior": "Service validation rejects the draft/update.",
+          "codeRefs": [
+            "lib/services/lore-canonization-service.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "lore-archive-effective-view",
+        "admin-lore-submission-review"
+      ]
+    },
+    {
+      "id": "map-explore",
+      "title": "Interactive map exploration",
+      "category": "map",
+      "summary": "The map page combines React HUD/sidebar state, Phaser rendering, marker/event bridges, and location APIs to let users explore WAGDIE geography.",
+      "participants": [
+        "visitor",
+        "next-app-router",
+        "phaser-map",
+        "api-routes",
+        "services"
+      ],
+      "entrypoints": [
+        {
+          "label": "Map",
+          "path": "/map",
+          "file": "app/map/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/map/page.tsx",
+          "app/map/README.md"
+        ],
+        "components": [
+          "components/map/MapPageHud.tsx",
+          "components/map/MapLayerControls.tsx",
+          "components/map/CharacterListPanel.tsx",
+          "components/map/LoadingState.tsx"
+        ],
+        "hooks": [
+          "hooks/map/useMapData.ts",
+          "hooks/map/useMapLayers.ts",
+          "hooks/map/useMapPageEventBridge.ts",
+          "hooks/map/useMapPageMarkers.ts",
+          "hooks/map/useMapPageSelection.ts",
+          "hooks/map/usePhaserEvents.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/locations",
+            "file": "app/api/locations/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/locations/[id]",
+            "file": "app/api/locations/[id]/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/location-service.ts",
+          "lib/domain/location/metadata.ts"
+        ],
+        "domain": [
+          "game/PhaserGame.tsx",
+          "game/EventBus.ts",
+          "game/scenes/MapScene.ts",
+          "game/config/markerConfig.ts"
+        ],
+        "types": [
+          "types/map.ts"
+        ]
+      },
+      "dataFlow": [
+        "Map page loads map data, event markers, locations, and selected character/location state.",
+        "React passes map props into PhaserGame and listens to EventBus events from MapScene.",
+        "Layer controls and HUD update visible markers and selected entities.",
+        "Location APIs/services provide editable map metadata shared with admin location tools."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "visitor",
+          "action": "Opens /map and waits for asset/data loading.",
+          "codeRefs": [
+            "app/map/page.tsx",
+            "components/map/LoadingState.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "api-routes",
+          "action": "Returns locations and map data used to build markers.",
+          "codeRefs": [
+            "app/api/locations/route.ts",
+            "hooks/map/useMapData.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "phaser-map",
+          "action": "Renders the map scene and emits selection/hover events to React.",
+          "codeRefs": [
+            "game/PhaserGame.tsx",
+            "game/EventBus.ts",
+            "game/scenes/MapScene.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "visitor",
+          "action": "Toggles layers, selects markers, and opens contextual panels.",
+          "codeRefs": [
+            "components/map/MapLayerControls.tsx",
+            "hooks/map/useMapPageSelection.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Asset loading fails",
+          "behavior": "Map asset error/loading components keep the page from crashing.",
+          "codeRefs": [
+            "components/map/AssetErrorBoundary.tsx",
+            "components/map/AssetLoadingStates.tsx"
+          ]
+        },
+        {
+          "condition": "No characters/markers available",
+          "behavior": "Map UI renders no-data states and keeps base navigation usable.",
+          "codeRefs": [
+            "components/map/NoCharactersState.tsx"
+          ]
+        },
+        {
+          "condition": "Phaser bridge event mismatch",
+          "behavior": "Map README documents the React↔Phaser event boundary so implementation can be traced.",
+          "codeRefs": [
+            "app/map/README.md"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "map-staking",
+        "location-room",
+        "admin-map-locations",
+        "character-detail-edit"
+      ]
+    },
+    {
+      "id": "map-staking",
+      "title": "Map staking panel and staking sync",
+      "category": "staking",
+      "summary": "Wallet users inspect location occupancy and character staking state from the map sidebar, perform staking-adjacent actions, and sync contract-derived state.",
+      "participants": [
+        "wallet-user",
+        "token-owner",
+        "transaction-context",
+        "api-routes",
+        "services",
+        "ethereum-contracts"
+      ],
+      "entrypoints": [
+        {
+          "label": "Map staking sidebar",
+          "path": "/map",
+          "file": "components/map/MapStakingSidebar.tsx"
+        }
+      ],
+      "codeRefs": {
+        "components": [
+          "components/map/MapStakingSidebar.tsx",
+          "components/map/staking-sidebar/LocationDetailsCard.tsx",
+          "components/StakingStatusCard.tsx"
+        ],
+        "hooks": [
+          "hooks/map/useMapStakingPanel.ts",
+          "hooks/useStaking.ts",
+          "hooks/useStakingStatuses.ts",
+          "hooks/staking/post-transaction-sync.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/characters/staking-status",
+            "file": "app/api/characters/staking-status/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/[tokenId]/staking",
+            "file": "app/api/characters/[tokenId]/staking/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/staking",
+            "file": "app/api/sync/staking/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/ownership",
+            "file": "app/api/sync/ownership/route.ts"
+          }
+        ],
+        "services": [
+          "lib/contracts/abis/wagdie-world.ts",
+          "lib/contracts/addresses.ts",
+          "lib/services/sync/staking-state-sync.ts"
+        ],
+        "types": [
+          "types/map.ts",
+          "types/wallet.ts"
+        ]
+      },
+      "dataFlow": [
+        "Sidebar selection identifies a location and candidate characters.",
+        "Staking-status APIs provide current persisted/materialized staking state.",
+        "Wallet/contract hooks perform blockchain transactions where enabled.",
+        "Post-transaction sync routes update server-side state so the map and character pages reflect the latest chain data."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "wallet-user",
+          "action": "Selects a map location and opens the staking sidebar.",
+          "codeRefs": [
+            "components/map/MapStakingSidebar.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "api-routes",
+          "action": "Loads staking status for relevant tokens/locations.",
+          "codeRefs": [
+            "app/api/characters/staking-status/route.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "token-owner",
+          "action": "Initiates a staking/unstaking action through wallet-aware hooks.",
+          "codeRefs": [
+            "hooks/useStaking.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "transaction-context",
+          "action": "Tracks transaction state and triggers post-transaction sync.",
+          "codeRefs": [
+            "contexts/TransactionContext.tsx",
+            "hooks/staking/post-transaction-sync.ts",
+            "app/api/sync/staking/route.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Wallet disconnected",
+          "behavior": "Wallet-aware controls prompt connection or remain disabled.",
+          "codeRefs": [
+            "hooks/useWallet.ts",
+            "components/wallet/WalletButton.tsx"
+          ]
+        },
+        {
+          "condition": "Transaction rejected or fails",
+          "behavior": "Transaction context/hook state surfaces failure without mutating local success state.",
+          "codeRefs": [
+            "contexts/TransactionContext.tsx"
+          ]
+        },
+        {
+          "condition": "Materialized staking data stale",
+          "behavior": "Sync endpoints refresh persisted state from chain-derived data.",
+          "codeRefs": [
+            "app/api/sync/staking/route.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "map-explore",
+        "wallet-siwe-auth",
+        "background-sync",
+        "location-room"
+      ]
+    },
+    {
+      "id": "location-room",
+      "title": "Location room and Eliza map interactions",
+      "category": "eliza",
+      "summary": "Map locations can expose Eliza-backed room state, including location room reads and tick/sync operations for AI activity at a place.",
+      "participants": [
+        "visitor",
+        "wallet-user",
+        "phaser-map",
+        "api-routes",
+        "eliza-service",
+        "services"
+      ],
+      "entrypoints": [
+        {
+          "label": "Location room panel",
+          "path": "/map",
+          "file": "components/map/staking-sidebar/LocationRoomPanel.tsx"
+        }
+      ],
+      "codeRefs": {
+        "components": [
+          "components/map/staking-sidebar/LocationRoomPanel.tsx"
+        ],
+        "hooks": [
+          "hooks/map/useLocationRoom.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/eliza/location-rooms/[locationId]",
+            "file": "app/api/eliza/location-rooms/[locationId]/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/eliza/location-rooms/[locationId]/tick",
+            "file": "app/api/eliza/location-rooms/[locationId]/tick/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/eliza-location-rooms",
+            "file": "app/api/sync/eliza-location-rooms/route.ts"
+          }
+        ],
+        "services": [
+          "lib/eliza/locationRooms/types.ts",
+          "lib/eliza/routeAuth.ts"
+        ],
+        "types": [
+          "types/eliza.ts"
+        ]
+      },
+      "dataFlow": [
+        "Selected map location drives location room API calls.",
+        "Location-room route returns current room state and participants/messages as defined by location room types.",
+        "Tick/sync routes advance or reconcile Eliza-backed room state.",
+        "Panel renders room status inside the map staking/sidebar context."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "visitor",
+          "action": "Selects a map location that supports a location room.",
+          "codeRefs": [
+            "hooks/map/useLocationRoom.ts"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "api-routes",
+          "action": "Fetches location-room state for the selected location.",
+          "codeRefs": [
+            "app/api/eliza/location-rooms/[locationId]/route.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "eliza-service",
+          "action": "Provides room state or advances it through a tick operation.",
+          "codeRefs": [
+            "app/api/eliza/location-rooms/[locationId]/tick/route.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "visitor",
+          "action": "Views current room activity in the map sidebar panel.",
+          "codeRefs": [
+            "components/map/staking-sidebar/LocationRoomPanel.tsx"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Location has no room",
+          "behavior": "Panel can render an unavailable/empty state instead of assuming room data.",
+          "codeRefs": [
+            "hooks/map/useLocationRoom.ts"
+          ]
+        },
+        {
+          "condition": "Eliza route auth fails",
+          "behavior": "Route auth blocks the request according to Eliza boundary rules.",
+          "codeRefs": [
+            "lib/eliza/routeAuth.ts"
+          ]
+        },
+        {
+          "condition": "Room sync falls behind",
+          "behavior": "Dedicated sync endpoint can reconcile location-room state.",
+          "codeRefs": [
+            "app/api/sync/eliza-location-rooms/route.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "map-explore",
+        "map-staking",
+        "eliza-character-chat",
+        "background-sync"
+      ]
+    },
+    {
+      "id": "searing-concord",
+      "title": "Searing and concord-driven previews",
+      "category": "searing",
+      "summary": "The searing experience uses concord ownership, concord-to-layer mappings, character metadata, preview composition, and sync routes to drive searing visual state.",
+      "participants": [
+        "token-owner",
+        "wallet-user",
+        "api-routes",
+        "services",
+        "ethereum-contracts",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Searing",
+          "path": "/searing",
+          "file": "app/searing/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/searing/page.tsx"
+        ],
+        "components": [
+          "components/searing/SearingPageClient.tsx",
+          "components/modals/SearingModal.tsx",
+          "components/characters/searing/*"
+        ],
+        "hooks": [
+          "hooks/useSearing.ts",
+          "hooks/useSearingConcords.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/concords/owned",
+            "file": "app/api/concords/owned/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/character/[tokenId]/concords",
+            "file": "app/api/character/[tokenId]/concords/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/[tokenId]/concords",
+            "file": "app/api/characters/[tokenId]/concords/route.ts"
+          },
+          {
+            "method": "GET",
+            "path": "/api/characters/[tokenId]/searing/preview",
+            "file": "app/api/characters/[tokenId]/searing/preview/route.ts"
+          },
+          {
+            "method": "GET/POST",
+            "path": "/api/characters/[tokenId]/searing",
+            "file": "app/api/characters/[tokenId]/searing/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/characters/[tokenId]/searing/sync",
+            "file": "app/api/characters/[tokenId]/searing/sync/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/searing-image-composer.ts",
+          "lib/services/concord-searing-map-service.ts",
+          "lib/contracts/abis/searing.ts",
+          "lib/contracts/abis/concord.ts"
+        ],
+        "domain": [
+          "lib/domain/searing/searing-layer-resolver.ts",
+          "lib/domain/searing/concord-searing-map.ts"
+        ]
+      },
+      "dataFlow": [
+        "Wallet/concord APIs identify concord assets owned or associated with a character.",
+        "Concord searing map domain resolves concord IDs to visual layer instructions.",
+        "Preview route composes character metadata and searing layers into a preview response.",
+        "Searing contract interactions and sync routes update persisted searing state."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "wallet-user",
+          "action": "Opens /searing and connects wallet if needed.",
+          "codeRefs": [
+            "app/searing/page.tsx",
+            "components/searing/SearingPageClient.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "api-routes",
+          "action": "Loads owned concords and character searing status.",
+          "codeRefs": [
+            "app/api/concords/owned/route.ts",
+            "hooks/useSearingConcords.ts"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "services",
+          "action": "Resolves searing layers and renders a preview for the selected character/concord combination.",
+          "codeRefs": [
+            "app/api/characters/[tokenId]/searing/preview/route.ts",
+            "lib/domain/searing/searing-layer-resolver.ts",
+            "lib/services/searing-image-composer.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "token-owner",
+          "action": "Confirms searing action and syncs resulting state.",
+          "codeRefs": [
+            "components/modals/SearingModal.tsx",
+            "app/api/characters/[tokenId]/searing/sync/route.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "No owned concords",
+          "behavior": "Searing UI can show an unavailable state and avoid preview/action calls.",
+          "codeRefs": [
+            "app/api/concords/owned/route.ts"
+          ]
+        },
+        {
+          "condition": "Layer mapping invalid",
+          "behavior": "Resolver/preview validation rejects invalid searing layer combinations.",
+          "codeRefs": [
+            "lib/domain/searing/searing-layer-resolver.ts"
+          ]
+        },
+        {
+          "condition": "Searing sync stale or fails",
+          "behavior": "Dedicated sync route can refresh per-character searing state.",
+          "codeRefs": [
+            "app/api/characters/[tokenId]/searing/sync/route.ts",
+            "app/api/sync/searing/route.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "character-detail-edit",
+        "admin-searing-map",
+        "spread-infection-cure",
+        "background-sync"
+      ]
+    },
+    {
+      "id": "spread-infection-cure",
+      "title": "Spread, infection, cure, and corpse burning",
+      "category": "spread",
+      "summary": "The spread page orchestrates infection/spread interactions, cure actions, and corpse burning modals backed by wallet/contract hooks and character event state.",
+      "participants": [
+        "wallet-user",
+        "token-owner",
+        "transaction-context",
+        "api-routes",
+        "ethereum-contracts"
+      ],
+      "entrypoints": [
+        {
+          "label": "Spread",
+          "path": "/spread",
+          "file": "app/spread/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/spread/page.tsx"
+        ],
+        "components": [
+          "components/spread/SpreadInfect.tsx",
+          "components/modals/InfectionModal.tsx",
+          "components/modals/CureModal.tsx",
+          "components/modals/CorpseBurningModal.tsx",
+          "components/spread/DialogSpreadingApproval.tsx",
+          "components/spread/DialogBurnCorpseApproval.tsx"
+        ],
+        "hooks": [
+          "hooks/useSpread.ts",
+          "hooks/useCure.ts",
+          "hooks/useCorpseBurning.ts",
+          "hooks/useBlockchainTransaction.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET",
+            "path": "/api/characters/[tokenId]/events",
+            "file": "app/api/characters/[tokenId]/events/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/searing",
+            "file": "app/api/sync/searing/route.ts"
+          }
+        ],
+        "services": [
+          "lib/contracts/abis/spread.ts",
+          "lib/contracts/abis/corpse.ts",
+          "lib/contracts/abis/searing.ts",
+          "lib/contracts/addresses.ts"
+        ]
+      },
+      "dataFlow": [
+        "Spread page and components gather candidate character/action state.",
+        "Modal flows confirm infection, cure, searing-adjacent, or corpse burning actions.",
+        "Wallet hooks submit contract transactions and TransactionContext reports status.",
+        "Character event/sync APIs expose recent outcomes and refresh server-side materialization."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "wallet-user",
+          "action": "Opens /spread and chooses an available action.",
+          "codeRefs": [
+            "app/spread/page.tsx",
+            "components/spread/SpreadInfect.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "token-owner",
+          "action": "Reviews and confirms action in the relevant modal.",
+          "codeRefs": [
+            "components/modals/InfectionModal.tsx",
+            "components/modals/CureModal.tsx",
+            "components/modals/CorpseBurningModal.tsx"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "ethereum-contracts",
+          "action": "Processes spread/cure/corpse transaction through contract hooks.",
+          "codeRefs": [
+            "hooks/useSpread.ts",
+            "hooks/useCure.ts",
+            "hooks/useCorpseBurning.ts",
+            "lib/contracts/abis/spread.ts",
+            "lib/contracts/abis/corpse.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "transaction-context",
+          "action": "Surfaces status and allows sync/event views to refresh.",
+          "codeRefs": [
+            "contexts/TransactionContext.tsx",
+            "app/api/characters/[tokenId]/events/route.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Action unavailable for selected token state",
+          "behavior": "UI disables or redirects the user to a valid action path.",
+          "codeRefs": [
+            "components/spread/SpreadInfect.tsx"
+          ]
+        },
+        {
+          "condition": "Wallet rejects transaction",
+          "behavior": "Transaction hook reports rejection and leaves action state unchanged.",
+          "codeRefs": [
+            "hooks/useBlockchainTransaction.ts"
+          ]
+        },
+        {
+          "condition": "Event history unavailable",
+          "behavior": "Event API returns an error and the page can still show primary action UI.",
+          "codeRefs": [
+            "app/api/characters/[tokenId]/events/route.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "wallet-siwe-auth",
+        "searing-concord",
+        "background-sync"
+      ]
+    },
+    {
+      "id": "admin-map-locations",
+      "title": "Admin map location editing",
+      "category": "admin",
+      "summary": "Admins create, edit, and delete map location metadata consumed by the public map and location-room experiences.",
+      "participants": [
+        "admin",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Map locations admin",
+          "path": "/admin/map-locations",
+          "file": "app/admin/map-locations/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/admin/map-locations/page.tsx"
+        ],
+        "components": [
+          "components/map-editor/MapEditorContainer.tsx",
+          "components/map-editor/LocationForm.tsx",
+          "components/map-editor/EditorControls.tsx",
+          "components/map-editor/DeleteConfirmation.tsx"
+        ],
+        "hooks": [
+          "hooks/map/useMapEditor.ts",
+          "hooks/map/useLocationApi.ts",
+          "hooks/map/useAdminAuth.ts"
+        ],
+        "apis": [
+          {
+            "method": "GET/POST",
+            "path": "/api/locations",
+            "file": "app/api/locations/route.ts"
+          },
+          {
+            "method": "GET/PATCH/DELETE",
+            "path": "/api/locations/[id]",
+            "file": "app/api/locations/[id]/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/location-service.ts",
+          "lib/domain/location/metadata.ts",
+          "lib/domain/location/metadata-types.ts"
+        ],
+        "types": [
+          "types/map.ts"
+        ]
+      },
+      "dataFlow": [
+        "Admin page loads existing location records through location APIs.",
+        "Location form edits are validated and normalized by domain metadata helpers.",
+        "Location service persists create/update/delete operations.",
+        "Public map reads the same location data for marker/panel rendering."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "admin",
+          "action": "Opens /admin/map-locations and passes admin gate.",
+          "codeRefs": [
+            "app/admin/map-locations/page.tsx",
+            "components/map-editor/AdminGate.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "admin",
+          "action": "Creates or edits a location in the form.",
+          "codeRefs": [
+            "components/map-editor/LocationForm.tsx"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "api-routes",
+          "action": "Validates request and calls location service.",
+          "codeRefs": [
+            "app/api/locations/route.ts",
+            "app/api/locations/[id]/route.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "services",
+          "action": "Normalizes metadata and persists the location.",
+          "codeRefs": [
+            "lib/services/location-service.ts",
+            "lib/domain/location/metadata.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Invalid coordinates/metadata",
+          "behavior": "Domain validation prevents saving malformed location metadata.",
+          "codeRefs": [
+            "lib/domain/location/metadata.ts"
+          ]
+        },
+        {
+          "condition": "Delete requested accidentally",
+          "behavior": "Delete confirmation component gates destructive action.",
+          "codeRefs": [
+            "components/map-editor/DeleteConfirmation.tsx"
+          ]
+        },
+        {
+          "condition": "Non-admin request",
+          "behavior": "Admin UI/API protection blocks location edits.",
+          "codeRefs": [
+            "hooks/map/useAdminAuth.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "map-explore",
+        "location-room"
+      ]
+    },
+    {
+      "id": "admin-searing-map",
+      "title": "Admin concord-to-searing map editing",
+      "category": "admin",
+      "summary": "Admins maintain the mapping from concord IDs to searing layer behavior used by previews and searing composition.",
+      "participants": [
+        "admin",
+        "api-routes",
+        "services",
+        "supabase"
+      ],
+      "entrypoints": [
+        {
+          "label": "Searing map admin",
+          "path": "/admin/searing-map",
+          "file": "app/admin/searing-map/page.tsx"
+        }
+      ],
+      "codeRefs": {
+        "pages": [
+          "app/admin/searing-map/page.tsx"
+        ],
+        "components": [
+          "components/searing-map-editor/SearingMapEditorContainer.tsx"
+        ],
+        "apis": [
+          {
+            "method": "GET/POST",
+            "path": "/api/concords/searing-map",
+            "file": "app/api/concords/searing-map/route.ts"
+          },
+          {
+            "method": "GET/PATCH/DELETE",
+            "path": "/api/concords/searing-map/[concordId]",
+            "file": "app/api/concords/searing-map/[concordId]/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/concord-searing-map-service.ts"
+        ],
+        "domain": [
+          "lib/domain/searing/concord-searing-map-input.ts",
+          "lib/domain/searing/concord-searing-map.ts"
+        ]
+      },
+      "dataFlow": [
+        "Admin editor lists concord searing mappings.",
+        "CRUD APIs validate concord IDs and layer payloads.",
+        "Concord searing map service persists mappings.",
+        "Searing preview and resolver logic consume mappings for user-facing searing flows."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "admin",
+          "action": "Opens the searing-map editor.",
+          "codeRefs": [
+            "app/admin/searing-map/page.tsx"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "admin",
+          "action": "Creates or updates a concord mapping.",
+          "codeRefs": [
+            "components/searing-map-editor/SearingMapEditorContainer.tsx"
+          ]
+        },
+        {
+          "step": 3,
+          "actor": "api-routes",
+          "action": "Validates and persists mapping through service/domain helpers.",
+          "codeRefs": [
+            "app/api/concords/searing-map/route.ts",
+            "lib/domain/searing/concord-searing-map-input.ts"
+          ]
+        },
+        {
+          "step": 4,
+          "actor": "services",
+          "action": "Searing flow uses the mapping for preview/layer resolution.",
+          "codeRefs": [
+            "lib/domain/searing/searing-layer-resolver.ts"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "Invalid concord ID or duplicate mapping",
+          "behavior": "Input/domain validation rejects bad records.",
+          "codeRefs": [
+            "lib/domain/searing/concord-searing-map-input.ts"
+          ]
+        },
+        {
+          "condition": "Mapping deleted while preview is requested",
+          "behavior": "Searing resolver/preview handles missing mapping as unavailable/invalid.",
+          "codeRefs": [
+            "lib/domain/searing/searing-layer-resolver.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "searing-concord"
+      ]
+    },
+    {
+      "id": "background-sync",
+      "title": "Background and operational sync endpoints",
+      "category": "sync",
+      "summary": "Dedicated sync routes reconcile ownership, staking, searing, and Eliza location-room materialized state from chain/external systems into app-readable data.",
+      "participants": [
+        "admin",
+        "api-routes",
+        "services",
+        "supabase",
+        "ethereum-contracts",
+        "eliza-service"
+      ],
+      "entrypoints": [
+        {
+          "label": "Operational sync APIs",
+          "path": "/api/sync/*",
+          "file": "app/api/sync"
+        }
+      ],
+      "codeRefs": {
+        "apis": [
+          {
+            "method": "POST",
+            "path": "/api/sync/ownership",
+            "file": "app/api/sync/ownership/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/staking",
+            "file": "app/api/sync/staking/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/searing",
+            "file": "app/api/sync/searing/route.ts"
+          },
+          {
+            "method": "POST",
+            "path": "/api/sync/eliza-location-rooms",
+            "file": "app/api/sync/eliza-location-rooms/route.ts"
+          }
+        ],
+        "services": [
+          "lib/services/sync/*",
+          "lib/services/searing-materialization-service.ts",
+          "lib/services/searing-storage.ts"
+        ],
+        "domain": [
+          "lib/domain/searing/*",
+          "lib/eliza/locationRooms/types.ts"
+        ]
+      },
+      "dataFlow": [
+        "Sync endpoints are invoked after transactions, by operational jobs, or by admin/operator tooling.",
+        "Routes validate request shape and call subsystem-specific sync/materialization services.",
+        "Services read chain/external state and update database-backed app state.",
+        "Public pages and APIs consume the refreshed materialized state."
+      ],
+      "happyPath": [
+        {
+          "step": 1,
+          "actor": "api-routes",
+          "action": "Receives a sync request for ownership, staking, searing, or location rooms.",
+          "codeRefs": [
+            "app/api/sync/ownership/route.ts",
+            "app/api/sync/staking/route.ts",
+            "app/api/sync/searing/route.ts",
+            "app/api/sync/eliza-location-rooms/route.ts"
+          ]
+        },
+        {
+          "step": 2,
+          "actor": "services",
+          "action": "Queries chain or external integration state and normalizes results."
+        },
+        {
+          "step": 3,
+          "actor": "supabase",
+          "action": "Stores refreshed materialized state for fast app reads."
+        },
+        {
+          "step": 4,
+          "actor": "visitor",
+          "action": "Sees current state in character, map, searing, spread, or Eliza room UI.",
+          "codeRefs": [
+            "app/characters/[tokenId]/page.tsx",
+            "app/map/page.tsx",
+            "app/searing/page.tsx"
+          ]
+        }
+      ],
+      "edgeCases": [
+        {
+          "condition": "External chain/API temporarily unavailable",
+          "behavior": "Sync route returns an error and callers can retry without changing UI contracts.",
+          "codeRefs": [
+            "app/api/sync/ownership/route.ts"
+          ]
+        },
+        {
+          "condition": "Partial sync result",
+          "behavior": "Subsystem routes scope updates to their domain to avoid corrupting unrelated state.",
+          "codeRefs": [
+            "app/api/sync/staking/route.ts",
+            "app/api/sync/searing/route.ts"
+          ]
+        }
+      ],
+      "relatedFlows": [
+        "map-staking",
+        "searing-concord",
+        "spread-infection-cure",
+        "location-room"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "auth-gates-owner-actions",
+      "from": "wallet-siwe-auth",
+      "to": "character-detail-edit",
+      "label": "SIWE session enables owner/admin editing and protected character APIs."
+    },
+    {
+      "id": "auth-gates-submissions",
+      "from": "wallet-siwe-auth",
+      "to": "lore-submission-create-revise",
+      "label": "Lore submission create/revise requires an authenticated wallet and ownership checks."
+    },
+    {
+      "id": "submissions-feed-public-lore",
+      "from": "admin-lore-submission-review",
+      "to": "lore-archive-effective-view",
+      "label": "Published/canonized submissions affect public lore archive and detail pages."
+    },
+    {
+      "id": "canonization-overlays-lore",
+      "from": "admin-lore-canonization",
+      "to": "lore-archive-effective-view",
+      "label": "Canonization overrides shape effective canon/community status."
+    },
+    {
+      "id": "map-links-characters",
+      "from": "map-explore",
+      "to": "character-detail-edit",
+      "label": "Map marker and sidebar selections can lead to character detail pages."
+    },
+    {
+      "id": "map-staking-sync",
+      "from": "map-staking",
+      "to": "background-sync",
+      "label": "Staking actions rely on sync endpoints to refresh materialized state."
+    },
+    {
+      "id": "location-room-eliza",
+      "from": "location-room",
+      "to": "eliza-character-chat",
+      "label": "Both use Eliza route auth and integration boundaries for AI-backed interactions."
+    },
+    {
+      "id": "searing-admin-map",
+      "from": "admin-searing-map",
+      "to": "searing-concord",
+      "label": "Concord-to-layer mappings maintained by admins drive searing previews."
+    },
+    {
+      "id": "spread-searing-state",
+      "from": "spread-infection-cure",
+      "to": "searing-concord",
+      "label": "Spread/cure/corpse actions intersect with character state shown in searing-related experiences."
+    },
+    {
+      "id": "home-to-features",
+      "from": "home-navigation",
+      "to": "character-browse",
+      "label": "Home navigation routes visitors into the core feature flows."
+    }
+  ]
+}
