@@ -33,8 +33,10 @@ export function CharacterCard({ character, onClick, onSearClick, showSearingLink
   const imageCandidates = imageDisclosure.candidates
   const [imageUrl, setImageUrl] = useState(() => imageDisclosure.primaryUrl)
 
-  // Extract data from metadata if available, otherwise use direct fields
-  const name = character.metadata?.name || character.name || `character #${character.token_id}`
+  // Prefer the DB column (editable, source of truth after renames) over the
+  // metadata snapshot (frozen at import time). This matches the detail page
+  // at app/characters/[tokenId]/page.tsx so the two views never disagree.
+  const name = character.name || character.metadata?.name || `character #${character.token_id}`
 
   useEffect(() => {
     setIsLoading(true)
@@ -149,7 +151,10 @@ export function CharacterCard({ character, onClick, onSearClick, showSearingLink
 
       {/* Character Info */}
       <CardContent className="p-4">
-        <h3 className="text-h4 font-display text-bone group-hover:text-soul-accent transition-colors duration-300 truncate lowercase">
+        <h3
+          title={name}
+          className="text-h4 font-display text-bone group-hover:text-soul-accent transition-colors duration-300 line-clamp-2 min-h-[2.5em] leading-tight lowercase"
+        >
           {name.toLowerCase()}
         </h3>
         {(characterClass || level) && (

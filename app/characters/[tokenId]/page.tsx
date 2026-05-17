@@ -74,6 +74,16 @@ export default function CharacterDetailPage() {
     setIsEditMode(false)
   }, [editor])
 
+  const handleBack = useCallback(() => {
+    // Prefer history-based back so filters/page/sort on /characters survive.
+    // Fall back to a clean push when this page was deep-linked from outside the site.
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+      return
+    }
+    router.push('/characters')
+  }, [router])
+
   const handleEditToggle = useCallback(() => {
     if (isEditMode) {
       handleCancelEdit()
@@ -128,7 +138,7 @@ export default function CharacterDetailPage() {
         isOwner={isOwner}
         isEditMode={isEditMode}
         isSaving={isSaving}
-        onBack={() => router.push('/characters')}
+        onBack={handleBack}
         onEdit={handleEditToggle}
         onSave={saveCharacter}
         onCancel={handleEditToggle}

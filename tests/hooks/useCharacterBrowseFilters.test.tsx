@@ -35,10 +35,11 @@ describe('character browse filter URL helpers', () => {
   it('parses initial URL filters with defaults', () => {
     expect(parseCharacterBrowseFilters(params())).toEqual({
       tab: 'all',
-      sort: 'desc',
+      sort: 'asc',
       page: 1,
       searchQuery: '',
       hasSheet: false,
+      hasElizaProfile: false,
       origin: null,
       alignment: null,
       the17: null,
@@ -47,12 +48,13 @@ describe('character browse filter URL helpers', () => {
       mask: null,
     });
 
-    expect(parseCharacterBrowseFilters(params('tab=owned&sort=asc&page=4&search=orc&hasSheet=true&origin=Warrior&alignment=Chaotic&the17=Luta&armor=Plate&back=Cloak&mask=Skull'))).toEqual({
+    expect(parseCharacterBrowseFilters(params('tab=owned&sort=desc&page=4&search=orc&hasSheet=true&origin=Warrior&alignment=Chaotic&the17=Luta&armor=Plate&back=Cloak&mask=Skull'))).toEqual({
       tab: 'owned',
-      sort: 'asc',
+      sort: 'desc',
       page: 4,
       searchQuery: 'orc',
       hasSheet: true,
+      hasElizaProfile: false,
       origin: 'Warrior',
       alignment: 'Chaotic',
       the17: 'Luta',
@@ -65,7 +67,7 @@ describe('character browse filter URL helpers', () => {
   it('omits default URL values and trims search', () => {
     expect(buildCharacterBrowsePath({
       tab: 'all',
-      sort: 'desc',
+      sort: 'asc',
       page: 1,
       search: '',
       hasSheet: false,
@@ -79,7 +81,7 @@ describe('character browse filter URL helpers', () => {
 
     expect(buildCharacterBrowsePath({
       tab: 'infected',
-      sort: 'asc',
+      sort: 'desc',
       page: 2,
       search: '  dread  ',
       hasSheet: true,
@@ -89,7 +91,7 @@ describe('character browse filter URL helpers', () => {
       armor: null,
       back: 'Wings',
       mask: null,
-    })).toBe('/characters?tab=infected&sort=asc&page=2&search=dread&hasSheet=true&origin=Feral&the17=Luta+the+Beacon&back=Wings');
+    })).toBe('/characters?tab=infected&sort=desc&page=2&search=dread&hasSheet=true&origin=Feral&the17=Luta+the+Beacon&back=Wings');
   });
 
   it('detects active filters beyond tab and sort', () => {
@@ -112,13 +114,23 @@ describe('useCharacterBrowseFilters', () => {
   });
 
   it('resets page to 1 when filters change', () => {
-    const { result, router } = setupHook('page=5&sort=asc&search=bone&armor=Mail');
+    const { result, router } = setupHook('page=5&search=bone&armor=Mail');
 
     act(() => {
       result.current.handlers.onOriginChange('Ghoul');
     });
 
-    expect(router.push).toHaveBeenCalledWith('/characters?sort=asc&search=bone&origin=Ghoul&armor=Mail');
+    expect(router.push).toHaveBeenCalledWith('/characters?search=bone&origin=Ghoul&armor=Mail');
+  });
+
+  it('preserves a non-default sort when filters change', () => {
+    const { result, router } = setupHook('page=5&sort=desc&search=bone&armor=Mail');
+
+    act(() => {
+      result.current.handlers.onOriginChange('Ghoul');
+    });
+
+    expect(router.push).toHaveBeenCalledWith('/characters?sort=desc&search=bone&origin=Ghoul&armor=Mail');
   });
 
   it('updates page without resetting filters and scrolls to top', () => {
@@ -146,7 +158,7 @@ describe('useCharacterBrowseFilters', () => {
     expect(router.push).not.toHaveBeenCalled();
 
     rerender({
-      searchParams: params('tab=infected&sort=asc&page=6&search=old&origin=New&mask=Skull'),
+      searchParams: params('tab=infected&page=6&search=old&origin=New&mask=Skull'),
       wallet: undefined,
     });
 
@@ -155,7 +167,7 @@ describe('useCharacterBrowseFilters', () => {
     });
 
     expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith('/characters?tab=infected&sort=asc&search=new&origin=New&mask=Skull');
+    expect(router.push).toHaveBeenCalledWith('/characters?tab=infected&search=new&origin=New&mask=Skull');
   });
 
   it('clear all resets tab, sort, filters, search, and page defaults', () => {

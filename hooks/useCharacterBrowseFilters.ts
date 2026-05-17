@@ -66,7 +66,7 @@ interface UseCharacterBrowseFiltersOptions {
 }
 
 const DEFAULT_TAB: CharacterFilterTab = 'all'
-const DEFAULT_SORT: SortOrder = 'desc'
+const DEFAULT_SORT: SortOrder = 'asc'
 
 export function parseCharacterBrowseFilters(searchParams: SearchParamsReader): CharacterBrowseFilters {
   return {
