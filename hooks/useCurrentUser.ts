@@ -6,6 +6,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { UserSession } from '@/types/wallet'
 
 interface UseCurrentUserReturn {
@@ -33,11 +34,10 @@ export function useCurrentUser(): UseCurrentUserReturn {
         return
       }
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user: ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      const data = await readApiRaw<UserSession>(
+        response,
+        `Failed to fetch user: ${response.statusText}`
+      )
       setUser(data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'))

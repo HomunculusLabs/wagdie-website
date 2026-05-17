@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { Character } from '@/types/character'
 
 type SortOrder = 'asc' | 'desc'
@@ -68,18 +69,7 @@ async function fetchCharacters(
     cache: 'no-store',
   })
 
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`
-    try {
-      const text = await res.text()
-      if (text) message = text
-    } catch {
-      // ignore body parse failures
-    }
-    throw new Error(message)
-  }
-
-  const json = (await res.json()) as unknown
+  const json = await readApiRaw<unknown>(res, `Request failed (${res.status})`)
   return coerceCharacters(json)
 }
 

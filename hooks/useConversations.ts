@@ -6,7 +6,8 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import type { Conversation, ConversationDetail, ChatMessage, ErrorResponse } from '@/types/eliza'
+import { readApiRaw } from '@/lib/api/client-response'
+import type { Conversation, ConversationDetail, ChatMessage } from '@/types/eliza'
 
 interface ConversationsListResponse {
   conversations: Conversation[]
@@ -105,13 +106,10 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
       const response = await fetch(`/api/eliza/conversations?${params}`, {
         credentials: 'include',
       })
-      const data: ConversationsListResponse | ErrorResponse = await response.json()
-
-      if (!response.ok) {
-        throw new Error((data as ErrorResponse).message || 'Failed to fetch conversations')
-      }
-
-      const result = data as ConversationsListResponse
+      const result = await readApiRaw<ConversationsListResponse>(
+        response,
+        'Failed to fetch conversations'
+      )
 
       if (reset) {
         setConversations(result.conversations)
@@ -148,13 +146,10 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
       const response = await fetch(`/api/eliza/conversations/${conversationId}`, {
         credentials: 'include',
       })
-      const data: ConversationDetail | ErrorResponse = await response.json()
-
-      if (!response.ok) {
-        throw new Error((data as ErrorResponse).message || 'Failed to fetch conversation')
-      }
-
-      const conversation = data as ConversationDetail
+      const conversation = await readApiRaw<ConversationDetail>(
+        response,
+        'Failed to fetch conversation'
+      )
       setActiveConversation(conversation)
 
       // Track oldest message for pagination
@@ -187,10 +182,7 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
         credentials: 'include',
       })
 
-      if (!response.ok) {
-        const data: ErrorResponse = await response.json()
-        throw new Error(data.message || 'Failed to delete conversation')
-      }
+      await readApiRaw<{ success: boolean }>(response, 'Failed to delete conversation')
 
       // Remove from list
       setConversations((prev) => prev.filter((c) => c.id !== conversationId))
@@ -230,13 +222,10 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
         `/api/eliza/conversations/${activeConversation.id}?${params}`,
         { credentials: 'include' }
       )
-      const data: ConversationDetail | ErrorResponse = await response.json()
-
-      if (!response.ok) {
-        throw new Error((data as ErrorResponse).message || 'Failed to load more messages')
-      }
-
-      const result = data as ConversationDetail
+      const result = await readApiRaw<ConversationDetail>(
+        response,
+        'Failed to load more messages'
+      )
 
       // Prepend older messages
       setActiveConversation((prev) => {

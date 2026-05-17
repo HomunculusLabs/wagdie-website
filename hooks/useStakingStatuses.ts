@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { readApiRaw } from '@/lib/api/client-response'
 import { parseChainLocationId } from '@/lib/utils/chainIds'
 import { ContractErrorType, type ContractError, type StakingStatus } from '@/types/blockchain'
 
@@ -104,12 +105,7 @@ async function fetchStakingStatusFromApi(
     cache: 'no-store',
   })
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => 'Request failed')
-    throw new Error(text || `Request failed (${response.status})`)
-  }
-
-  return (await response.json()) as ApiResponse
+  return readApiRaw<ApiResponse>(response, `Request failed (${response.status})`)
 }
 
 export function useStakingStatuses(

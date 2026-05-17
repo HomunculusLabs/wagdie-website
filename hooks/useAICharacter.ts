@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { AICharacter, UpdateAICharacterInput, ElizaCharacterExport } from '@/types/eliza'
 
 interface ImportResult {
@@ -61,12 +62,7 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
         return
       }
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to fetch AI character')
-      }
-
-      const data: AICharacter = await response.json()
+      const data = await readApiRaw<AICharacter>(response, 'Failed to fetch AI character')
       setAICharacter(data)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch AI character'
@@ -95,12 +91,7 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
         body: JSON.stringify(data),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to save AI character')
-      }
-
-      const updated: AICharacter = await response.json()
+      const updated = await readApiRaw<AICharacter>(response, 'Failed to save AI character')
       setAICharacter(updated)
       return true
     } catch (err) {
@@ -123,8 +114,7 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to export character')
+        await readApiRaw<never>(response, 'Failed to export character')
       }
 
       // Get filename from Content-Disposition header
@@ -167,12 +157,7 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
         body: JSON.stringify(data),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to import character')
-      }
-
-      const result: ImportResult = await response.json()
+      const result = await readApiRaw<ImportResult>(response, 'Failed to import character')
 
       // Refresh character data after import
       await fetchAICharacter()

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmissionDetailDto } from '@/types/lore-submission';
 import type { LoreSubmissionAdminReferenceOptions } from './types';
 
@@ -80,22 +80,19 @@ export function LoreSubmissionCurationForm({ detail, referenceOptions, onUpdated
     }
 
     try {
-      const response = await fetch(`/api/admin/lore/submissions/${encodeURIComponent(submission.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          curatedTitle: emptyToNull(curatedTitle),
-          curatedSummary: emptyToNull(curatedSummary),
-          curatedBodyMarkdown: emptyToNull(curatedBodyMarkdown),
-          curatedTags: splitValues(curatedTagsText).length > 0 ? splitValues(curatedTagsText) : null,
-          seasonId: emptyToNull(seasonId),
-          characterIds: splitValues(characterIdsText),
-          locationIds: splitValues(locationIdsText),
-          canonNote: emptyToNull(canonNote),
-          canonPath,
-        }),
+      const updated = await apiClient.patchEnvelope<LoreSubmissionDetailDto>(`/api/admin/lore/submissions/${encodeURIComponent(submission.id)}`, {
+        curatedTitle: emptyToNull(curatedTitle),
+        curatedSummary: emptyToNull(curatedSummary),
+        curatedBodyMarkdown: emptyToNull(curatedBodyMarkdown),
+        curatedTags: splitValues(curatedTagsText).length > 0 ? splitValues(curatedTagsText) : null,
+        seasonId: emptyToNull(seasonId),
+        characterIds: splitValues(characterIdsText),
+        locationIds: splitValues(locationIdsText),
+        canonNote: emptyToNull(canonNote),
+        canonPath,
+      }, {
+        fallbackMessage: 'Failed to save curation',
       });
-      const updated = await readApiData<LoreSubmissionDetailDto>(response, 'Failed to save curation');
       onUpdated(updated);
       setSaved(true);
     } catch (saveError) {

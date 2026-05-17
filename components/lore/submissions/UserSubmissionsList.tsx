@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmissionListItemDto } from '@/types/lore-submission';
 import { SubmissionStatusBadge } from './SubmissionStatusBadge';
 
@@ -31,8 +31,10 @@ export function UserSubmissionsList() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/lore/submissions', { cache: 'no-store' });
-        const data = await readApiData<{ submissions: LoreSubmissionListItemDto[] }>(response, 'Failed to load submissions');
+        const data = await apiClient.getEnvelope<{ submissions: LoreSubmissionListItemDto[] }>('/api/lore/submissions', {
+          cache: 'no-store',
+          fallbackMessage: 'Failed to load submissions',
+        });
         if (mounted) setSubmissions(data.submissions);
       } catch (loadError) {
         if (mounted) setError(loadError instanceof Error ? loadError.message : 'Failed to load submissions');

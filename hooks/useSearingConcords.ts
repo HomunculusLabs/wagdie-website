@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { readApiRaw } from '@/lib/api/client-response';
 import type { ConcordSearingMap } from '@/lib/domain/searing/concord-searing-map';
 import type { SearingConcordBalance } from '@/lib/services/blockchain/searing';
 
@@ -141,11 +142,10 @@ async function fetchIndexedConcordBalances(
   const response = await fetch(`/api/concords/owned?${params.toString()}`, {
     cache: 'no-store',
   });
-  const payload = await response.json() as OwnedConcordBalancesApiResponse;
-
-  if (!response.ok) {
-    throw new Error(payload.error || 'Failed to fetch owned Concord balances');
-  }
+  const payload = await readApiRaw<OwnedConcordBalancesApiResponse>(
+    response,
+    'Failed to fetch owned Concord balances'
+  );
 
   return (payload.balances ?? []).map((balance) => ({
     concordId: balance.concordId,
@@ -187,11 +187,10 @@ export function useSearingConcords({
         cache: 'no-store',
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch Concord searing map');
-      }
-
-      const payload = await response.json() as SearingMapApiResponse;
+      const payload = await readApiRaw<SearingMapApiResponse>(
+        response,
+        'Failed to fetch Concord searing map'
+      );
       const searingMap = normalizeSearableMapEntries(getConcordEntries(payload));
       const concordIds = searingMap.map((entry) => entry.concordTokenId);
       const balances = walletAddress

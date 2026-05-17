@@ -23,6 +23,7 @@ const showLoreNav = process.env.NEXT_PUBLIC_SHOW_LORE_NAV === 'true';
 const VIDEO_CONSENT_COOKIE = 'wagdie_video_consent';
 const VIDEO_CONSENT_MAX_AGE = 60 * 60 * 24 * 365;
 const DISCORD_URL = process.env.NEXT_PUBLIC_DISCORD_URL || 'https://discord.gg/wagdie';
+const WIKI_URL = 'https://wiki.fateofwagdie.com';
 
 type VideoConsent = 'granted' | 'denied' | null;
 
@@ -333,12 +334,9 @@ export default function HomePage() {
               Open the World Map
             </CtaLink>
           </div>
-          <Link
-            href="/videos"
-            className="mt-6 text-sm text-neutral-500 hover:text-soul-accent font-eskapade underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-soul-accent"
-          >
-            Watch the low poly chronicles instead
-          </Link>
+          <CtaLink href="/videos" variant="secondary" className="mt-6 h-11 px-6 text-sm">
+            Watch the Low Poly Chronicles
+          </CtaLink>
         </div>
       </section>
 
@@ -388,24 +386,31 @@ export default function HomePage() {
             href="/videos"
             cta="Watch /videos"
           />
-          {showLoreNav ? (
+          {showLoreNav && (
             <FeatureCard
               title="Lore Archive"
-              description="Read canon, submissions, and world records only when lore navigation is enabled for this environment."
+              description="Read canon, submissions, and world records when lore navigation is enabled for this environment."
               imageSrc="/images/story-3.png"
               href="/lore"
               cta="Read /lore"
             />
-          ) : (
-            <FeatureCard
-              title="Community Discord"
-              description="When lore is hidden, join the verified Discord invite to follow announcements and community decisions."
-              imageSrc="/images/community-1.png"
-              href={DISCORD_URL}
-              cta="Join Discord"
-              isExternal
-            />
           )}
+          <FeatureCard
+            title="WAGDIE Wiki"
+            description="Use the wiki as the public reference for world details, mechanics, and lore."
+            imageSrc="/images/story-3.png"
+            href={WIKI_URL}
+            cta="Open the wiki"
+            isExternal
+          />
+          <FeatureCard
+            title="Community Discord"
+            description="Join the verified Discord invite to follow announcements, community decisions, and development updates."
+            imageSrc="/images/community-1.png"
+            href={DISCORD_URL}
+            cta="Join Discord"
+            isExternal
+          />
         </Section>
 
         <Separator className="my-16" />

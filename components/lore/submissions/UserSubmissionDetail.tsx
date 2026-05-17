@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { MarkdownPreview } from './MarkdownPreview';
 import { useAuth } from '@/hooks/useAuth';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmissionDetailDto } from '@/types/lore-submission';
 import { LoreSubmissionForm, linksToEditableLinks } from './LoreSubmissionForm';
 import { SubmissionStatusBadge } from './SubmissionStatusBadge';
@@ -41,8 +41,10 @@ export function UserSubmissionDetail({ submissionId }: UserSubmissionDetailProps
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/lore/submissions/${encodeURIComponent(submissionId)}`, { cache: 'no-store' });
-        const data = await readApiData<LoreSubmissionDetailDto>(response, 'Failed to load submission');
+        const data = await apiClient.getEnvelope<LoreSubmissionDetailDto>(`/api/lore/submissions/${encodeURIComponent(submissionId)}`, {
+          cache: 'no-store',
+          fallbackMessage: 'Failed to load submission',
+        });
         if (mounted) setDetail(data);
       } catch (loadError) {
         if (mounted) setError(loadError instanceof Error ? loadError.message : 'Failed to load submission');

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useOwnedCharacters } from '@/hooks/useOwnedCharacters';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreLocation } from '@/lib/lore/types';
 import type { LoreSubmissionDetailDto, LoreSubmissionLink } from '@/types/lore-submission';
 import { MarkdownEditor } from './MarkdownEditor';
@@ -121,24 +121,19 @@ export function LoreSubmissionForm({
       const endpoint = mode === 'revise'
         ? `/api/lore/submissions/${encodeURIComponent(submissionId ?? '')}`
         : '/api/lore/submissions';
-      const response = await fetch(endpoint, {
-        method: mode === 'revise' ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tokenId: tokenId.trim(),
-          title: title.trim(),
-          summary: summary.trim(),
-          bodyMarkdown,
-          tags: tagsFromText(tagsText),
-          locationIds: locationId ? [locationId] : [],
-          links: cleanLinks(links),
-        }),
-      });
-
-      const detail = await readApiData<LoreSubmissionDetailDto>(
-        response,
-        mode === 'revise' ? 'Failed to revise lore submission' : 'Failed to create lore submission',
-      );
+      const body = {
+        tokenId: tokenId.trim(),
+        title: title.trim(),
+        summary: summary.trim(),
+        bodyMarkdown,
+        tags: tagsFromText(tagsText),
+        locationIds: locationId ? [locationId] : [],
+        links: cleanLinks(links),
+      };
+      const fallbackMessage = mode === 'revise' ? 'Failed to revise lore submission' : 'Failed to create lore submission';
+      const detail = mode === 'revise'
+        ? await apiClient.patchEnvelope<LoreSubmissionDetailDto>(endpoint, body, { fallbackMessage })
+        : await apiClient.postEnvelope<LoreSubmissionDetailDto>(endpoint, body, { fallbackMessage });
 
       setSuccessMessage(mode === 'revise'
         ? 'Changes republished as community lore.'

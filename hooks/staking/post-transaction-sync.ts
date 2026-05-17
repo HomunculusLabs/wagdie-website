@@ -1,3 +1,4 @@
+import { ApiError, readApiRaw } from '@/lib/api/client-response'
 import { logError as defaultLogError } from '@/lib/utils/errors'
 import { showErrorToast } from '@/lib/utils/toast'
 
@@ -33,6 +34,12 @@ const showDefaultDelayedSyncToast = () => {
     'Staking Sync Delayed',
     'Transaction confirmed, but map data is still syncing.'
   )
+}
+
+function coerceSyncStakingApiResponse(value: unknown): SyncStakingApiResponse | null {
+  return value && typeof value === 'object'
+    ? value as SyncStakingApiResponse
+    : null
 }
 
 export function buildSyncFailureMessage(params: {
@@ -91,16 +98,29 @@ export async function syncStakingStateToDb(params: {
     let payload: SyncStakingApiResponse | null = null
     let parseMessage: string | null = null
     try {
-      payload = (await response.json()) as SyncStakingApiResponse
-    } catch (parseError) {
-      payload = null
-      parseMessage = parseError instanceof Error ? parseError.message : String(parseError)
-      warn('[useStaking] Failed to parse /api/sync/staking JSON:', {
-        tokenId,
-        action,
-        status: response.status,
-        parseError: parseMessage,
-      })
+      payload = await readApiRaw<SyncStakingApiResponse>(
+        response,
+        `Request failed (${response.status})`
+      )
+    } catch (readError) {
+      if (readError instanceof ApiError) {
+        payload = coerceSyncStakingApiResponse(readError.data)
+        if (payload === null) {
+          parseMessage = readError.message
+        }
+      } else {
+        payload = null
+        parseMessage = readError instanceof Error ? readError.message : String(readError)
+      }
+
+      if (payload === null && parseMessage) {
+        warn('[useStaking] Failed to parse /api/sync/staking JSON:', {
+          tokenId,
+          action,
+          status: response.status,
+          parseError: parseMessage,
+        })
+      }
     }
 
     const results = Array.isArray(payload?.results) ? payload!.results : []

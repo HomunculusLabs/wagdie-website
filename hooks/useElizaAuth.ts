@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAccount, useSignMessage } from 'wagmi'
+import { ApiError, readApiRaw } from '@/lib/api/client-response'
 import type { TokenResponse, ElizaAuthNonceResponse } from '@/types/eliza'
 
 interface UseElizaAuthReturn {
@@ -27,6 +28,15 @@ interface UseElizaAuthReturn {
 
 // Token refresh buffer (5 minutes before expiry)
 const REFRESH_BUFFER_MS = 5 * 60 * 1000
+
+function getErrorCode(data: unknown): string | undefined {
+  if (typeof data !== 'object' || data === null || !('error' in data)) {
+    return undefined
+  }
+
+  const code = (data as { error?: unknown }).error
+  return typeof code === 'string' ? code : undefined
+}
 
 export function useElizaAuth(): UseElizaAuthReturn {
   const { address, isConnected } = useAccount()
@@ -99,85 +109,78 @@ export function useElizaAuth(): UseElizaAuthReturn {
         credentials: 'include',
       })
 
-      if (statusResponse.ok) {
+      try {
         // Token exists and is valid
-        const data: TokenResponse = await statusResponse.json()
+        const data = await readApiRaw<TokenResponse>(statusResponse, 'Authentication failed')
         setAccessToken(data.accessToken)
         const newExpiry = new Date(data.expiresAt).getTime()
         setExpiresAt(newExpiry)
         setAuthStep('complete')
         scheduleRefresh(newExpiry, getToken)
         return data.accessToken
+      } catch (statusError) {
+        const shouldStartSiwe = statusError instanceof ApiError
+          && statusError.status === 401
+          && ['NO_TOKEN', 'TOKEN_EXPIRED'].includes(getErrorCode(statusError.data) ?? '')
+
+        if (!shouldStartSiwe) {
+          throw statusError
+        }
       }
 
       // Token missing or expired - need to do full SIWE flow
-      const errorData = await statusResponse.json().catch(() => ({}))
-      const errorCode = errorData.error as string | undefined
-
       // If token exists but expired or no token, proceed with SIWE
-      if (
-        statusResponse.status === 401 &&
-        (errorCode === 'NO_TOKEN' || errorCode === 'TOKEN_EXPIRED')
-      ) {
-        // Step 2: Request nonce from Eliza
-        setAuthStep('nonce')
-        const nonceResponse = await fetch('/api/eliza/auth/nonce', {
-          method: 'POST',
-          credentials: 'include',
-        })
+      // Step 2: Request nonce from Eliza
+      setAuthStep('nonce')
+      const nonceResponse = await fetch('/api/eliza/auth/nonce', {
+        method: 'POST',
+        credentials: 'include',
+      })
 
-        if (!nonceResponse.ok) {
-          const nonceError = await nonceResponse.json().catch(() => ({}))
-          throw new Error(nonceError.message || 'Failed to get nonce from Eliza')
-        }
+      const nonceData = await readApiRaw<ElizaAuthNonceResponse>(
+        nonceResponse,
+        'Failed to get nonce from Eliza'
+      )
 
-        const nonceData: ElizaAuthNonceResponse = await nonceResponse.json()
-
-        // Step 3: Sign the SIWE message with wallet
-        setAuthStep('signing')
-        let signature: string
-        try {
-          signature = await signMessageAsync({ message: nonceData.message })
-        } catch (signError) {
-          // Handle user rejection or wallet errors explicitly
-          if (signError instanceof Error) {
-            if (
-              signError.message.includes('rejected') ||
-              signError.message.includes('denied') ||
-              signError.message.includes('cancelled')
-            ) {
-              throw new Error('Signature request was rejected by user')
-            }
-            throw new Error(`Wallet signing failed: ${signError.message}`)
+      // Step 3: Sign the SIWE message with wallet
+      setAuthStep('signing')
+      let signature: string
+      try {
+        signature = await signMessageAsync({ message: nonceData.message })
+      } catch (signError) {
+        // Handle user rejection or wallet errors explicitly
+        if (signError instanceof Error) {
+          if (
+            signError.message.includes('rejected') ||
+            signError.message.includes('denied') ||
+            signError.message.includes('cancelled')
+          ) {
+            throw new Error('Signature request was rejected by user')
           }
-          throw new Error('Wallet signing failed')
+          throw new Error(`Wallet signing failed: ${signError.message}`)
         }
-
-        // Step 4: Verify signature with Eliza
-        setAuthStep('verifying')
-        const verifyResponse = await fetch('/api/eliza/auth/verify', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ signature }),
-        })
-
-        if (!verifyResponse.ok) {
-          const verifyError = await verifyResponse.json().catch(() => ({}))
-          throw new Error(verifyError.message || 'Eliza verification failed')
-        }
-
-        const verifyData: TokenResponse = await verifyResponse.json()
-        setAccessToken(verifyData.accessToken)
-        const newExpiry = new Date(verifyData.expiresAt).getTime()
-        setExpiresAt(newExpiry)
-        setAuthStep('complete')
-        scheduleRefresh(newExpiry, getToken)
-        return verifyData.accessToken
+        throw new Error('Wallet signing failed')
       }
 
-      // Some other error
-      throw new Error(errorData.message || 'Authentication failed')
+      // Step 4: Verify signature with Eliza
+      setAuthStep('verifying')
+      const verifyResponse = await fetch('/api/eliza/auth/verify', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature }),
+      })
+
+      const verifyData = await readApiRaw<TokenResponse>(
+        verifyResponse,
+        'Eliza verification failed'
+      )
+      setAccessToken(verifyData.accessToken)
+      const newExpiry = new Date(verifyData.expiresAt).getTime()
+      setExpiresAt(newExpiry)
+      setAuthStep('complete')
+      scheduleRefresh(newExpiry, getToken)
+      return verifyData.accessToken
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Authentication failed'
       setError(message)

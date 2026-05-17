@@ -6,6 +6,7 @@
  */
 
 import { useCallback } from 'react'
+import { apiClient } from '@/lib/api/client'
 import type { Location, CreateLocationInput, UpdateLocationInput } from '@/lib/types/map'
 
 export interface UseLocationApiReturn {
@@ -19,77 +20,39 @@ export interface UseLocationApiReturn {
 
 export function useLocationApi(): UseLocationApiReturn {
   const getAll = useCallback(async (): Promise<Location[]> => {
-    const response = await fetch('/api/locations', {
+    return apiClient.getEnvelope<Location[]>('/api/locations', {
       credentials: 'include',
+      fallbackMessage: 'Failed to fetch locations',
     })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to fetch locations')
-    }
-
-    const { data } = await response.json()
-    return data
   }, [])
 
   const getById = useCallback(async (id: string): Promise<Location> => {
-    const response = await fetch(`/api/locations/${encodeURIComponent(id)}`, {
+    return apiClient.getEnvelope<Location>(`/api/locations/${encodeURIComponent(id)}`, {
       credentials: 'include',
+      fallbackMessage: 'Failed to fetch location',
     })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to fetch location')
-    }
-
-    const { data } = await response.json()
-    return data
   }, [])
 
   const create = useCallback(async (input: CreateLocationInput): Promise<Location> => {
-    const response = await fetch('/api/locations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    return apiClient.postEnvelope<Location>('/api/locations', input, {
       credentials: 'include',
-      body: JSON.stringify(input),
+      fallbackMessage: 'Failed to create location',
     })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to create location')
-    }
-
-    const { data } = await response.json()
-    return data
   }, [])
 
   const update = useCallback(async (id: string, input: UpdateLocationInput): Promise<Location> => {
-    const response = await fetch(`/api/locations/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+    return apiClient.patchEnvelope<Location>(`/api/locations/${encodeURIComponent(id)}`, input, {
       credentials: 'include',
-      body: JSON.stringify(input),
+      fallbackMessage: 'Failed to update location',
     })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to update location')
-    }
-
-    const { data } = await response.json()
-    return data
   }, [])
 
   const remove = useCallback(async (id: string): Promise<void> => {
-    const response = await fetch(`/api/locations/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
+    await apiClient.deleteEnvelope<void>(`/api/locations/${encodeURIComponent(id)}`, {
       credentials: 'include',
+      fallbackMessage: 'Failed to delete location',
+      requireData: false,
     })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to delete location')
-    }
   }, [])
 
   const checkStakedCharacters = useCallback(async (id: string): Promise<number> => {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmissionDetailDto } from '@/types/lore-submission';
 
 type PublishAction = 'canonize' | 'decanonize' | 'unpublish';
@@ -28,12 +28,11 @@ export function LoreSubmissionPublishControls({ detail, onUpdated }: LoreSubmiss
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/lore/submissions/${encodeURIComponent(detail.submission.id)}/${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: note.trim() || undefined }),
+      const updated = await apiClient.postEnvelope<LoreSubmissionDetailDto>(`/api/admin/lore/submissions/${encodeURIComponent(detail.submission.id)}/${action}`, {
+        note: note.trim() || undefined,
+      }, {
+        fallbackMessage: `Failed to ${labels[action].toLowerCase()}`,
       });
-      const updated = await readApiData<LoreSubmissionDetailDto>(response, `Failed to ${labels[action].toLowerCase()}`);
       setNote('');
       onUpdated(updated);
     } catch (actionError) {

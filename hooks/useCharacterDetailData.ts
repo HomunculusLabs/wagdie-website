@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { Dispatch, SetStateAction } from 'react'
 import type { Character } from '@/types/character'
 
@@ -20,8 +21,7 @@ export function useCharacterDetailData(tokenId: number): UseCharacterDetailDataR
     try {
       setIsLoading(true)
       const response = await fetch(`/api/characters/${tokenId}`, { cache: 'no-store' })
-      if (!response.ok) throw new Error('Failed to fetch character')
-      setCharacter(await response.json())
+      setCharacter(await readApiRaw<Character>(response, 'Failed to fetch character'))
     } catch (error) {
       console.error('Error fetching character:', error)
       toast.error('Failed to load character')

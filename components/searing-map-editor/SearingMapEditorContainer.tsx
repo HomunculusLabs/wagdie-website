@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { ConcordSearingMap, ConcordSearingVariantKey } from '@/lib/domain/searing'
 import { CONCORD_SEARING_VARIANT_KEYS } from '@/lib/domain/searing'
 
@@ -131,8 +132,7 @@ export function SearingMapEditorContainer() {
 
     try {
       const response = await fetch('/api/concords/searing-map?limit=2000', { cache: 'no-store' })
-      const payload = await response.json() as SearingMapResponse
-      if (!response.ok) throw new Error(payload.error || 'Failed to load searing map')
+      const payload = await readApiRaw<SearingMapResponse>(response, 'Failed to load searing map')
       setEntries(payload.searingMap ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load searing map')
@@ -190,8 +190,7 @@ export function SearingMapEditorContainer() {
           body: JSON.stringify(payload),
         }
       )
-      const result = await response.json() as SearingMapResponse
-      if (!response.ok) throw new Error(result.error || 'Failed to save searing map')
+      await readApiRaw<SearingMapResponse>(response, 'Failed to save searing map')
 
       await loadEntries()
       setSelectedId(concordTokenId)
@@ -216,8 +215,7 @@ export function SearingMapEditorContainer() {
       const response = await fetch(`/api/concords/searing-map/${selectedEntry.concordTokenId}`, {
         method: 'DELETE',
       })
-      const result = await response.json() as { error?: string }
-      if (!response.ok) throw new Error(result.error || 'Failed to delete searing map')
+      await readApiRaw<{ message?: string }>(response, 'Failed to delete searing map')
 
       startNew()
       await loadEntries()

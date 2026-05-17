@@ -45,6 +45,8 @@ const makeDetail = (status: LoreSubmissionStatus): LoreSubmissionDetailDto => ({
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
   status,
+  statusText: status >= 200 && status < 300 ? 'OK' : 'Error',
+  headers: new Headers({ 'content-type': 'application/json' }),
   json: jest.fn().mockResolvedValue(body),
 }) as unknown as Response;
 
@@ -66,7 +68,7 @@ describe('LoreSubmissionPublishControls', () => {
     fireEvent.click(screen.getByRole('button', { name: /^canonize$/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    expect(fetchMock).toHaveBeenCalledWith('/api/admin/lore/submissions/sub-1/canonize', expect.objectContaining({
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost/api/admin/lore/submissions/sub-1/canonize', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ note: 'Accepted into canon.' }),
     }));

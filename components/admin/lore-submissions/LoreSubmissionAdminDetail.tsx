@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Spinner } from '@/components/ui/Spinner';
 import { MarkdownPreview } from '@/components/lore/submissions/MarkdownPreview';
 import { SubmissionStatusBadge } from '@/components/lore/submissions/SubmissionStatusBadge';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmissionDetailDto } from '@/types/lore-submission';
 import { LoreSubmissionCurationForm } from './LoreSubmissionCurationForm';
 import { LoreSubmissionPublishControls } from './LoreSubmissionPublishControls';
@@ -48,8 +48,10 @@ export function LoreSubmissionAdminDetail({ submissionId, referenceOptions }: Lo
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/admin/lore/submissions/${encodeURIComponent(submissionId)}`, { cache: 'no-store' });
-        const data = await readApiData<LoreSubmissionDetailDto>(response, 'Failed to load lore submission');
+        const data = await apiClient.getEnvelope<LoreSubmissionDetailDto>(`/api/admin/lore/submissions/${encodeURIComponent(submissionId)}`, {
+          cache: 'no-store',
+          fallbackMessage: 'Failed to load lore submission',
+        });
         if (mounted) setDetail(data);
       } catch (loadError) {
         if (mounted) setError(loadError instanceof Error ? loadError.message : 'Failed to load lore submission');

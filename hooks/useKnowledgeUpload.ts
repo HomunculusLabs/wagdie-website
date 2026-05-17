@@ -6,6 +6,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { KnowledgeDocument } from '@/types/eliza'
 
 interface UseKnowledgeUploadReturn {
@@ -48,12 +49,7 @@ export function useKnowledgeUpload(tokenId: string): UseKnowledgeUploadReturn {
           body: formData,
         })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Failed to upload document')
-        }
-
-        const newDoc: KnowledgeDocument = await response.json()
+        const newDoc = await readApiRaw<KnowledgeDocument>(response, 'Failed to upload document')
         setDocuments((prev) => [...prev, newDoc])
         return newDoc
       } catch (err) {
@@ -82,10 +78,10 @@ export function useKnowledgeUpload(tokenId: string): UseKnowledgeUploadReturn {
           }
         )
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Failed to delete document')
-        }
+        await readApiRaw<{ success: boolean; message?: string }>(
+          response,
+          'Failed to delete document'
+        )
 
         setDocuments((prev) => prev.filter((doc) => doc.id !== documentId))
         return true

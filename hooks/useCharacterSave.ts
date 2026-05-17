@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
+import { ApiError, readApiRaw } from '@/lib/api/client-response'
 import { buildCharacterUpdateDiff } from '@/lib/domain/character/update-diff'
 import type { Dispatch, SetStateAction } from 'react'
 import type { Character } from '@/types/character'
@@ -19,6 +20,26 @@ interface UseCharacterSaveInput {
 interface UseCharacterSaveReturn {
   isSaving: boolean
   saveCharacter: () => Promise<void>
+}
+
+function getCharacterSaveErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const data = error.data
+    if (data && typeof data === 'object') {
+      const errorData = data as { error?: unknown; details?: unknown }
+      if (Array.isArray(errorData.details)) {
+        const details = errorData.details.filter((detail): detail is string => typeof detail === 'string')
+        if (details.length > 0) {
+          const prefix = typeof errorData.error === 'string' && errorData.error.length > 0
+            ? errorData.error
+            : error.message
+          return `${prefix}: ${details.join(', ')}`
+        }
+      }
+    }
+  }
+
+  return error instanceof Error ? error.message : 'Failed to save'
 }
 
 export function useCharacterSave({
@@ -51,19 +72,11 @@ export function useCharacterSave({
         body: JSON.stringify(updates),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        if (errorData.details && Array.isArray(errorData.details)) {
-          throw new Error(`${errorData.error}: ${errorData.details.join(', ')}`)
-        }
-        throw new Error(errorData.error || 'Failed to update')
-      }
-
-      setCharacter(await response.json())
+      setCharacter(await readApiRaw<Character>(response, 'Failed to update'))
       onSaved()
       toast.success('Character updated!')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save')
+      toast.error(getCharacterSaveErrorMessage(error))
     } finally {
       setIsSaving(false)
     }

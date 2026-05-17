@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { readApiRaw } from '@/lib/api/client-response'
 import type { Address } from '@/types/blockchain'
 
 /** Default number of blocks to scan for transaction history (used for display) */
@@ -111,12 +112,7 @@ export function useCharacterTxHistory(
 
       const response = await fetch(`/api/characters/${tokenIdNumber}/events?limit=100`)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `API error: ${response.status}`)
-      }
-
-      const data: ApiResponse = await response.json()
+      const data = await readApiRaw<ApiResponse>(response, `API error: ${response.status}`)
 
       const mappedItems = data.events.map(mapApiEventToItem)
 

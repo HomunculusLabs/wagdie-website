@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmission, LoreSubmissionStatus } from '@/types/lore-submission';
 import { loreSubmissionStatuses } from '@/types/lore-submission';
 import { SubmissionStatusBadge } from '@/components/lore/submissions/SubmissionStatusBadge';
@@ -55,12 +55,16 @@ export function LoreSubmissionsAdminQueue() {
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ page: String(page), perPage: '25' });
-        if (status !== 'all') params.set('status', status);
-        if (query.trim()) params.set('query', query.trim());
-
-        const response = await fetch(`/api/admin/lore/submissions?${params.toString()}`, { cache: 'no-store' });
-        const data = await readApiData<AdminListResponse>(response, 'Failed to load lore submission queue');
+        const data = await apiClient.getEnvelope<AdminListResponse>('/api/admin/lore/submissions', {
+          cache: 'no-store',
+          fallbackMessage: 'Failed to load lore submission queue',
+          params: {
+            page,
+            perPage: 25,
+            status: status === 'all' ? undefined : status,
+            query: query.trim() || undefined,
+          },
+        });
         if (mounted) setResult(data);
       } catch (loadError) {
         if (mounted) setError(loadError instanceof Error ? loadError.message : 'Failed to load lore submission queue');

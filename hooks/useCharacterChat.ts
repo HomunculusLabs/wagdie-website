@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { ApiError, readApiRaw } from '@/lib/api/client-response'
 import type { ChatMessage } from '@/types/eliza'
 
 interface ChatErrorPayload {
@@ -21,6 +22,14 @@ class CharacterChatError extends Error {
     this.name = 'CharacterChatError'
     this.code = payload.code || payload.error || 'CHAT_ERROR'
   }
+}
+
+function asChatErrorPayload(data: unknown): ChatErrorPayload {
+  if (typeof data === 'object' && data !== null) {
+    return data as ChatErrorPayload
+  }
+
+  return {}
 }
 
 interface UseCharacterChatReturn {
@@ -104,11 +113,19 @@ export function useCharacterChat(tokenId: string): UseCharacterChatReturn {
       })
 
       if (!response.ok) {
-        const errorData: ChatErrorPayload = await response.json()
-        throw new CharacterChatError({
-          code: errorData.code || errorData.error,
-          message: errorData.message || 'Chat request failed',
-        })
+        try {
+          await readApiRaw<never>(response, 'Chat request failed')
+        } catch (chatError) {
+          if (chatError instanceof ApiError) {
+            const errorData = asChatErrorPayload(chatError.data)
+            throw new CharacterChatError({
+              code: errorData.code || errorData.error,
+              message: errorData.message || 'Chat request failed',
+            })
+          }
+
+          throw chatError
+        }
       }
 
       // Handle SSE stream

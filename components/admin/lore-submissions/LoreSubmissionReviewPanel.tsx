@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { readApiData } from '@/lib/api/client-response';
+import { apiClient } from '@/lib/api/client';
 import type { LoreSubmissionDetailDto } from '@/types/lore-submission';
 
 type ReviewAction = 'request_changes' | 'reject' | 'admin_note';
@@ -28,12 +28,12 @@ export function LoreSubmissionReviewPanel({ detail, onUpdated }: LoreSubmissionR
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/lore/submissions/${encodeURIComponent(detail.submission.id)}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, note: note.trim() || undefined }),
+      const updated = await apiClient.postEnvelope<LoreSubmissionDetailDto>(`/api/admin/lore/submissions/${encodeURIComponent(detail.submission.id)}/review`, {
+        action,
+        note: note.trim() || undefined,
+      }, {
+        fallbackMessage: `Failed to ${actionLabels[action].toLowerCase()}`,
       });
-      const updated = await readApiData<LoreSubmissionDetailDto>(response, `Failed to ${actionLabels[action].toLowerCase()}`);
       setNote('');
       onUpdated(updated);
     } catch (reviewError) {
