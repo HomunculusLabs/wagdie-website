@@ -117,9 +117,15 @@ export const elizaConfig = {
     baseUrl:
       process.env.ELIZA_LLM_BASE_URL ||
       process.env.VENICE_API_BASE_URL ||
+      process.env.VENICE_BASE_URL ||
       DEFAULT_VENICE_BASE_URL,
     apiKey: process.env.ELIZA_LLM_API_KEY || process.env.VENICE_API_KEY || '',
-    model: process.env.ELIZA_LLM_MODEL || process.env.VENICE_MODEL || '',
+    model:
+      process.env.ELIZA_LLM_MODEL ||
+      process.env.VENICE_MODEL ||
+      process.env.VENICE_LARGE_MODEL ||
+      process.env.VENICE_SMALL_MODEL ||
+      '',
     temperature: optionalNumberInRange(process.env.ELIZA_LLM_TEMPERATURE, { min: 0, max: 2 }),
     maxTokens: optionalNumberInRange(process.env.ELIZA_LLM_MAX_TOKENS, {
       min: 1,
