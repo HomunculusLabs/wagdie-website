@@ -44,6 +44,31 @@ export function useMapData() {
     'Finalizing setup',
   ])
 
+  const fetchLocationsFromApi = async (): Promise<Location[]> => {
+    const response = await fetch('/api/locations', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      const suffix = text ? ` - ${text}` : ''
+      throw new Error(`Failed to fetch locations (${response.status})${suffix}`)
+    }
+
+    const payload = (await response.json()) as {
+      success?: boolean
+      data?: Location[]
+    } | Location[]
+
+    if (Array.isArray(payload)) {
+      return payload
+    }
+
+    return Array.isArray(payload.data) ? payload.data : []
+  }
+
   const fetchStakedCharactersFromApi = async (): Promise<CharacterWithLocation[]> => {
     const perPage = 100
     const maxPages = 50
@@ -107,22 +132,13 @@ export function useMapData() {
         setLoadingProgress(20)
         await new Promise((resolve) => setTimeout(resolve, 200))
 
-        const { LocationRepository } = await import('@/lib/repositories/locationRepository')
-
         setLoadingStage('Fetching locations')
         setLoadingProgress(40)
 
-        const locationRepo = new LocationRepository()
-        let locationsData: Location[] = []
-        try {
-          locationsData = await locationRepo.getAll()
-        } catch {
-          locationsData = []
-        }
+        const locationsData = await fetchLocationsFromApi()
 
         if (!locationsData || locationsData.length === 0) {
-          console.warn('[useMapData] No locations returned, falling back to mock locations')
-          locationsData = locationRepo.getMockLocations()
+          throw new Error('No map locations returned')
         }
 
         setLocations(locationsData)
