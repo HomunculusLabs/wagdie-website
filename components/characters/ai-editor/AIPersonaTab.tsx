@@ -14,6 +14,7 @@ import { IdentityTab } from './tabs/IdentityTab'
 import { BehaviorTab } from './tabs/BehaviorTab'
 import { ExamplesTab } from './tabs/ExamplesTab'
 import { AdvancedTab } from './tabs/AdvancedTab'
+import { PersonaAssistantPanel } from './assistant'
 import { useAICharacter } from '@/hooks/useAICharacter'
 import { useAIPersonaEditor } from '@/hooks/useAIPersonaEditor'
 import { useKnowledgeUpload } from '@/hooks/useKnowledgeUpload'
@@ -300,6 +301,20 @@ function AIPersonaTabComponent({
             </div>
           )}
         </div>
+
+        {/* Owner-facing persona assistant */}
+        {isOwner && (
+          <div className="px-4 pt-4">
+            <PersonaAssistantPanel
+              tokenId={tokenId}
+              isOwner={isOwner}
+              isConnected={isConnected}
+              disabled={isSaving || isImporting}
+              getAssistantSnapshot={editor.getAssistantSnapshot}
+              applyAssistantDraft={editor.applyAssistantDraft}
+            />
+          </div>
+        )}
 
         {/* Tab navigation */}
         <div className="px-4">

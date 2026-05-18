@@ -6,6 +6,12 @@
  */
 
 import type { AgentCharacter, ChatMessage, StreamCallbacks } from './types'
+import {
+  WagdieElizaError,
+  WagdieElizaNetworkError,
+  getGatewayErrorCode,
+  isRetryableGatewayStatus,
+} from './errors'
 
 type ChatRole = 'system' | 'user' | 'assistant'
 
@@ -29,12 +35,37 @@ export interface StreamOpenAICompatibleChatParams extends OpenAICompatibleChatCo
   signal?: AbortSignal
 }
 
+export interface CompleteOpenAICompatibleChatParams extends OpenAICompatibleChatConfig {
+  messages: OpenAICompatibleChatMessage[]
+  signal?: AbortSignal
+  responseFormat?: Record<string, unknown>
+}
+
+export interface OpenAICompatibleCompletionResult {
+  id?: string
+  content: string
+  finishReason?: string | null
+}
+
 type OpenAICompatibleStreamChunk = {
   id?: string
   choices?: Array<{
     delta?: {
       content?: string | null
     }
+    message?: {
+      content?: string | null
+    }
+    finish_reason?: string | null
+  }>
+  error?: {
+    message?: string
+  }
+}
+
+type OpenAICompatibleCompletionResponse = {
+  id?: string
+  choices?: Array<{
     message?: {
       content?: string | null
     }
@@ -192,6 +223,94 @@ async function parseFailure(response: Response): Promise<string> {
   }
 }
 
+export async function completeOpenAICompatibleChat(
+  params: CompleteOpenAICompatibleChatParams
+): Promise<OpenAICompatibleCompletionResult> {
+  const controller = new AbortController()
+  const timeoutId = params.timeout
+    ? setTimeout(() => controller.abort(), params.timeout)
+    : undefined
+
+  const abortFromExternalSignal = () => controller.abort()
+  if (params.signal) {
+    if (params.signal.aborted) {
+      controller.abort()
+    } else {
+      params.signal.addEventListener('abort', abortFromExternalSignal, { once: true })
+    }
+  }
+
+  try {
+    const response = await fetch(buildCompletionUrl(params.baseUrl), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${params.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: params.model,
+        messages: params.messages,
+        stream: false,
+        ...(typeof params.temperature === 'number' ? { temperature: params.temperature } : {}),
+        ...(typeof params.maxTokens === 'number' ? { max_tokens: params.maxTokens } : {}),
+        ...(params.responseFormat ? { response_format: params.responseFormat } : {}),
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      const message = await parseFailure(response)
+      throw new WagdieElizaError(message, {
+        code: getGatewayErrorCode(response.status),
+        statusCode: response.status,
+        isRetryable: isRetryableGatewayStatus(response.status),
+      })
+    }
+
+    const body = await response.json() as OpenAICompatibleCompletionResponse
+    if (body.error) {
+      throw new WagdieElizaError(body.error.message || 'Provider completion error', {
+        code: 'API_ERROR',
+        statusCode: 502,
+        isRetryable: true,
+      })
+    }
+
+    const choice = body.choices?.[0]
+    const content = choice?.message?.content
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      throw new WagdieElizaError('Provider completion did not include assistant content', {
+        code: 'API_ERROR',
+        statusCode: 502,
+        isRetryable: true,
+      })
+    }
+
+    return {
+      id: body.id,
+      content,
+      finishReason: choice?.finish_reason,
+    }
+  } catch (error) {
+    if (error instanceof WagdieElizaError) {
+      throw error
+    }
+
+    throw new WagdieElizaNetworkError(
+      error instanceof Error ? error.message : 'Provider completion request failed',
+      undefined,
+      error
+    )
+  } finally {
+    params.signal?.removeEventListener('abort', abortFromExternalSignal)
+
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+  }
+}
+
 export async function streamOpenAICompatibleChat(
   params: StreamOpenAICompatibleChatParams,
   callbacks: StreamCallbacks
@@ -278,10 +397,12 @@ export async function streamOpenAICompatibleChat(
       }
     }
 
-    while (true) {
+    let isReading = true
+    while (isReading) {
       const { done, value } = await reader.read()
       if (done) {
-        break
+        isReading = false
+        continue
       }
 
       buffer += decoder.decode(value, { stream: true })

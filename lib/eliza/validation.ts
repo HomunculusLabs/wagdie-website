@@ -120,6 +120,36 @@ export const safeSettingsSchema = z.object({
   }).optional(),
 })
 
+export const assistantStyleConfigSchema = z.object({
+  all: styleRuleArraySchema.optional(),
+  chat: styleRuleArraySchema.optional(),
+  post: styleRuleArraySchema.optional(),
+}).strict()
+
+export const assistantSafeSettingsSchema = z.object({
+  avatar: nullableTrimmedString(FIELD_LIMITS.settingsAvatar, 'Avatar').optional(),
+  metadata: z.object({
+    wagdieUser: z
+      .union([
+        z.record(
+          z.string().regex(keyRegex, 'Metadata key may contain letters, numbers, underscore, dash, and dot'),
+          safeMetadataValueSchema
+        ).refine((value) => Object.keys(value).length <= FIELD_LIMITS.maxMetadataKeys, {
+          message: `Maximum ${FIELD_LIMITS.maxMetadataKeys} metadata keys allowed`,
+        }),
+        z.null(),
+      ])
+      .optional(),
+  }).strict().optional(),
+}).strict()
+
+export const assistantTemplatesSchema = z.record(
+  z.string().regex(keyRegex, 'Template name may contain letters, numbers, underscore, dash, and dot'),
+  z.string().max(FIELD_LIMITS.templateBody)
+).refine((value) => Object.keys(value).length <= FIELD_LIMITS.maxTemplates, {
+  message: `Maximum ${FIELD_LIMITS.maxTemplates} templates allowed`,
+})
+
 /**
  * Example message schema
  */
@@ -133,6 +163,12 @@ export const exampleMessageSchema = z.object({
  */
 export const exampleMessagesSchema = z
   .array(exampleMessageSchema)
+  .max(FIELD_LIMITS.maxExampleMessages, `Maximum ${FIELD_LIMITS.maxExampleMessages} example messages allowed`)
+
+export const assistantExampleMessageSchema = exampleMessageSchema.strict()
+
+export const assistantExampleMessagesSchema = z
+  .array(assistantExampleMessageSchema)
   .max(FIELD_LIMITS.maxExampleMessages, `Maximum ${FIELD_LIMITS.maxExampleMessages} example messages allowed`)
 
 /**
@@ -201,5 +237,35 @@ export const elizaCharacterExportSchema = z.object({
   })).max(FIELD_LIMITS.maxKnowledgeDocs).optional(),
 }).passthrough()
 
+export const personaAssistantEditableDraftSchema = z.object({
+  username: usernameSchema.optional(),
+  backstory: backstorySchema.optional(),
+  system: nullableSystemPromptSchema.optional(),
+  bio: bioUpdateSchema.optional(),
+  lore: loreSchema.optional(),
+  topics: topicsSchema.optional(),
+  adjectives: adjectivesSchema.optional(),
+  style: assistantStyleConfigSchema.optional(),
+  exampleMessages: assistantExampleMessagesSchema.optional(),
+  postExamples: postExamplesSchema.optional(),
+  templates: assistantTemplatesSchema.optional(),
+  settings: assistantSafeSettingsSchema.optional(),
+}).strict()
+
+export const personaAssistantMessageSchema = z.object({
+  id: z.string().min(1).max(120),
+  role: z.enum(['user', 'assistant']),
+  content: z.string().min(1).max(FIELD_LIMITS.messageContent),
+  createdAt: z.string().min(1),
+}).strict()
+
+export const personaAssistantRequestSchema = z.object({
+  mode: z.enum(['chat', 'generate']),
+  messages: z.array(personaAssistantMessageSchema).max(30),
+  editorSnapshot: personaAssistantEditableDraftSchema,
+}).strict()
+
 export type AIPersonaUpdateInput = z.infer<typeof aiPersonaUpdateSchema>
 export type ElizaCharacterExportInput = z.infer<typeof elizaCharacterExportSchema>
+export type PersonaAssistantEditableDraftInput = z.infer<typeof personaAssistantEditableDraftSchema>
+export type PersonaAssistantRequestInput = z.infer<typeof personaAssistantRequestSchema>

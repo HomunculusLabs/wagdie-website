@@ -14,6 +14,7 @@ import type {
   DraftAIPersona,
   CharacterTemplates,
   ExampleMessage,
+  PersonaAssistantEditableDraft,
   SafeCharacterSettings,
   StyleConfig,
   UpdateAICharacterInput,
@@ -67,6 +68,7 @@ export type AIPersonaEditorAction =
   | { type: 'SET_TEMPLATES'; payload: CharacterTemplates }
   | { type: 'SET_SETTINGS'; payload: SafeCharacterSettings }
   | { type: 'SET_KNOWLEDGE_IDS'; payload: string[] }
+  | { type: 'APPLY_ASSISTANT_DRAFT'; payload: PersonaAssistantEditableDraft }
   | { type: 'RESET'; payload?: AICharacter | null }
   | { type: 'LOAD_DRAFT'; payload: Partial<AIPersonaEditorState> }
   | { type: 'INIT_FROM_CHARACTER'; payload: AICharacter }
@@ -120,6 +122,92 @@ function initializeState(character?: AICharacter | null): AIPersonaEditorState {
 // Reducer
 // ============================================================================
 
+function hasOwn<T extends object, K extends PropertyKey>(value: T, key: K): value is T & Record<K, unknown> {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function cloneStyle(style: StyleConfig): StyleConfig {
+  return {
+    ...(style.all !== undefined ? { all: [...style.all] } : {}),
+    ...(style.chat !== undefined ? { chat: [...style.chat] } : {}),
+    ...(style.post !== undefined ? { post: [...style.post] } : {}),
+  }
+}
+
+function cloneSettings(settings: SafeCharacterSettings): SafeCharacterSettings {
+  return {
+    ...(hasOwn(settings, 'avatar') ? { avatar: settings.avatar } : {}),
+    ...(settings.metadata
+      ? {
+          metadata: {
+            ...(hasOwn(settings.metadata, 'wagdieUser')
+              ? {
+                  wagdieUser: settings.metadata.wagdieUser
+                    ? { ...settings.metadata.wagdieUser }
+                    : settings.metadata.wagdieUser,
+                }
+              : {}),
+          },
+        }
+      : {}),
+  }
+}
+
+function mergeAssistantSettings(
+  current: SafeCharacterSettings,
+  draftSettings: SafeCharacterSettings
+): SafeCharacterSettings {
+  const next: SafeCharacterSettings = cloneSettings(current)
+
+  if (hasOwn(draftSettings, 'avatar')) {
+    next.avatar = draftSettings.avatar
+  }
+
+  if (draftSettings.metadata && hasOwn(draftSettings.metadata, 'wagdieUser')) {
+    next.metadata = {
+      ...(next.metadata || {}),
+      wagdieUser: draftSettings.metadata.wagdieUser
+        ? { ...draftSettings.metadata.wagdieUser }
+        : draftSettings.metadata.wagdieUser,
+    }
+  }
+
+  return next
+}
+
+function applyAssistantDraftToState(
+  state: AIPersonaEditorState,
+  draft: PersonaAssistantEditableDraft
+): AIPersonaEditorState {
+  return {
+    ...state,
+    ...(hasOwn(draft, 'username') ? { username: draft.username || '' } : {}),
+    ...(hasOwn(draft, 'backstory') ? { backstory: draft.backstory || '' } : {}),
+    ...(hasOwn(draft, 'system') ? { systemPrompt: draft.system || '' } : {}),
+    ...(hasOwn(draft, 'bio') && draft.bio !== undefined ? { bio: [...draft.bio] } : {}),
+    ...(hasOwn(draft, 'lore') && draft.lore !== undefined ? { lore: [...draft.lore] } : {}),
+    ...(hasOwn(draft, 'topics') && draft.topics !== undefined ? { topics: [...draft.topics] } : {}),
+    ...(hasOwn(draft, 'adjectives') && draft.adjectives !== undefined ? { adjectives: [...draft.adjectives] } : {}),
+    ...(hasOwn(draft, 'style') && draft.style !== undefined ? { style: cloneStyle(draft.style) } : {}),
+    ...(hasOwn(draft, 'exampleMessages') && draft.exampleMessages !== undefined
+      ? {
+          exampleMessages: draft.exampleMessages.map((message) => ({ ...message })),
+        }
+      : {}),
+    ...(hasOwn(draft, 'postExamples') && draft.postExamples !== undefined
+      ? { postExamples: [...draft.postExamples] }
+      : {}),
+    ...(hasOwn(draft, 'templates') && draft.templates !== undefined
+      ? { templates: { ...draft.templates } }
+      : {}),
+    ...(hasOwn(draft, 'settings') && draft.settings !== undefined
+      ? { settings: mergeAssistantSettings(state.settings, draft.settings) }
+      : {}),
+    hasUnsavedChanges: true,
+    initialized: true,
+  }
+}
+
 function aiPersonaEditorReducer(
   state: AIPersonaEditorState,
   action: AIPersonaEditorAction
@@ -151,6 +239,8 @@ function aiPersonaEditorReducer(
       return { ...state, settings: action.payload, hasUnsavedChanges: true }
     case 'SET_KNOWLEDGE_IDS':
       return { ...state, knowledgeIds: action.payload, hasUnsavedChanges: true }
+    case 'APPLY_ASSISTANT_DRAFT':
+      return applyAssistantDraftToState(state, action.payload)
     case 'RESET':
       return initializeState(action.payload)
     case 'LOAD_DRAFT':
@@ -203,6 +293,10 @@ export interface UseAIPersonaEditorReturn {
   resetState: (character?: AICharacter | null) => void
   /** Discard draft and reset to character state */
   discardDraft: () => void
+  /** Get canonical assistant-safe editor snapshot */
+  getAssistantSnapshot: () => PersonaAssistantEditableDraft
+  /** Stage an approved assistant draft in local editor state only */
+  applyAssistantDraft: (draft: PersonaAssistantEditableDraft) => void
   /** Get data formatted for API update */
   getUpdateInput: () => UpdateAICharacterInput
   /** Clear draft from storage */
@@ -305,6 +399,25 @@ export function useAIPersonaEditor(
   const setSettings = useCallback((value: SafeCharacterSettings) => dispatch({ type: 'SET_SETTINGS', payload: value }), [])
   const setKnowledgeIds = useCallback((value: string[]) => dispatch({ type: 'SET_KNOWLEDGE_IDS', payload: value }), [])
 
+  const getAssistantSnapshot = useCallback((): PersonaAssistantEditableDraft => ({
+    username: state.username || null,
+    backstory: state.backstory || null,
+    system: state.systemPrompt || null,
+    bio: [...state.bio],
+    lore: [...state.lore],
+    topics: [...state.topics],
+    adjectives: [...state.adjectives],
+    style: cloneStyle(state.style),
+    exampleMessages: state.exampleMessages.map((message) => ({ ...message })),
+    postExamples: [...state.postExamples],
+    templates: { ...state.templates },
+    settings: cloneSettings(state.settings),
+  }), [state])
+
+  const applyAssistantDraft = useCallback((draft: PersonaAssistantEditableDraft) => {
+    dispatch({ type: 'APPLY_ASSISTANT_DRAFT', payload: draft })
+  }, [])
+
   // Reset state to character or empty
   const resetState = useCallback((character?: AICharacter | null) => {
     dispatch({ type: 'RESET', payload: character ?? aiCharacterRef.current })
@@ -392,6 +505,8 @@ export function useAIPersonaEditor(
     setKnowledgeIds,
     resetState,
     discardDraft,
+    getAssistantSnapshot,
+    applyAssistantDraft,
     getUpdateInput,
     clearDraft,
   }

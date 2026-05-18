@@ -197,6 +197,42 @@ export interface SendMessageInput {
   conversationId?: string
 }
 
+export type PersonaAssistantMode = 'chat' | 'generate'
+
+export interface PersonaAssistantMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+}
+
+export interface PersonaAssistantEditableDraft {
+  username?: string | null
+  backstory?: string | null
+  system?: string | null
+  bio?: string[]
+  lore?: string[]
+  topics?: string[]
+  adjectives?: string[]
+  style?: StyleConfig
+  exampleMessages?: ExampleMessage[]
+  postExamples?: string[]
+  templates?: CharacterTemplates
+  settings?: SafeCharacterSettings
+}
+
+export interface PersonaAssistantRequest {
+  mode: PersonaAssistantMode
+  messages: PersonaAssistantMessage[]
+  editorSnapshot: PersonaAssistantEditableDraft
+}
+
+export interface PersonaAssistantResponse {
+  assistantMessage: PersonaAssistantMessage
+  proposal?: PersonaAssistantEditableDraft
+  warnings: string[]
+}
+
 /**
  * Response from chat API (non-streaming)
  */

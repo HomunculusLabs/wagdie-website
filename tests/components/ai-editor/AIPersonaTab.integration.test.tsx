@@ -84,6 +84,8 @@ const mockSetSystemPrompt = jest.fn()
 const mockGetUpdateInput = jest.fn(() => mockEditorState)
 const mockClearDraft = jest.fn()
 const mockDiscardDraft = jest.fn()
+const mockGetAssistantSnapshot = jest.fn(() => ({ bio: ['A brave warrior'] }))
+const mockApplyAssistantDraft = jest.fn()
 
 jest.mock('@/hooks/useAIPersonaEditor', () => ({
   useAIPersonaEditor: jest.fn(() => ({
@@ -100,6 +102,8 @@ jest.mock('@/hooks/useAIPersonaEditor', () => ({
     getUpdateInput: mockGetUpdateInput,
     clearDraft: mockClearDraft,
     discardDraft: mockDiscardDraft,
+    getAssistantSnapshot: mockGetAssistantSnapshot,
+    applyAssistantDraft: mockApplyAssistantDraft,
   })),
 }))
 
@@ -154,6 +158,19 @@ jest.mock('@/components/characters/ai-editor/tabs/AdvancedTab', () => ({
     <div data-testid="advanced-tab">
       <span data-testid="advanced-prompt">{systemPrompt}</span>
       <span data-testid="advanced-knowledge">{knowledgeDocuments?.length || 0}</span>
+    </div>
+  )),
+}))
+
+jest.mock('@/components/characters/ai-editor/assistant', () => ({
+  PersonaAssistantPanel: jest.fn(({ tokenId, isOwner, isConnected }) => (
+    <div
+      data-testid="persona-assistant-panel"
+      data-token-id={tokenId}
+      data-owner={isOwner ? 'true' : 'false'}
+      data-connected={isConnected ? 'true' : 'false'}
+    >
+      Persona Assistant
     </div>
   )),
 }))
@@ -258,6 +275,22 @@ describe('AIPersonaTab Integration', () => {
       expect(screen.getByRole('button', { name: /Save AI Persona/i })).toBeInTheDocument()
     })
 
+    it('should wire the owner assistant panel to editor snapshot and apply callbacks', () => {
+      const { PersonaAssistantPanel } = jest.requireMock('@/components/characters/ai-editor/assistant')
+
+      render(<AIPersonaTab tokenId="123" isOwner={true} />)
+
+      expect(screen.getByTestId('persona-assistant-panel')).toBeInTheDocument()
+      expect(PersonaAssistantPanel).toHaveBeenCalled()
+      expect((PersonaAssistantPanel as jest.Mock).mock.calls[0][0]).toEqual(expect.objectContaining({
+        tokenId: '123',
+        isOwner: true,
+        isConnected: true,
+        getAssistantSnapshot: mockGetAssistantSnapshot,
+        applyAssistantDraft: mockApplyAssistantDraft,
+      }))
+    })
+
     it('should not show save button for non-owners', () => {
       render(<AIPersonaTab tokenId="123" isOwner={false} />)
 
@@ -312,6 +345,8 @@ describe('AIPersonaTab Integration', () => {
         getUpdateInput: mockGetUpdateInput,
         clearDraft: mockClearDraft,
         discardDraft: mockDiscardDraft,
+        getAssistantSnapshot: mockGetAssistantSnapshot,
+        applyAssistantDraft: mockApplyAssistantDraft,
       })
 
       render(<AIPersonaTab tokenId="123" isOwner={true} characterName="Test" />)
@@ -340,6 +375,8 @@ describe('AIPersonaTab Integration', () => {
         getUpdateInput: mockGetUpdateInput,
         clearDraft: mockClearDraft,
         discardDraft: mockDiscardDraft,
+        getAssistantSnapshot: mockGetAssistantSnapshot,
+        applyAssistantDraft: mockApplyAssistantDraft,
       })
 
       render(<AIPersonaTab tokenId="123" isOwner={true} />)
@@ -429,6 +466,8 @@ describe('AIPersonaTab Integration', () => {
         getUpdateInput: mockGetUpdateInput,
         clearDraft: mockClearDraft,
         discardDraft: mockDiscardDraft,
+        getAssistantSnapshot: mockGetAssistantSnapshot,
+        applyAssistantDraft: mockApplyAssistantDraft,
       })
 
       render(<AIPersonaTab tokenId="123" isOwner={true} />)
@@ -454,6 +493,8 @@ describe('AIPersonaTab Integration', () => {
         getUpdateInput: mockGetUpdateInput,
         clearDraft: mockClearDraft,
         discardDraft: mockDiscardDraft,
+        getAssistantSnapshot: mockGetAssistantSnapshot,
+        applyAssistantDraft: mockApplyAssistantDraft,
       })
 
       render(<AIPersonaTab tokenId="123" isOwner={true} />)
@@ -503,6 +544,8 @@ describe('AIPersonaTab Integration', () => {
         getUpdateInput: mockGetUpdateInput,
         clearDraft: mockClearDraft,
         discardDraft: mockDiscardDraft,
+        getAssistantSnapshot: mockGetAssistantSnapshot,
+        applyAssistantDraft: mockApplyAssistantDraft,
       })
 
       render(<AIPersonaTab tokenId="123" isOwner={true} />)

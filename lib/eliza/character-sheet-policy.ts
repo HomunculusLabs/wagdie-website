@@ -1,6 +1,16 @@
-import type { ElizaCharacterExport, SafeCharacterSettings, UpdateAICharacterInput } from '@/types/eliza'
+import type {
+  ElizaCharacterExport,
+  ExampleMessage,
+  PersonaAssistantEditableDraft,
+  SafeCharacterSettings,
+  UpdateAICharacterInput,
+} from '@/types/eliza'
 import type { AgentCharacter, AgentMessageExample } from '@/lib/eliza/sdk-types'
-import { aiPersonaUpdateSchema, elizaCharacterExportSchema } from '@/lib/eliza/validation'
+import {
+  aiPersonaUpdateSchema,
+  elizaCharacterExportSchema,
+  personaAssistantEditableDraftSchema,
+} from '@/lib/eliza/validation'
 import {
   fromElizaExportMessageExamples,
   toElizaExportMessageExamples,
@@ -17,6 +27,10 @@ export type PolicyIssue = {
 export type PutPolicyResult =
   | { ok: true; update: UpdateAICharacterInput }
   | { ok: false; status: 400; issues: PolicyIssue[] }
+
+export type PersonaAssistantPolicyResult =
+  | { ok: true; proposal: PersonaAssistantEditableDraft; warnings: string[] }
+  | { ok: false; issues: PolicyIssue[]; warnings: string[] }
 
 export type ImportPolicyResult = {
   agentPatch: Partial<AgentCharacter>
@@ -71,6 +85,24 @@ const USER_MANAGED_TOP_LEVEL = new Set([
   'postExamples',
   'knowledge',
 ])
+
+export const ASSISTANT_PERSONA_PROPOSAL_FIELDS = [
+  'username',
+  'backstory',
+  'system',
+  'bio',
+  'lore',
+  'topics',
+  'adjectives',
+  'style',
+  'exampleMessages',
+  'postExamples',
+  'templates',
+  'settings',
+] as const
+
+const ASSISTANT_PROPOSAL_TOP_LEVEL = new Set<string>(ASSISTANT_PERSONA_PROPOSAL_FIELDS)
+const ASSISTANT_ALIAS_TOP_LEVEL = new Set(['systemPrompt', 'messageExamples'])
 
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -169,6 +201,149 @@ function systemFrom(record: UnknownRecord): { value?: string | null; warning?: s
   }
 
   return { value: system !== undefined ? system : systemPrompt }
+}
+
+function issueKey(issue: PolicyIssue): string {
+  return `${issue.path}:${issue.reason}:${issue.message}`
+}
+
+function dedupeIssues(issues: PolicyIssue[]): PolicyIssue[] {
+  const seen = new Set<string>()
+  return issues.filter((issue) => {
+    const key = issueKey(issue)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function isAllowedAssistantSettingsPath(path: string): boolean {
+  return (
+    path === 'settings.avatar' ||
+    path === 'settings.metadata' ||
+    path === 'settings.metadata.wagdieUser' ||
+    path.startsWith('settings.metadata.wagdieUser.')
+  )
+}
+
+function convertElizaMessageExamplesAlias(value: unknown): ExampleMessage[] | undefined {
+  if (!Array.isArray(value)) return undefined
+
+  const examples: ExampleMessage[] = []
+
+  for (const conversation of value) {
+    if (!Array.isArray(conversation) || conversation.length < 2) return undefined
+
+    const texts = conversation
+      .map((entry) => {
+        const record = asRecord(entry)
+        const content = asRecord(record?.content)
+        return typeof content?.text === 'string' ? content.text.trim() : ''
+      })
+      .filter(Boolean)
+
+    if (texts.length < 2) return undefined
+
+    examples.push({ userMessage: texts[0], assistantMessage: texts[1] })
+  }
+
+  return examples
+}
+
+export function sanitizePersonaAssistantProposal(value: unknown): PersonaAssistantPolicyResult {
+  if (!isRecord(value)) {
+    return {
+      ok: false,
+      warnings: [],
+      issues: [{ path: '', reason: 'invalid', message: 'Assistant proposal must be an object' }],
+    }
+  }
+
+  const issues: PolicyIssue[] = []
+  const warnings: string[] = []
+
+  for (const path of findBackendOwnedPaths(value)) {
+    issues.push({ path, reason: 'backend_owned', message: `${path} is managed by the WAGDIE backend` })
+  }
+
+  for (const key of Object.keys(value)) {
+    if (ASSISTANT_PROPOSAL_TOP_LEVEL.has(key)) continue
+    if (ASSISTANT_ALIAS_TOP_LEVEL.has(key)) continue
+
+    issues.push({
+      path: key,
+      reason: 'unsupported',
+      message: `${key} is not supported in assistant persona proposals`,
+    })
+  }
+
+  if (hasOwn(value, 'systemPrompt')) {
+    if (hasOwn(value, 'system')) {
+      issues.push({
+        path: 'systemPrompt',
+        reason: 'invalid',
+        message: 'systemPrompt is an alias and cannot be returned with canonical system',
+      })
+    } else {
+      warnings.push('systemPrompt was normalized to canonical system')
+    }
+  }
+
+  if (hasOwn(value, 'messageExamples')) {
+    if (hasOwn(value, 'exampleMessages')) {
+      issues.push({
+        path: 'messageExamples',
+        reason: 'invalid',
+        message: 'messageExamples is an alias and cannot be returned with exampleMessages',
+      })
+    } else {
+      const converted = convertElizaMessageExamplesAlias(value.messageExamples)
+      if (!converted) {
+        issues.push({
+          path: 'messageExamples',
+          reason: 'invalid',
+          message: 'messageExamples must be an array of Eliza message pairs with content.text values',
+        })
+      } else {
+        warnings.push('messageExamples was normalized to app-facing exampleMessages')
+      }
+    }
+  }
+
+  const settings = asRecord(value.settings)
+  if (settings) {
+    for (const path of collectPaths(settings, 'settings')) {
+      if (!isAllowedAssistantSettingsPath(path) && !isBackendOwnedPath(path)) {
+        issues.push({ path, reason: 'unsupported', message: `${path} is not supported in assistant persona proposals` })
+      }
+    }
+  }
+
+  const proposal: UnknownRecord = {}
+  for (const key of ASSISTANT_PERSONA_PROPOSAL_FIELDS) {
+    if (hasOwn(value, key)) proposal[key] = value[key]
+  }
+
+  if (!hasOwn(proposal, 'system') && hasOwn(value, 'systemPrompt')) {
+    proposal.system = value.systemPrompt
+  }
+
+  if (!hasOwn(proposal, 'exampleMessages') && hasOwn(value, 'messageExamples')) {
+    proposal.exampleMessages = convertElizaMessageExamplesAlias(value.messageExamples)
+  }
+
+  const parsed = personaAssistantEditableDraftSchema.safeParse(proposal)
+  if (!parsed.success) {
+    for (const issue of parsed.error.errors) {
+      issues.push({ path: issue.path.join('.'), reason: 'invalid', message: issue.message })
+    }
+  }
+
+  if (issues.length > 0) {
+    return { ok: false, warnings: unique(warnings), issues: dedupeIssues(issues) }
+  }
+
+  return { ok: true, proposal: parsed.data as PersonaAssistantEditableDraft, warnings: unique(warnings) }
 }
 
 export function findBackendOwnedPaths(value: unknown): string[] {

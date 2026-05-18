@@ -15,6 +15,9 @@ export { ExampleMessagesEditor } from './ExampleMessagesEditor'
 export { CharacterCounter, ArrayFieldEditor, TabNavigation } from './shared'
 export type { Tab } from './shared'
 
+// Assistant components
+export { PersonaAssistantPanel } from './assistant'
+
 // New editor components
 export { BioEditor } from './editors/BioEditor'
 export { LoreEditor } from './editors/LoreEditor'

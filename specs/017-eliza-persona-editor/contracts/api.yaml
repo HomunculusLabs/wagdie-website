@@ -71,6 +71,93 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidationError'
 
+  /api/eliza/characters/{tokenId}/persona-assistant:
+    post:
+      summary: Chat with the owner-facing persona assistant
+      operationId: runPersonaAssistant
+      description: >-
+        Non-streaming JSON endpoint for an owner-gated assistant that drafts only
+        user-managed persona fields. Assistant state is ephemeral in the client;
+        generated proposals are pending review only, Apply to editor stages local
+        editor changes only, and Save AI Persona remains the separate persistence
+        step through PUT /api/eliza/characters/{tokenId}.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: WAGDIE character token ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaAssistantRequest'
+      responses:
+        '200':
+          description: Assistant message and optional pending proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonaAssistantResponse'
+        '400':
+          description: Invalid token ID or malformed JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized wallet/session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not character owner or admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: WAGDIE character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid assistant payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Assistant gateway rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Assistant gateway error or invalid model output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Persona assistant inference unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /api/eliza/characters/{tokenId}/knowledge:
     get:
       summary: List knowledge documents for character
@@ -414,6 +501,200 @@ components:
           maxLength: 4000
           deprecated: true
           description: Compatibility alias for system.
+
+    PersonaAssistantMessage:
+      type: object
+      required:
+        - id
+        - role
+        - content
+        - createdAt
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 120
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        createdAt:
+          type: string
+          format: date-time
+
+    PersonaAssistantStyleConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        all:
+          type: array
+          items:
+            type: string
+            maxLength: 200
+          maxItems: 10
+        chat:
+          type: array
+          items:
+            type: string
+            maxLength: 200
+          maxItems: 10
+        post:
+          type: array
+          items:
+            type: string
+            maxLength: 200
+          maxItems: 10
+
+    PersonaAssistantExampleMessage:
+      type: object
+      additionalProperties: false
+      required:
+        - userMessage
+        - assistantMessage
+      properties:
+        userMessage:
+          type: string
+          maxLength: 500
+        assistantMessage:
+          type: string
+          maxLength: 1000
+
+    PersonaAssistantSafeSettings:
+      type: object
+      additionalProperties: false
+      description: Assistant-safe settings only; all provider/runtime/secrets/migration settings are rejected.
+      properties:
+        avatar:
+          type: string
+          nullable: true
+          maxLength: 500
+        metadata:
+          type: object
+          additionalProperties: false
+          properties:
+            wagdieUser:
+              type: object
+              nullable: true
+              additionalProperties:
+                nullable: true
+                oneOf:
+                  - type: string
+                    maxLength: 500
+                  - type: number
+                  - type: boolean
+
+    PersonaAssistantEditableDraft:
+      type: object
+      additionalProperties: false
+      description: >-
+        Pending assistant proposal shape. Only these user-managed fields may be
+        returned by the assistant. name, personality, knowledge, systemPrompt,
+        plugins, secrets, providers, clients, runtime config, migration metadata,
+        IDs, and external IDs are rejected by server policy rather than silently
+        saved.
+      properties:
+        username:
+          type: string
+          nullable: true
+          maxLength: 100
+        backstory:
+          type: string
+          nullable: true
+          maxLength: 5000
+        system:
+          type: string
+          nullable: true
+          maxLength: 4000
+          description: Canonical Eliza system prompt; assistant output must not use systemPrompt.
+        bio:
+          type: array
+          items:
+            type: string
+            maxLength: 500
+          maxItems: 10
+        lore:
+          type: array
+          items:
+            type: string
+            maxLength: 500
+          maxItems: 20
+        topics:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 30
+        adjectives:
+          type: array
+          items:
+            type: string
+            maxLength: 30
+          maxItems: 20
+        style:
+          $ref: '#/components/schemas/PersonaAssistantStyleConfig'
+        exampleMessages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonaAssistantExampleMessage'
+          maxItems: 20
+        postExamples:
+          type: array
+          items:
+            type: string
+            maxLength: 280
+          maxItems: 20
+        templates:
+          type: object
+          additionalProperties:
+            type: string
+            maxLength: 4000
+          description: Optional user-managed template map only.
+        settings:
+          $ref: '#/components/schemas/PersonaAssistantSafeSettings'
+
+    PersonaAssistantRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - mode
+        - messages
+        - editorSnapshot
+      properties:
+        mode:
+          type: string
+          enum:
+            - chat
+            - generate
+        messages:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/PersonaAssistantMessage'
+        editorSnapshot:
+          $ref: '#/components/schemas/PersonaAssistantEditableDraft'
+
+    PersonaAssistantResponse:
+      type: object
+      required:
+        - assistantMessage
+        - warnings
+      properties:
+        assistantMessage:
+          $ref: '#/components/schemas/PersonaAssistantMessage'
+        proposal:
+          $ref: '#/components/schemas/PersonaAssistantEditableDraft'
+          description: Present only for successful generate responses; still pending until explicitly applied.
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Normalization warnings, such as accepted compatibility aliases.
 
     SafeCharacterSettings:
       type: object
