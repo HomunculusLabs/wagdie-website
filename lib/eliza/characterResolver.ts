@@ -14,6 +14,7 @@ import {
   recordPersonaMigrationSuccess,
   syncOfficialPersonaShadow,
 } from '@/lib/eliza/personaMigration'
+import { buildNeutralDefaultPersonality } from '@/lib/eliza/persona-copy'
 import type { CharacterRecord, AgentCharacter } from '@/lib/eliza/sdkAdapter'
 import { toAgentCharacterFromAICharacter } from '@/lib/eliza/sdkAdapter'
 
@@ -41,7 +42,7 @@ function buildDefaultCharacter(params: {
       ? wagdieDefaults.name.trim()
       : null) || `Character #${tokenId}`
 
-  const personality = `A mysterious character from the world of WAGDIE. Character #${tokenId}.`
+  const personality = buildNeutralDefaultPersonality(tokenId)
   const backstory =
     typeof wagdieDefaults.backgroundStory === 'string' ? wagdieDefaults.backgroundStory : null
 

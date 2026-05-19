@@ -5,6 +5,7 @@
  * the responsibility of app/api/eliza/chat/route.ts.
  */
 
+import { neutralizeLegacyDefaultPersonaSeedText } from '@/lib/eliza/persona-copy'
 import type { AgentCharacter, ChatMessage, StreamCallbacks } from './types'
 import {
   WagdieElizaError,
@@ -88,6 +89,10 @@ function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
 }
 
+function neutralizeStrings(values: string[]): string[] {
+  return values.map(neutralizeLegacyDefaultPersonaSeedText)
+}
+
 function pushSection(lines: string[], title: string, values: string[]): void {
   if (values.length === 0) {
     return
@@ -141,31 +146,32 @@ export function buildMessagesForCharacter(
   character: AgentCharacter,
   userMessage: string
 ): OpenAICompatibleChatMessage[] {
-  const name = asString(character.name) ?? 'WAGDIE character'
+  const name = asString(character.name) ?? 'an unnamed character'
   const lines = [
-    `You are ${name}, an AI persona in the WAGDIE universe.`,
-    'Stay in character and answer as this persona in a concise, immersive voice.',
+    `You are ${name}.`,
+    'Stay in character and answer in a concise, immersive voice.',
+    'Do not introduce app, project, collection, brand, or universe names unless the user asks or the character profile explicitly includes them.',
   ]
 
   const systemPrompt =
     asString(character.system) || asString((character as Record<string, unknown>).systemPrompt)
   if (systemPrompt) {
-    lines.push('', systemPrompt)
+    lines.push('', neutralizeLegacyDefaultPersonaSeedText(systemPrompt))
   }
 
   const legacyPersonality = asString((character as Record<string, unknown>).personality)
   const legacyBackstory = asString((character as Record<string, unknown>).backstory)
-  const bio = asStringArray(character.bio)
-  const lore = asStringArray(character.lore)
+  const bio = neutralizeStrings(asStringArray(character.bio))
+  const lore = neutralizeStrings(asStringArray(character.lore))
 
-  pushSection(lines, 'Bio', bio.length > 0 ? bio : legacyPersonality ? [legacyPersonality] : [])
-  pushSection(lines, 'Lore', lore.length > 0 ? lore : legacyBackstory ? [legacyBackstory] : [])
-  pushSection(lines, 'Topics', asStringArray(character.topics))
-  pushSection(lines, 'Adjectives', asStringArray(character.adjectives))
-  pushSection(lines, 'Style rules', [
+  pushSection(lines, 'Bio', bio.length > 0 ? bio : legacyPersonality ? [neutralizeLegacyDefaultPersonaSeedText(legacyPersonality)] : [])
+  pushSection(lines, 'Lore', lore.length > 0 ? lore : legacyBackstory ? [neutralizeLegacyDefaultPersonaSeedText(legacyBackstory)] : [])
+  pushSection(lines, 'Topics', neutralizeStrings(asStringArray(character.topics)))
+  pushSection(lines, 'Adjectives', neutralizeStrings(asStringArray(character.adjectives)))
+  pushSection(lines, 'Style rules', neutralizeStrings([
     ...getStyleRules(character, 'all'),
     ...getStyleRules(character, 'chat'),
-  ])
+  ]))
 
   return [
     { role: 'system', content: lines.join('\n') },

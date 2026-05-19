@@ -18,7 +18,7 @@ function AssistantTranscriptComponent({ messages, isLoading = false }: Assistant
   if (messages.length === 0) {
     return (
       <div className="rounded-lg border border-neutral-800 bg-black/20 p-4 text-sm text-neutral-400">
-        Tell the assistant what kind of elizaOS persona boilerplate you want, then generate a draft for review.
+        Tell the assistant what kind of character persona draft you want, then generate it for review.
       </div>
     )
   }

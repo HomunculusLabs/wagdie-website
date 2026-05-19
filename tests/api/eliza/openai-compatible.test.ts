@@ -40,8 +40,38 @@ describe('OpenAI-compatible Eliza inference helpers', () => {
     )
     expect(messages[0].content).toContain('Speak in prophecy.')
     expect(messages[0].content).toContain('Born beneath a broken banner.')
+    expect(messages[0].content).not.toContain('WAGDIE universe')
+    expect(messages[0].content).not.toContain('world of WAGDIE')
+    expect(messages[0].content).not.toMatch(/\bWAGDIE\b/)
     expect(messages).toContainEqual({ role: 'assistant', content: 'Ash, then silence.' })
     expect(messages[messages.length - 1]).toEqual({ role: 'user', content: 'Who are you?' })
+  })
+
+  it('uses immersive generic prompt framing when character name is absent', () => {
+    const messages = buildMessagesForCharacter(
+      { name: '' },
+      'Who are you?'
+    )
+
+    expect(messages[0].content).toContain('You are an unnamed character.')
+    expect(messages[0].content).toContain('Stay in character and answer in a concise, immersive voice.')
+    expect(messages[0].content).not.toContain('WAGDIE universe')
+    expect(messages[0].content).not.toMatch(/\bWAGDIE\b/)
+  })
+
+  it('neutralizes exact legacy generated default persona seeds before building prompts', () => {
+    const messages = buildMessagesForCharacter(
+      {
+        name: 'Seeded Character',
+        bio: ['A mysterious character from the world of WAGDIE. Character #4040.'],
+      },
+      'Who are you?'
+    )
+
+    expect(messages[0].content).toContain(
+      'A mysterious character whose story is still being written. Character #4040.'
+    )
+    expect(messages[0].content).not.toContain('world of WAGDIE')
   })
 
   it('falls back to legacy personality and backstory fields when canonical fields are absent', () => {

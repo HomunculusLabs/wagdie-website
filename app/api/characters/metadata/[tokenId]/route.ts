@@ -27,19 +27,6 @@ function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }
 
-function isPlaceholderAnimationUrl(value: unknown): boolean {
-  if (typeof value !== 'string' || value.length === 0) {
-    return false
-  }
-
-  try {
-    const url = new URL(value, 'https://fateofwagdie.com')
-    return /^\/characters\/\d+\/animated\/?$/.test(url.pathname)
-  } catch {
-    return false
-  }
-}
-
 async function getHostedCharacterImageUrl(tokenId: number, appOrigin: string): Promise<string | null> {
   const imagePath = path.join(CHARACTER_IMAGES_DIR, `${tokenId}.png`)
 
@@ -85,9 +72,7 @@ export async function GET(
       ...(hostedImageUrl ? { image: hostedImageUrl } : {}),
     }
 
-    if (isPlaceholderAnimationUrl(responseMetadata.animation_url)) {
-      delete responseMetadata.animation_url
-    }
+    delete responseMetadata.animation_url
 
     return jsonRaw(responseMetadata, {
       headers: withCorsHeaders({

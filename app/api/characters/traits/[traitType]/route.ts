@@ -10,7 +10,7 @@ import { serverCharacterRepository } from '@/lib/repositories/character-reposito
 export const runtime = 'nodejs'
 
 // Valid trait types that can be queried
-const VALID_TRAIT_TYPES = ['Armor', 'Back', 'Mask', 'Body', 'Hair', 'Background', 'Class', 'Health']
+const VALID_TRAIT_TYPES = ['Armor', 'Back', 'Mask', 'Body', 'Hair', 'Background', 'Class', 'Health', 'The 17']
 
 export async function GET(
   _request: NextRequest,

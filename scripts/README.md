@@ -4,6 +4,22 @@ This directory contains scripts for populating the WAGDIE database with sample d
 
 ## Available Scripts
 
+### refresh-opensea-metadata.ts
+Queues OpenSea metadata refresh jobs for WAGDIE tokens using the OpenSea v2 refresh endpoint.
+
+```bash
+# Preview requests without an API key
+bun run opensea:refresh -- --token 1 --dry-run
+bun run opensea:refresh -- --range 1-10 --dry-run
+
+# Queue refreshes
+OPENSEA_API_KEY=your_key bun run opensea:refresh -- --token 1
+OPENSEA_API_KEY=your_key bun run opensea:refresh -- --range 1-100 --yes
+OPENSEA_API_KEY=your_key bun run opensea:refresh -- --all --yes
+```
+
+Defaults to the Ethereum WAGDIE contract and sends `ignoreCachedItemUrls=true`. Use `--help` for the full option list.
+
 ### seed-database.ts
 Populates the database with realistic mock data:
 - 50 sample characters with D&D stats, equipment, and varied statuses
