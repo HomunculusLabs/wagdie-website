@@ -38,6 +38,13 @@ interface UseAICharacterReturn {
   clearError: () => void
 }
 
+function isAbortError(error: unknown): boolean {
+  return typeof error === 'object'
+    && error !== null
+    && 'name' in error
+    && (error as { name?: unknown }).name === 'AbortError'
+}
+
 export function useAICharacter(tokenId: string): UseAICharacterReturn {
   const { isConnected } = useAccount()
   const [aiCharacter, setAICharacter] = useState<AICharacter | null>(null)
@@ -65,6 +72,8 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
       const data = await readApiRaw<AICharacter>(response, 'Failed to fetch AI character')
       setAICharacter(data)
     } catch (err) {
+      if (isAbortError(err)) return
+
       const message = err instanceof Error ? err.message : 'Failed to fetch AI character'
       setError(message)
       console.error('[useAICharacter] Fetch error:', err)
@@ -95,6 +104,8 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
       setAICharacter(updated)
       return true
     } catch (err) {
+      if (isAbortError(err)) return true
+
       const message = err instanceof Error ? err.message : 'Failed to save AI character'
       setError(message)
       console.error('[useAICharacter] Save error:', err)
@@ -133,6 +144,8 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch (err) {
+      if (isAbortError(err)) return
+
       const message = err instanceof Error ? err.message : 'Failed to export character'
       setError(message)
       console.error('[useAICharacter] Export error:', err)
@@ -164,6 +177,8 @@ export function useAICharacter(tokenId: string): UseAICharacterReturn {
 
       return result
     } catch (err) {
+      if (isAbortError(err)) return null
+
       const message = err instanceof Error ? err.message : 'Failed to import character'
       setError(message)
       console.error('[useAICharacter] Import error:', err)
