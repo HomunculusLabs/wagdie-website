@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getElizaClient } from '@/lib/eliza/client'
 import { elizaConfig } from '@/lib/eliza/config'
 import { recordLegacyPersonaProfileLink, recordPersonaMigrationSuccess, syncOfficialPersonaShadow } from '@/lib/eliza/personaMigration'
+import { buildNeutralDefaultPersonality } from '@/lib/eliza/persona-copy'
 import { authorizeElizaCharacterMutation } from '@/lib/eliza/routeAuth'
 import { getCharacterRecordByExternalId } from '@/lib/eliza/characterResolver'
 import {
@@ -160,7 +161,7 @@ export async function PUT(
       const name =
         typeof body.name === 'string' && body.name.trim().length > 0 ? body.name : fallbackName
 
-      const defaultPersonality = `A mysterious character from the world of WAGDIE. Character #${externalTokenId}.`
+      const defaultPersonality = buildNeutralDefaultPersonality(externalTokenId)
 
       const character = toAgentCharacterFromAICharacter({
         name,

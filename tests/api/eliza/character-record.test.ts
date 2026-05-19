@@ -17,6 +17,7 @@ jest.mock('@/lib/eliza/client', () => ({ getElizaClient: jest.fn() }))
 jest.mock('@/lib/services/character-service', () => ({ getCharacter: jest.fn() }))
 jest.mock('@/lib/auth/admin', () => ({ isAdmin: (address: string) => mockIsAdmin(address) }))
 jest.mock('@/lib/eliza/personaMigration', () => ({
+  recordLegacyPersonaProfileLink: jest.fn(),
   recordPersonaMigrationSuccess: jest.fn(),
   syncOfficialPersonaShadow: jest.fn(),
 }))
@@ -216,6 +217,42 @@ describe('Eliza character record route', () => {
     )
     expect(syncOfficialPersonaShadow).not.toHaveBeenCalled()
     expect(recordPersonaMigrationSuccess).not.toHaveBeenCalled()
+  })
+
+  it('PUT uses neutral default persona copy when creating a missing record without explicit persona text', async () => {
+    ;(getSession as jest.Mock).mockResolvedValueOnce({ address: '0xOwner' })
+    ;(getCharacter as jest.Mock).mockResolvedValueOnce({
+      name: 'Ash',
+      owner_address: '0xowner',
+      background_story: null,
+    })
+
+    const createRecord = jest.fn().mockResolvedValueOnce({
+      id: 'record-123',
+      externalId: '123',
+      character: {
+        name: 'Ash',
+        bio: ['A mysterious character whose story is still being written. Character #123.'],
+      },
+      createdAt: '2026-05-10T00:00:00.000Z',
+      updatedAt: '2026-05-10T00:00:00.000Z',
+    })
+
+    ;(getElizaClient as jest.Mock).mockReturnValue({
+      characters: {
+        getRecordByExternalId: jest.fn().mockResolvedValueOnce(null),
+        createRecord,
+      },
+    })
+
+    const response = await PUT(request({}), params())
+
+    expect(response.status).toBe(201)
+    const createdCharacter = createRecord.mock.calls[0][0].character
+    expect(createdCharacter.bio).toContain(
+      'A mysterious character whose story is still being written. Character #123.'
+    )
+    expect(JSON.stringify(createdCharacter)).not.toContain('world of WAGDIE')
   })
 
   it('PUT rejects missing wallet session before loading the character', async () => {
