@@ -17,6 +17,8 @@ import { FIELD_LIMITS as ELIZA_FIELD_LIMITS } from '@/types/eliza'
 type AuthorizedElizaCharacterMutation = Extract<ElizaCharacterMutationAuthorization, { authorized: true }>
 type UnknownRecord = Record<string, unknown>
 
+const ASSISTANT_PROPOSAL_ALIASES = ['systemPrompt', 'messageExamples'] as const
+
 export class PersonaAssistantUnavailableError extends Error {
   constructor(message = 'Persona assistant inference is not configured') {
     super(message)
@@ -153,6 +155,54 @@ function extractJson(content: string): unknown {
   }
 }
 
+function selectProposalRecord(value: unknown): { proposal: unknown; warnings: string[] } {
+  if (!isRecord(value)) return { proposal: value, warnings: [] }
+
+  const hasAllowedTopLevel = [...ASSISTANT_PERSONA_PROPOSAL_FIELDS, ...ASSISTANT_PROPOSAL_ALIASES]
+    .some((key) => Object.prototype.hasOwnProperty.call(value, key))
+
+  if (!hasAllowedTopLevel && isRecord(value.character)) {
+    return {
+      proposal: value.character,
+      warnings: ['Assistant returned proposal.character; normalized nested character proposal'],
+    }
+  }
+
+  return { proposal: value, warnings: [] }
+}
+
+function pruneModelProposal(value: unknown): { proposal: unknown; warnings: string[] } {
+  const selected = selectProposalRecord(value)
+  if (!isRecord(selected.proposal)) return selected
+
+  const proposal: UnknownRecord = {}
+  const warnings = [...selected.warnings]
+  const allowedKeys = new Set<string>([
+    ...ASSISTANT_PERSONA_PROPOSAL_FIELDS,
+    ...ASSISTANT_PROPOSAL_ALIASES,
+  ])
+
+  for (const key of ASSISTANT_PERSONA_PROPOSAL_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(selected.proposal, key)) {
+      proposal[key] = selected.proposal[key]
+    }
+  }
+
+  for (const key of ASSISTANT_PROPOSAL_ALIASES) {
+    if (Object.prototype.hasOwnProperty.call(selected.proposal, key)) {
+      proposal[key] = selected.proposal[key]
+    }
+  }
+
+  for (const key of Object.keys(selected.proposal)) {
+    if (!allowedKeys.has(key)) {
+      warnings.push(`Assistant returned unsupported field ${key}; ignored before review`)
+    }
+  }
+
+  return { proposal, warnings }
+}
+
 function parseAssistantEnvelope(
   mode: PersonaAssistantRequest['mode'],
   content: string
@@ -185,7 +235,8 @@ function parseAssistantEnvelope(
     throw new PersonaAssistantInvalidOutputError('Generate mode response must include proposal')
   }
 
-  const policyResult = sanitizePersonaAssistantProposal(parsed.proposal)
+  const pruned = pruneModelProposal(parsed.proposal)
+  const policyResult = sanitizePersonaAssistantProposal(pruned.proposal)
   if (!policyResult.ok) {
     throw new PersonaAssistantInvalidOutputError('Assistant proposal failed policy validation', policyResult.issues)
   }
@@ -193,7 +244,7 @@ function parseAssistantEnvelope(
   return {
     assistantText,
     proposal: policyResult.proposal,
-    warnings: policyResult.warnings,
+    warnings: [...pruned.warnings, ...policyResult.warnings],
   }
 }
 

@@ -208,6 +208,17 @@ function parseErrorMessage(body: unknown): string | null {
   return typeof error?.message === 'string' ? error.message : null
 }
 
+function summarizeFailureText(text: string): string | null {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+
+  const title = trimmed.match(/<title>([^<]+)<\/title>/i)?.[1]
+  if (title) return title.replace(/\s+/g, ' ').trim()
+
+  const withoutTags = trimmed.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  return withoutTags ? withoutTags.slice(0, 300) : null
+}
+
 async function parseFailure(response: Response): Promise<string> {
   try {
     const contentType = response.headers.get('content-type') || ''
@@ -217,7 +228,10 @@ async function parseFailure(response: Response): Promise<string> {
     }
 
     const text = await response.text()
-    return text || `Provider request failed with ${response.status}`
+    const summary = summarizeFailureText(text)
+    return summary
+      ? `Provider request failed with ${response.status}: ${summary}`
+      : `Provider request failed with ${response.status}`
   } catch {
     return `Provider request failed with ${response.status}`
   }
