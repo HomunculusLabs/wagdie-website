@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, Select } from '@/components/ui';
 import { canonStatusLabels, getCanonizationStageOptions } from '@/lib/lore/canonization';
 import { canonStatuses } from '@/lib/lore/types';
 import type { LoreArchiveFilters, LoreCharacter, LoreLocation, LoreSeason } from '@/lib/lore/types';
@@ -15,13 +14,44 @@ interface LoreFilterBarProps {
   characters: LoreCharacter[];
 }
 
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}
+
 const unsetOption = (label: string) => ({ value: '', label });
+
+const hasActiveFilter = (filters: LoreArchiveFilters) => {
+  return Boolean(filters.season || filters.location || filters.character || filters.keyword || filters.canonStatus || filters.canonStage);
+};
+
+function SelectField({ label, value, options, onChange }: SelectFieldProps) {
+  return (
+    <label className="block space-y-2 font-serif text-sm text-neutral-400">
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full border border-midnight-light/40 bg-black/30 px-3 py-2.5 font-serif text-sm text-bone outline-none transition-colors focus:border-soul-accent"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value} className="bg-soul-950 text-bone">
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 export function LoreFilterBar({ filters, seasons, locations, characters }: LoreFilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [keyword, setKeyword] = useState(filters.keyword ?? '');
+  const active = hasActiveFilter(filters);
 
   useEffect(() => {
     setKeyword(filters.keyword ?? '');
@@ -73,72 +103,72 @@ export function LoreFilterBar({ filters, seasons, locations, characters }: LoreF
   };
 
   return (
-    <section className="border border-midnight-light/50 bg-soul-900/50 p-4 shadow-2xl backdrop-blur-md md:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-midnight-light/40 pb-4">
-        <div>
-          <p className="text-xs font-eskapade uppercase tracking-[0.28em] text-soul-accent">
-            Archive filters
-          </p>
-          <p className="mt-1 text-sm font-eskapade text-neutral-500">
-            URL-driven controls for season, place, character, keyword, canon status, and canon workflow stage.
-          </p>
-        </div>
-        <Link
-          href="/lore"
-          className="text-xs font-eskapade uppercase tracking-[0.22em] text-neutral-500 transition-colors hover:text-soul-accent"
-        >
-          Clear filters
-        </Link>
+    <section className="border-y border-midnight-light/30 py-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <p className="font-serif text-base text-neutral-300">
+          Filter stories
+          {active && <span className="ml-3 text-sm text-soul-accent">Active</span>}
+        </p>
+        {active && (
+          <Link href="/lore" className="font-serif text-sm text-soul-accent transition-colors hover:text-bone">
+            Reset all
+          </Link>
+        )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-6">
-        <Select
-          label="Season"
-          aria-label="Filter by season"
-          value={filters.season ?? ''}
-          options={seasonOptions}
-          onChange={(event) => pushFilter('season', event.target.value)}
-        />
-        <Select
-          label="Location"
-          aria-label="Filter by location"
-          value={filters.location ?? ''}
-          options={locationOptions}
-          onChange={(event) => pushFilter('location', event.target.value)}
-        />
-        <Select
-          label="Character"
-          aria-label="Filter by character"
-          value={filters.character ?? ''}
-          options={characterOptions}
-          onChange={(event) => pushFilter('character', event.target.value)}
-        />
-        <Select
-          label="Canon status"
-          aria-label="Filter by canon status"
-          value={filters.canonStatus ?? ''}
-          options={canonOptions}
-          onChange={(event) => pushFilter('canonStatus', event.target.value)}
-        />
-        <Select
-          label="Canon stage"
-          aria-label="Filter by canon workflow stage"
-          value={filters.canonStage ?? ''}
-          options={canonStageOptions}
-          onChange={(event) => pushFilter('canonStage', event.target.value)}
-        />
-        <form onSubmit={handleKeywordSubmit} className="flex items-end gap-2">
-          <Input
-            label="Keyword"
-            aria-label="Search lore keyword"
-            value={keyword}
-            placeholder="altar, citadel..."
-            onChange={(event) => setKeyword(event.target.value)}
+      <div className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <SelectField
+            label="Season"
+            value={filters.season ?? ''}
+            options={seasonOptions}
+            onChange={(value) => pushFilter('season', value)}
           />
-          <Button type="submit" size="sm" className="mb-[1px] whitespace-nowrap py-2.5">
-            Search
-          </Button>
-        </form>
+          <SelectField
+            label="Location"
+            value={filters.location ?? ''}
+            options={locationOptions}
+            onChange={(value) => pushFilter('location', value)}
+          />
+          <SelectField
+            label="Character"
+            value={filters.character ?? ''}
+            options={characterOptions}
+            onChange={(value) => pushFilter('character', value)}
+          />
+          <SelectField
+            label="Canon status"
+            value={filters.canonStatus ?? ''}
+            options={canonOptions}
+            onChange={(value) => pushFilter('canonStatus', value)}
+          />
+          <SelectField
+            label="Canon stage"
+            value={filters.canonStage ?? ''}
+            options={canonStageOptions}
+            onChange={(value) => pushFilter('canonStage', value)}
+          />
+          <form onSubmit={handleKeywordSubmit} className="space-y-2 font-serif text-sm text-neutral-400">
+            <label htmlFor="lore-keyword">Keyword</label>
+            <div className="flex gap-2">
+              <input
+                id="lore-keyword"
+                aria-label="Search lore keyword"
+                value={keyword}
+                placeholder="altar, citadel..."
+                onChange={(event) => setKeyword(event.target.value)}
+                className="min-w-0 flex-1 border border-midnight-light/40 bg-black/30 px-3 py-2.5 font-serif text-sm text-bone outline-none transition-colors placeholder:text-neutral-600 focus:border-soul-accent"
+              />
+              <button
+                type="submit"
+                className="border border-soul-accent/40 px-3 py-2.5 font-serif text-sm text-soul-accent transition-colors hover:border-soul-accent hover:text-bone"
+              >
+                Search
+              </button>
+            </div>
+          </form>
+        </div>
+
       </div>
     </section>
   );
