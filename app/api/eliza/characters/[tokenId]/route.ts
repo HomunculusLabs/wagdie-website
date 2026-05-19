@@ -129,6 +129,7 @@ export async function PUT(
 
     const policyResult = validatePutCharacterSheetUpdate(rawBody)
     if (!policyResult.ok) {
+      console.error('[Eliza Characters] PUT validation failed:', { issues: policyResult.issues })
       return NextResponse.json(
         {
           error: 'VALIDATION_ERROR',

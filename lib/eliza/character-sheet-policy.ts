@@ -82,6 +82,7 @@ const USER_MANAGED_TOP_LEVEL = new Set([
   'adjectives',
   'style',
   'messageExamples',
+  'exampleMessages',
   'postExamples',
   'knowledge',
 ])

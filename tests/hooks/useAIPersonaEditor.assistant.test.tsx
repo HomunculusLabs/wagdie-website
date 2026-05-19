@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useAIPersonaEditor } from '@/hooks/useAIPersonaEditor'
+import { validatePutCharacterSheetUpdate } from '@/lib/eliza/character-sheet-policy'
 import type { AICharacter } from '@/types/eliza'
 
 const character: AICharacter = {
@@ -71,6 +72,47 @@ describe('useAIPersonaEditor assistant support', () => {
     expect(snapshot).not.toHaveProperty('personality')
   })
 
+  it('cleans assistant-applied fields before building the save payload', async () => {
+    const { result } = renderHook(() => useAIPersonaEditor('123', character, false))
+
+    await waitFor(() => expect(result.current.state.username).toBe('ash_knight'))
+
+    act(() => {
+      result.current.applyAssistantDraft({
+        bio: ['Valid bio', 'x'.repeat(600)],
+        topics: ['valid-topic', 'this topic is far too long and should be clamped before save'],
+        style: { all: ['  concise  ', 'x'.repeat(300)] },
+        exampleMessages: [
+          { userMessage: '  user  ', assistantMessage: 'assistant' },
+          { userMessage: '', assistantMessage: 'drop me' },
+        ],
+        postExamples: ['valid post', 'x'.repeat(400)],
+        templates: { 'bad key': 'drop', ok: 'x'.repeat(5000) },
+        settings: {
+          metadata: {
+            wagdieUser: {
+              safe: 'yes',
+              nested: { drop: true } as never,
+              list: ['drop'] as never,
+            },
+          },
+        },
+      })
+    })
+
+    const updateInput = result.current.getUpdateInput()
+    const policyResult = validatePutCharacterSheetUpdate(updateInput)
+
+    expect(policyResult.ok).toBe(true)
+    expect(updateInput.settings?.metadata?.wagdieUser).toEqual({ safe: 'yes' })
+    expect(updateInput.templates).toEqual({ ok: 'x'.repeat(4000) })
+    expect(updateInput.bio?.[1]).toHaveLength(500)
+    expect(updateInput.topics?.[1]).toHaveLength(50)
+    expect(updateInput.style?.all?.[1]).toHaveLength(200)
+    expect(updateInput.postExamples?.[1]).toHaveLength(280)
+    expect(updateInput.exampleMessages).toEqual([{ userMessage: 'user', assistantMessage: 'assistant' }])
+  })
+
   it('stages approved assistant drafts locally while preserving omitted fields', async () => {
     const { result } = renderHook(() => useAIPersonaEditor('123', character, false))
 
@@ -121,6 +163,7 @@ describe('useAIPersonaEditor assistant support', () => {
       topics: ['new-topic'],
       exampleMessages: [],
     })
+    expect(validatePutCharacterSheetUpdate(updateInput).ok).toBe(true)
 
     await waitFor(() => {
       const stored = localStorage.getItem('wagdie-ai-draft-123')

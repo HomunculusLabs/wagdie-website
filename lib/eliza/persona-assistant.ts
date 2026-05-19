@@ -258,8 +258,22 @@ function normalizeSettings(value: unknown): UnknownRecord | undefined {
   const metadata = isRecord(value.metadata) ? value.metadata : undefined
   if (metadata && Object.prototype.hasOwnProperty.call(metadata, 'wagdieUser')) {
     const wagdieUser = metadata.wagdieUser
-    if (wagdieUser === null || isRecord(wagdieUser)) {
-      settings.metadata = { wagdieUser }
+    if (wagdieUser === null) {
+      settings.metadata = { wagdieUser: null }
+    } else if (isRecord(wagdieUser)) {
+      const cleaned = Object.fromEntries(
+        Object.entries(wagdieUser)
+          .filter(([key, child]) => (
+            /^[A-Za-z0-9_.-]{1,64}$/.test(key) &&
+            (typeof child === 'string' || typeof child === 'number' || typeof child === 'boolean' || child === null)
+          ))
+          .map(([key, child]) => [
+            key,
+            typeof child === 'string' ? clampString(child, ELIZA_FIELD_LIMITS.metadataStringValue) : child,
+          ])
+          .slice(0, ELIZA_FIELD_LIMITS.maxMetadataKeys)
+      )
+      settings.metadata = { wagdieUser: Object.keys(cleaned).length > 0 ? cleaned : null }
     }
   }
 

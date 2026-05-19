@@ -19,6 +19,7 @@ import type {
   StyleConfig,
   UpdateAICharacterInput,
 } from '@/types/eliza'
+import { FIELD_LIMITS } from '@/types/eliza'
 import { migrateDraft } from '@/lib/eliza/migration'
 
 /** Draft storage key prefix */
@@ -124,6 +125,75 @@ function initializeState(character?: AICharacter | null): AIPersonaEditorState {
 
 function hasOwn<T extends object, K extends PropertyKey>(value: T, key: K): value is T & Record<K, unknown> {
   return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+const SAFE_KEY_REGEX = /^[A-Za-z0-9_.-]{1,64}$/
+
+function truncate(value: string, max: number): string {
+  return value.length > max ? value.slice(0, max) : value
+}
+
+function cleanStringList(values: string[], maxItems: number, maxLength: number): string[] {
+  return values
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => truncate(value.trim(), maxLength))
+    .filter(Boolean)
+    .slice(0, maxItems)
+}
+
+function cleanStyle(style: StyleConfig): StyleConfig {
+  return {
+    ...(style.all !== undefined ? { all: cleanStringList(style.all, FIELD_LIMITS.maxStyleRules, FIELD_LIMITS.styleRule) } : {}),
+    ...(style.chat !== undefined ? { chat: cleanStringList(style.chat, FIELD_LIMITS.maxStyleRules, FIELD_LIMITS.styleRule) } : {}),
+    ...(style.post !== undefined ? { post: cleanStringList(style.post, FIELD_LIMITS.maxStyleRules, FIELD_LIMITS.styleRule) } : {}),
+  }
+}
+
+function cleanExampleMessages(messages: ExampleMessage[]): ExampleMessage[] {
+  return messages
+    .map((message) => ({
+      userMessage: truncate((message.userMessage || '').trim(), FIELD_LIMITS.userMessageExample),
+      assistantMessage: truncate((message.assistantMessage || '').trim(), FIELD_LIMITS.assistantMessageExample),
+    }))
+    .filter((message) => message.userMessage && message.assistantMessage)
+    .slice(0, FIELD_LIMITS.maxExampleMessages)
+}
+
+function cleanTemplates(templates: CharacterTemplates): CharacterTemplates {
+  return Object.fromEntries(
+    Object.entries(templates)
+      .map(([key, value]) => [key.trim(), value] as const)
+      .filter(([key, value]) => SAFE_KEY_REGEX.test(key) && typeof value === 'string')
+      .map(([key, value]) => [key, truncate(value, FIELD_LIMITS.templateBody)])
+      .slice(0, FIELD_LIMITS.maxTemplates)
+  )
+}
+
+function cleanWagdieUserMetadata(
+  metadata: SafeCharacterSettings['metadata']
+): SafeCharacterSettings['metadata'] | undefined {
+  if (!metadata || !hasOwn(metadata, 'wagdieUser')) return undefined
+  if (metadata.wagdieUser === null) return { wagdieUser: null }
+
+  const wagdieUser = metadata.wagdieUser
+  if (!wagdieUser || typeof wagdieUser !== 'object' || Array.isArray(wagdieUser)) {
+    return { wagdieUser: null }
+  }
+
+  const cleaned = Object.fromEntries(
+    Object.entries(wagdieUser)
+      .filter(([key, value]) => (
+        SAFE_KEY_REGEX.test(key) &&
+        (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null)
+      ))
+      .map(([key, value]) => [
+        key,
+        typeof value === 'string' ? truncate(value, FIELD_LIMITS.metadataStringValue) : value,
+      ])
+      .slice(0, FIELD_LIMITS.maxMetadataKeys)
+  )
+
+  return { wagdieUser: Object.keys(cleaned).length > 0 ? cleaned : null }
 }
 
 function cloneStyle(style: StyleConfig): StyleConfig {
@@ -442,30 +512,30 @@ export function useAIPersonaEditor(
     const backstory = state.backstory.trim()
     const system = state.systemPrompt.trim()
     const avatar = state.settings.avatar?.trim()
+    const metadata = cleanWagdieUserMetadata(state.settings.metadata)
+    const templates = cleanTemplates(state.templates)
 
     const settings: SafeCharacterSettings | undefined =
-      avatar || state.settings.metadata?.wagdieUser !== undefined
+      avatar || metadata || current?.settings?.avatar
         ? {
-            ...(avatar || current?.settings?.avatar ? { avatar: avatar || null } : {}),
-            ...(state.settings.metadata?.wagdieUser !== undefined
-              ? { metadata: { wagdieUser: state.settings.metadata.wagdieUser || null } }
-              : {}),
+            ...(avatar || current?.settings?.avatar ? { avatar: avatar ? truncate(avatar, FIELD_LIMITS.settingsAvatar) : null } : {}),
+            ...(metadata ? { metadata } : {}),
           }
         : undefined
 
     return {
-      username: username || (current?.username ? null : undefined),
-      backstory: backstory || (current?.backstory ? null : undefined),
-      bio: state.bio.filter((b) => b.trim() !== ''),
-      lore: state.lore.filter((l) => l.trim() !== ''),
-      topics: state.topics.filter((t) => t.trim() !== ''),
-      adjectives: state.adjectives.filter((a) => a.trim() !== ''),
-      style: state.style,
-      exampleMessages: state.exampleMessages,
-      postExamples: state.postExamples.filter((p) => p.trim() !== ''),
-      system: system || (current?.system || current?.systemPrompt ? null : undefined),
-      systemPrompt: system || (current?.system || current?.systemPrompt ? null : undefined),
-      templates: Object.keys(state.templates).length > 0 ? state.templates : current?.templates ? {} : undefined,
+      username: username ? truncate(username, FIELD_LIMITS.username) : (current?.username ? null : undefined),
+      backstory: backstory ? truncate(backstory, FIELD_LIMITS.backstory) : (current?.backstory ? null : undefined),
+      bio: cleanStringList(state.bio, FIELD_LIMITS.maxBioEntries, FIELD_LIMITS.bio),
+      lore: cleanStringList(state.lore, FIELD_LIMITS.maxLoreEntries, FIELD_LIMITS.lore),
+      topics: cleanStringList(state.topics, FIELD_LIMITS.maxTopics, FIELD_LIMITS.topic),
+      adjectives: cleanStringList(state.adjectives, FIELD_LIMITS.maxAdjectives, FIELD_LIMITS.adjective),
+      style: cleanStyle(state.style),
+      exampleMessages: cleanExampleMessages(state.exampleMessages),
+      postExamples: cleanStringList(state.postExamples, FIELD_LIMITS.maxPostExamples, FIELD_LIMITS.postExample),
+      system: system ? truncate(system, FIELD_LIMITS.systemPrompt) : (current?.system || current?.systemPrompt ? null : undefined),
+      systemPrompt: system ? truncate(system, FIELD_LIMITS.systemPrompt) : (current?.system || current?.systemPrompt ? null : undefined),
+      templates: Object.keys(templates).length > 0 ? templates : current?.templates ? {} : undefined,
       settings,
     }
   }, [state])
