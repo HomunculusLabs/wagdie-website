@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useCallback, Suspense } from 'react'
+import { useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { BannerHeader } from '@/components/shared/BannerHeader'
 import { FilterSidebar } from '@/components/characters/FilterSidebar'
@@ -20,6 +20,7 @@ import { useArmorTraits, useBackTraits, useMaskTraits, useThe17Traits } from '@/
 import { useWallet } from '@/hooks/useWallet'
 import { useCharacterBrowseFilters } from '@/hooks/useCharacterBrowseFilters'
 import type { Character } from '@/types/character'
+import { THE_17_COUNT, THE_17_FILTER_VALUE } from '@/lib/domain/character/the17'
 
 const ITEMS_PER_PAGE = 50
 
@@ -63,7 +64,18 @@ function CharactersPageContent() {
   const { traits: armorTraits, isLoading: armorLoading } = useArmorTraits()
   const { traits: backTraits, isLoading: backLoading } = useBackTraits()
   const { traits: maskTraits, isLoading: maskLoading } = useMaskTraits()
-  const { traits: the17Traits, isLoading: the17Loading } = useThe17Traits()
+  const { traits: the17Traits } = useThe17Traits()
+  const the17Options = useMemo(() => {
+    const manualThe17Option = {
+      value: THE_17_FILTER_VALUE,
+      count: THE_17_COUNT,
+    }
+
+    return [
+      manualThe17Option,
+      ...the17Traits.filter((trait) => trait.value !== THE_17_FILTER_VALUE),
+    ]
+  }, [the17Traits])
 
   // Fetch characters using custom hook with React Query
   const {
@@ -137,9 +149,9 @@ function CharactersPageContent() {
           onAlignmentChange={handlers.onAlignmentChange}
           alignmentsLoading={alignmentsLoading}
           the17Filter={the17}
-          availableThe17={the17Traits}
+          availableThe17={the17Options}
           onThe17Change={handlers.onThe17Change}
-          the17Loading={the17Loading}
+          the17Loading={false}
           armorFilter={armor}
           availableArmor={armorTraits}
           onArmorChange={handlers.onArmorChange}

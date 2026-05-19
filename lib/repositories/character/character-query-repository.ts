@@ -4,6 +4,10 @@ import {
   type CharacterTraitFilters,
   noopCharacterRuntimeAssets,
 } from '@/lib/domain/character/character-runtime-assets'
+import {
+  THE_17_TOKEN_IDS,
+  isThe17HardcodedFilter,
+} from '@/lib/domain/character/the17'
 import { getSupabaseAdmin, supabase } from '@/lib/supabase'
 import { isBurnedOwner } from '@/lib/utils/blockchain'
 import type {
@@ -43,7 +47,7 @@ function hasTraitFilters(filters: CharacterFilters): boolean {
   return Boolean(
     filters.origin ||
     filters.alignment ||
-    filters.the17 ||
+    (filters.the17 && !isThe17HardcodedFilter(filters.the17)) ||
     filters.armor ||
     filters.back ||
     filters.mask
@@ -54,7 +58,7 @@ function toTraitFilters(filters: CharacterFilters): CharacterTraitFilters {
   return {
     origin: filters.origin,
     alignment: filters.alignment,
-    the17: filters.the17,
+    the17: isThe17HardcodedFilter(filters.the17) ? undefined : filters.the17,
     armor: filters.armor,
     back: filters.back,
     mask: filters.mask,
@@ -156,7 +160,7 @@ function applyMetadataTraitFilters(query: CharacterQueryBuilder, filters: Charac
     })
   }
 
-  if (filters.the17) {
+  if (filters.the17 && !isThe17HardcodedFilter(filters.the17)) {
     nextQuery = nextQuery.contains('metadata', {
       attributes: [{ trait_type: 'The 17', value: filters.the17 }],
     })
@@ -336,6 +340,10 @@ export class CharacterQueryRepository {
       : null
 
     const tokenIdConstraints: Set<number>[] = []
+
+    if (isThe17HardcodedFilter(filters.the17)) {
+      tokenIdConstraints.push(new Set<number>(THE_17_TOKEN_IDS))
+    }
 
     if (localTraitTokenIds) {
       if (localTraitTokenIds.size === 0) {
