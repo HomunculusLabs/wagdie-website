@@ -146,6 +146,21 @@ describe('API client response helpers', () => {
     });
   });
 
+  it('summarizes HTML error pages instead of surfacing raw markup', async () => {
+    const response = mockResponse('<!DOCTYPE html><html><head><title>runiverse.ai | 502: Bad gateway</title></head><body>Cloudflare failure</body></html>', {
+      status: 502,
+      statusText: 'Bad Gateway',
+      headers: { 'Content-Type': 'text/html' },
+    });
+
+    await expect(readApiRaw(response, 'Fallback failure')).rejects.toMatchObject({
+      name: 'ApiError',
+      message: 'runiverse.ai | 502: Bad gateway',
+      status: 502,
+      statusText: 'Bad Gateway',
+    });
+  });
+
   it('throws the fallback message for malformed JSON responses', async () => {
     const response = mockResponse('{ invalid json', {
       status: 200,

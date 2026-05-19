@@ -158,7 +158,7 @@ describe('persona assistant route', () => {
     await expect(response.json()).resolves.toMatchObject({ error: 'ASSISTANT_UNAVAILABLE' })
   })
 
-  it('returns 502 for invalid model output', async () => {
+  it('returns 422 for invalid model output', async () => {
     ;(runPersonaAssistant as jest.Mock).mockRejectedValueOnce(new PersonaAssistantInvalidOutputError(
       'Assistant proposal failed policy validation',
       [{ path: 'plugins', reason: 'backend_owned', message: 'plugins is managed by the WAGDIE backend' }]
@@ -166,7 +166,7 @@ describe('persona assistant route', () => {
 
     const response = await POST(request(validPayload), params())
 
-    expect(response.status).toBe(502)
+    expect(response.status).toBe(422)
     await expect(response.json()).resolves.toMatchObject({
       error: 'ASSISTANT_INVALID_OUTPUT',
       details: { issues: [expect.objectContaining({ path: 'plugins', reason: 'backend_owned' })] },

@@ -101,7 +101,7 @@ export async function POST(
           message: error.message,
           details: { issues: error.issues },
         },
-        { status: 502 }
+        { status: 422 }
       )
     }
 
@@ -112,7 +112,7 @@ export async function POST(
           message: error.message,
           details: { code: error.code, statusCode: error.statusCode },
         },
-        { status: error.statusCode === 429 ? 429 : 502 }
+        { status: error.statusCode === 429 ? 429 : 503 }
       )
     }
 

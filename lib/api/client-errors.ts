@@ -23,6 +23,26 @@ function getStringField(body: Record<string, unknown>, field: string): string | 
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
+function summarizeTextError(body: string, fallbackMessage: string): string {
+  const trimmed = body.trim();
+  if (!trimmed) return fallbackMessage;
+
+  const titleMatch = trimmed.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (titleMatch?.[1]) {
+    return titleMatch[1].replace(/\s+/g, ' ').trim();
+  }
+
+  const stripped = trimmed
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const message = stripped || trimmed.replace(/\s+/g, ' ').trim();
+  return message.length > 240 ? `${message.slice(0, 237)}...` : message;
+}
+
 export interface ApiErrorMessageOptions {
   preferMessage?: boolean;
 }
@@ -58,7 +78,7 @@ export function extractApiErrorMessage(
   }
 
   if (typeof body === 'string' && body.trim()) {
-    return body;
+    return summarizeTextError(body, fallbackMessage);
   }
 
   return fallbackMessage;
