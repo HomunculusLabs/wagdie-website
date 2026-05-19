@@ -265,7 +265,16 @@ export class OfficialWagdieElizaClient implements WagdieElizaClient {
         for (const agent of agents) {
           if (!agent.id) continue
 
-          const record = await this.characters.getRecord(agent.id)
+          let record: CharacterRecord
+          try {
+            record = await this.characters.getRecord(agent.id)
+          } catch (error) {
+            if (error instanceof WagdieElizaError && error.statusCode === 404) {
+              continue
+            }
+            throw error
+          }
+
           if (record.externalId === externalId) {
             return record
           }
