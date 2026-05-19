@@ -171,6 +171,135 @@ function selectProposalRecord(value: unknown): { proposal: unknown; warnings: st
   return { proposal: value, warnings: [] }
 }
 
+function firstString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return undefined
+}
+
+function clampString(value: string, max: number): string {
+  return value.length > max ? value.slice(0, max) : value
+}
+
+function textFromUnknown(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim() || undefined
+  if (!isRecord(value)) return undefined
+
+  const content = isRecord(value.content) ? value.content : undefined
+  return firstString(value.text, value.value, value.content, content?.text, value.description, value.name)
+}
+
+function normalizeStringList(value: unknown, maxItems: number, maxLength: number): string[] | undefined {
+  if (!Array.isArray(value)) return undefined
+
+  const items = value
+    .map(textFromUnknown)
+    .filter((item): item is string => Boolean(item))
+    .map((item) => clampString(item, maxLength))
+    .slice(0, maxItems)
+
+  return items.length > 0 ? items : undefined
+}
+
+function normalizeStyle(value: unknown): UnknownRecord | undefined {
+  if (!isRecord(value)) return undefined
+
+  const style: UnknownRecord = {}
+  const all = normalizeStringList(value.all, ELIZA_FIELD_LIMITS.maxStyleRules, ELIZA_FIELD_LIMITS.styleRule)
+  const chat = normalizeStringList(value.chat, ELIZA_FIELD_LIMITS.maxStyleRules, ELIZA_FIELD_LIMITS.styleRule)
+  const post = normalizeStringList(value.post, ELIZA_FIELD_LIMITS.maxStyleRules, ELIZA_FIELD_LIMITS.styleRule)
+
+  if (all) style.all = all
+  if (chat) style.chat = chat
+  if (post) style.post = post
+
+  return Object.keys(style).length > 0 ? style : undefined
+}
+
+function normalizeExampleMessages(value: unknown): UnknownRecord[] | undefined {
+  if (!Array.isArray(value)) return undefined
+
+  const examples: UnknownRecord[] = []
+  for (const item of value) {
+    if (isRecord(item)) {
+      const userMessage = firstString(item.userMessage, item.user, item.prompt)
+      const assistantMessage = firstString(item.assistantMessage, item.assistant, item.response, item.reply)
+      if (userMessage && assistantMessage) {
+        examples.push({
+          userMessage: clampString(userMessage, ELIZA_FIELD_LIMITS.userMessageExample),
+          assistantMessage: clampString(assistantMessage, ELIZA_FIELD_LIMITS.assistantMessageExample),
+        })
+      }
+    } else if (Array.isArray(item) && item.length >= 2) {
+      const userMessage = textFromUnknown(item[0])
+      const assistantMessage = textFromUnknown(item[1])
+      if (userMessage && assistantMessage) {
+        examples.push({
+          userMessage: clampString(userMessage, ELIZA_FIELD_LIMITS.userMessageExample),
+          assistantMessage: clampString(assistantMessage, ELIZA_FIELD_LIMITS.assistantMessageExample),
+        })
+      }
+    }
+
+    if (examples.length >= ELIZA_FIELD_LIMITS.maxExampleMessages) break
+  }
+
+  return examples.length > 0 ? examples : undefined
+}
+
+function normalizeSettings(value: unknown): UnknownRecord | undefined {
+  if (!isRecord(value)) return undefined
+
+  const settings: UnknownRecord = {}
+  const avatar = firstString(value.avatar)
+  if (avatar !== undefined) settings.avatar = clampString(avatar, ELIZA_FIELD_LIMITS.settingsAvatar)
+
+  const metadata = isRecord(value.metadata) ? value.metadata : undefined
+  if (metadata && Object.prototype.hasOwnProperty.call(metadata, 'wagdieUser')) {
+    const wagdieUser = metadata.wagdieUser
+    if (wagdieUser === null || isRecord(wagdieUser)) {
+      settings.metadata = { wagdieUser }
+    }
+  }
+
+  return Object.keys(settings).length > 0 ? settings : undefined
+}
+
+function normalizeModelProposalField(key: string, value: unknown): unknown {
+  switch (key) {
+    case 'username':
+      return firstString(value) === undefined ? undefined : clampString(firstString(value)!, ELIZA_FIELD_LIMITS.username)
+    case 'backstory':
+      return firstString(value) === undefined ? undefined : clampString(firstString(value)!, ELIZA_FIELD_LIMITS.backstory)
+    case 'system':
+    case 'systemPrompt':
+      return firstString(value) === undefined ? undefined : clampString(firstString(value)!, ELIZA_FIELD_LIMITS.systemPrompt)
+    case 'bio':
+      return normalizeStringList(value, ELIZA_FIELD_LIMITS.maxBioEntries, ELIZA_FIELD_LIMITS.bio)
+    case 'lore':
+      return normalizeStringList(value, ELIZA_FIELD_LIMITS.maxLoreEntries, ELIZA_FIELD_LIMITS.lore)
+    case 'topics':
+      return normalizeStringList(value, ELIZA_FIELD_LIMITS.maxTopics, ELIZA_FIELD_LIMITS.topic)
+    case 'adjectives':
+      return normalizeStringList(value, ELIZA_FIELD_LIMITS.maxAdjectives, ELIZA_FIELD_LIMITS.adjective)
+    case 'postExamples':
+      return normalizeStringList(value, ELIZA_FIELD_LIMITS.maxPostExamples, ELIZA_FIELD_LIMITS.postExample)
+    case 'style':
+      return normalizeStyle(value)
+    case 'exampleMessages':
+      return normalizeExampleMessages(value)
+    case 'messageExamples':
+      return value
+    case 'settings':
+      return normalizeSettings(value)
+    case 'templates':
+      return isRecord(value) ? value : undefined
+    default:
+      return value
+  }
+}
+
 function pruneModelProposal(value: unknown): { proposal: unknown; warnings: string[] } {
   const selected = selectProposalRecord(value)
   if (!isRecord(selected.proposal)) return selected
@@ -184,13 +313,23 @@ function pruneModelProposal(value: unknown): { proposal: unknown; warnings: stri
 
   for (const key of ASSISTANT_PERSONA_PROPOSAL_FIELDS) {
     if (Object.prototype.hasOwnProperty.call(selected.proposal, key)) {
-      proposal[key] = selected.proposal[key]
+      const normalized = normalizeModelProposalField(key, selected.proposal[key])
+      if (normalized !== undefined) {
+        proposal[key] = normalized
+      } else {
+        warnings.push(`Assistant returned unusable ${key}; ignored before review`)
+      }
     }
   }
 
   for (const key of ASSISTANT_PROPOSAL_ALIASES) {
     if (Object.prototype.hasOwnProperty.call(selected.proposal, key)) {
-      proposal[key] = selected.proposal[key]
+      const normalized = normalizeModelProposalField(key, selected.proposal[key])
+      if (normalized !== undefined) {
+        proposal[key] = normalized
+      } else {
+        warnings.push(`Assistant returned unusable ${key}; ignored before review`)
+      }
     }
   }
 

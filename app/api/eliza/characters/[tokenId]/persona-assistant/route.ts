@@ -85,7 +85,11 @@ export async function POST(
     const response = await runPersonaAssistant(authorization, parsed.data)
     return NextResponse.json(response)
   } catch (error) {
-    console.error('[Persona Assistant] POST failed:', error)
+    if (error instanceof PersonaAssistantInvalidOutputError) {
+      console.error('[Persona Assistant] POST failed:', error.message, { issues: error.issues })
+    } else {
+      console.error('[Persona Assistant] POST failed:', error)
+    }
 
     if (error instanceof PersonaAssistantUnavailableError) {
       return NextResponse.json(
