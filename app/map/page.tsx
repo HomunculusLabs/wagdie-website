@@ -9,7 +9,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAccount } from 'wagmi';
 import MapLayerControls from '@/components/map/MapLayerControls';
 import MapStakingSidebar from '@/components/map/MapStakingSidebar';
@@ -48,6 +48,12 @@ export default function MapPage() {
   const { locations, stakedCharacters, isLoading, error, refetch } = useMapData();
   const { layers, toggleLayer } = useMapLayers();
   const { characterMarkers, eventsPayload } = useMapPageMarkers(stakedCharacters, address);
+  const [focusLocationId, setFocusLocationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setFocusLocationId(params.get('location'));
+  }, []);
   const {
     selectedMarker,
     isSidebarOpen,
@@ -68,6 +74,7 @@ export default function MapPage() {
     isSidebarOpen,
     mapContentRef,
     phaserRef,
+    focusLocationId,
   });
 
   const handleSceneReady = useCallback(() => {

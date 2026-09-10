@@ -12,6 +12,7 @@ import type {
 } from '@/types/lore-submission';
 import type { Json } from '@/lib/database.types';
 import type { CanonStatus, CanonizationStageId, CanonizationStep } from '@/lib/lore/types';
+import { rowToThumbnail, type LoreSubmissionThumbnailRow, type LoreThumbnail } from '@/lib/lore/submissions/thumbnail';
 
 export interface LoreSubmissionAdminListFilters {
   status?: LoreSubmissionStatus;
@@ -188,6 +189,38 @@ function linkInsertRows(submissionId: string, links: NormalizedLoreSubmissionLin
   }));
 }
 
+function thumbnailInsertRow(submissionId: string, thumbnail: LoreThumbnail): Record<string, unknown> {
+  switch (thumbnail.kind) {
+    case 'token':
+      return {
+        submission_id: submissionId,
+        kind: 'token',
+        token_id: thumbnail.tokenId,
+        map_location_id: null,
+        custom_image_url: null,
+        custom_image_attribution: null,
+      };
+    case 'map_location':
+      return {
+        submission_id: submissionId,
+        kind: 'map_location',
+        token_id: null,
+        map_location_id: thumbnail.mapLocationId,
+        custom_image_url: null,
+        custom_image_attribution: null,
+      };
+    case 'custom':
+      return {
+        submission_id: submissionId,
+        kind: 'custom',
+        token_id: null,
+        map_location_id: null,
+        custom_image_url: thumbnail.imageUrl,
+        custom_image_attribution: thumbnail.attribution ?? null,
+      };
+  }
+}
+
 export class LoreSubmissionRepository {
   async createSubmission(input: CreateLoreSubmissionInput, submitterAddress: string): Promise<LoreSubmissionDetailDto> {
     const client = getClient();
@@ -211,6 +244,9 @@ export class LoreSubmissionRepository {
 
     const submission = toSubmission(data);
     const links = await this.replaceLinks(submission.id, input.links);
+    const thumbnail = input.thumbnail
+      ? await this.replaceThumbnail(submission.id, input.thumbnail)
+      : null;
     const review = await this.addReview({
       submissionId: submission.id,
       actorAddress: submitterAddress,
@@ -220,7 +256,7 @@ export class LoreSubmissionRepository {
       note: null,
     });
 
-    return { submission, links, reviews: [review] };
+    return { submission, links, reviews: [review], thumbnail };
   }
 
   async findById(submissionId: string): Promise<LoreSubmission | null> {
@@ -238,12 +274,13 @@ export class LoreSubmissionRepository {
     const submission = await this.findById(submissionId);
     if (!submission) return null;
 
-    const [links, reviews] = await Promise.all([
+    const [links, reviews, thumbnail] = await Promise.all([
       this.listLinks(submissionId),
       this.listReviews(submissionId),
+      this.findThumbnail(submissionId),
     ]);
 
-    return { submission, links, reviews };
+    return { submission, links, reviews, thumbnail };
   }
 
   async listForSubmitter(submitterAddress: string): Promise<LoreSubmission[]> {
@@ -445,6 +482,9 @@ export class LoreSubmissionRepository {
     if (!data) return null;
 
     const links = await this.replaceLinks(submissionId, input.links);
+    if (input.thumbnail) {
+      await this.replaceThumbnail(submissionId, input.thumbnail);
+    }
     await this.addReview({
       submissionId,
       actorAddress,
@@ -458,7 +498,36 @@ export class LoreSubmissionRepository {
       submission: toSubmission(data),
       links,
       reviews: await this.listReviews(submissionId),
+      thumbnail: await this.findThumbnail(submissionId),
     };
+  }
+
+  async findThumbnail(submissionId: string): Promise<LoreThumbnail | null> {
+    const { data, error } = await getClient()
+      .from('lore_submission_thumbnails')
+      .select('*')
+      .eq('submission_id', submissionId)
+      .maybeSingle();
+
+    throwOnError(error, 'Failed to fetch lore submission thumbnail');
+    return data ? rowToThumbnail(data as LoreSubmissionThumbnailRow) : null;
+  }
+
+  async replaceThumbnail(submissionId: string, thumbnail: LoreThumbnail): Promise<LoreThumbnail | null> {
+    const client = getClient();
+    await client
+      .from('lore_submission_thumbnails')
+      .delete()
+      .eq('submission_id', submissionId);
+
+    const { data, error } = await client
+      .from('lore_submission_thumbnails')
+      .upsert(thumbnailInsertRow(submissionId, thumbnail))
+      .select('*')
+      .maybeSingle();
+
+    throwOnError(error, 'Failed to save lore submission thumbnail');
+    return data ? rowToThumbnail(data as LoreSubmissionThumbnailRow) : null;
   }
 
   async listLinks(submissionId: string): Promise<LoreSubmissionLink[]> {

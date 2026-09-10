@@ -5,6 +5,7 @@ import {
   type LoreSubmissionLinkType,
   type NormalizedLoreSubmissionLinkInput,
 } from '@/types/lore-submission';
+import { loreThumbnailSchema } from './thumbnail';
 
 export const LORE_SUBMISSION_LIMITS = {
   titleMin: 3,
@@ -274,6 +275,7 @@ export const loreSubmissionCreateSchema = z.object({
     .refine((links) => links.length >= LORE_SUBMISSION_LIMITS.linksMin, {
       message: 'At least one unique link is required',
     }),
+  thumbnail: loreThumbnailSchema.optional(),
 });
 
 export type LoreSubmissionCreateInput = z.input<typeof loreSubmissionCreateSchema>;

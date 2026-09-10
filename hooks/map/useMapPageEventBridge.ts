@@ -19,6 +19,8 @@ interface UseMapPageEventBridgeInput {
   isSidebarOpen: boolean;
   mapContentRef: RefObject<HTMLDivElement>;
   phaserRef: RefObject<IRefPhaserGame>;
+  /** Optional location id from ?location= — initial fly targets it when known. */
+  focusLocationId?: string | null;
 }
 
 export function useMapPageEventBridge({
@@ -30,6 +32,7 @@ export function useMapPageEventBridge({
   isSidebarOpen,
   mapContentRef,
   phaserRef,
+  focusLocationId,
 }: UseMapPageEventBridgeInput): void {
   const didInitialFly = useRef(false);
 
@@ -49,6 +52,21 @@ export function useMapPageEventBridge({
     if (!mapReady) return;
     if (didInitialFly.current) return;
 
+    // Deep link (?location=<id>): fly to the requested location if it has a center.
+    if (focusLocationId) {
+      const target = locations.find((location) => location.id === focusLocationId);
+      const center = target?.metadata?.center;
+      if (Array.isArray(center) && center.length === 2) {
+        didInitialFly.current = true;
+        EventBus.emit(MapEvents.FLY_TO_LOCATION, {
+          x: center[0],
+          y: center[1],
+          zoom: 2.2,
+        });
+        return;
+      }
+    }
+
     const firstWithCenter = locations.find(
       (location) => Array.isArray(location.metadata?.center) && location.metadata.center.length === 2
     );
@@ -60,7 +78,7 @@ export function useMapPageEventBridge({
       y: firstWithCenter.metadata.center[1],
       zoom: 1.5,
     });
-  }, [locations, mapReady]);
+  }, [locations, mapReady, focusLocationId]);
 
   useEffect(() => {
     if (!mapReady) return;

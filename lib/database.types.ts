@@ -170,6 +170,61 @@ export interface Database {
           metadata?: Json | null
         }
       }
+      lore_submission_thumbnails: {
+        Row: {
+          submission_id: string
+          kind: string
+          token_id: string | null
+          map_location_id: string | null
+          custom_image_url: string | null
+          custom_image_attribution: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          submission_id: string
+          kind: string
+          token_id?: string | null
+          map_location_id?: string | null
+          custom_image_url?: string | null
+          custom_image_attribution?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          submission_id?: string
+          kind?: string
+          token_id?: string | null
+          map_location_id?: string | null
+          custom_image_url?: string | null
+          custom_image_attribution?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      lore_map_links: {
+        Row: {
+          id: string
+          lore_location_slug: string
+          map_location_id: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lore_location_slug: string
+          map_location_id: string
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lore_location_slug?: string
+          map_location_id?: string
+          created_by?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

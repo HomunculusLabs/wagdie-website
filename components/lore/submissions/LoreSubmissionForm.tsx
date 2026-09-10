@@ -7,7 +7,9 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useOwnedCharacters } from '@/hooks/useOwnedCharacters';
 import type { LoreSubmissionDetailDto, LoreSubmissionLink } from '@/types/lore-submission';
+import type { LoreThumbnail } from '@/lib/lore/submissions/thumbnail';
 import { MarkdownEditor } from './MarkdownEditor';
+import { SubmissionThumbnailPicker } from './SubmissionThumbnailPicker';
 import {
   SourceUrlListEditor,
   type EditableSubmissionLink,
@@ -27,6 +29,7 @@ export interface LoreSubmissionFormInitialValues {
   bodyMarkdown?: string;
   tags?: string[];
   links?: EditableSubmissionLink[];
+  thumbnail?: LoreThumbnail | null;
 }
 
 export interface LoreSubmissionFormProps {
@@ -116,6 +119,7 @@ export function LoreSubmissionForm({
   const [bodyMarkdown, setBodyMarkdown] = useState(initialValues?.bodyMarkdown ?? '');
   const [tagsText, setTagsText] = useState((initialValues?.tags ?? []).join(', '));
   const [links, setLinks] = useState<EditableSubmissionLink[]>(initialValues?.links ?? [defaultLink()]);
+  const [thumbnail, setThumbnail] = useState<LoreThumbnail | null>(initialValues?.thumbnail ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -157,6 +161,7 @@ export function LoreSubmissionForm({
           bodyMarkdown,
           tags: tagsFromText(tagsText),
           links: cleanLinks(links),
+          ...(thumbnail ? { thumbnail } : {}),
         }),
       });
 
@@ -176,6 +181,7 @@ export function LoreSubmissionForm({
         setBodyMarkdown('');
         setTagsText('');
         setLinks([defaultLink()]);
+        setThumbnail(null);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to submit lore.');
@@ -306,6 +312,15 @@ export function LoreSubmissionForm({
       </label>
 
       <SourceUrlListEditor links={links} onChange={setLinks} disabled={isSubmitting} />
+
+      <SubmissionThumbnailPicker
+        value={thumbnail}
+        onChange={setThumbnail}
+        ownedCharacters={ownedCharacters.characters}
+        ownedLoading={ownedCharacters.isLoading}
+        ownedError={Boolean(ownedCharacters.error)}
+        disabled={isSubmitting}
+      />
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-soul-accent/10 pt-4">
         <Button type="submit" isLoading={isSubmitting} disabled={cleanLinks(links).length === 0}>

@@ -1,5 +1,6 @@
 import type { Json } from '@/lib/database.types';
 import type { CanonStatus, CanonizationStageId, CanonizationStep } from '@/lib/lore/types';
+import type { LoreThumbnail } from '@/lib/lore/submissions/thumbnail';
 
 export const loreSubmissionStatuses = [
   'submitted',
@@ -136,12 +137,14 @@ export interface CreateLoreSubmissionInput {
   bodyMarkdown: string;
   tags: string[];
   links: NormalizedLoreSubmissionLinkInput[];
+  thumbnail?: LoreThumbnail;
 }
 
 export interface LoreSubmissionDetailDto {
   submission: LoreSubmission;
   links: LoreSubmissionLink[];
   reviews: LoreSubmissionReview[];
+  thumbnail?: LoreThumbnail | null;
 }
 
 export interface LoreSubmissionListItemDto {
@@ -154,4 +157,5 @@ export interface LoreSubmissionListItemDto {
   publishedSlug: string | null;
   submittedAt: string;
   updatedAt: string;
+  thumbnail?: LoreThumbnail | null;
 }
