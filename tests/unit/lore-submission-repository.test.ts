@@ -92,13 +92,34 @@ const createInput: CreateLoreSubmissionInput = {
   }],
 };
 
-function mockDetailFrom(submission = row, links = [linkRow], reviews = [reviewRow]) {
+const thumbnailRow = {
+  submission_id: 'sub-1',
+  kind: 'token',
+  token_id: '42',
+  map_location_id: null,
+  custom_image_url: null,
+  custom_image_attribution: null,
+  created_at: '2026-05-09T00:00:00.000Z',
+  updated_at: '2026-05-09T00:00:00.000Z',
+};
+
+function mockDetailFrom(submission = row, links = [linkRow], reviews = [reviewRow], thumbnail: unknown = null) {
   return jest.fn((table: string) => {
     if (table === 'lore_submissions') {
       return {
         select: jest.fn(() => ({
           eq: jest.fn(() => ({
             maybeSingle: jest.fn(async () => ({ data: submission, error: null })),
+          })),
+        })),
+      };
+    }
+
+    if (table === 'lore_submission_thumbnails') {
+      return {
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            maybeSingle: jest.fn(async () => ({ data: thumbnail, error: null })),
           })),
         })),
       };
