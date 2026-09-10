@@ -33,6 +33,11 @@ const adminSections = [
     title: 'Lore Submissions',
     description: 'Review community lore submissions, curate metadata, publish, canonize, decanonize, and hide records.',
   },
+  {
+    href: '/admin/lore-map-links',
+    title: 'Lore Map Links',
+    description: 'Link lore locations to live interactive-map places for deep-linked lore pages.',
+  },
 ]
 
 export default function AdminPage() {

@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui';
 import { EntityChips } from './EntityChips';
 import { LoreTimeline } from './LoreTimeline';
 import { MediaGallery } from './MediaGallery';
+import { LoreMapLinkCard } from './LoreMapLinkCard';
 import { SourceList } from './SourceList';
 import type {
   LoreCharacter,
@@ -92,6 +93,8 @@ export function LocationProfile({
       </Card>
 
       {media.length > 0 && <MediaGallery media={media} title="Location media" />}
+
+      <LoreMapLinkCard loreLocationSlug={location.slug} loreLocationName={location.name} />
 
       <section className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
         <aside className="space-y-5 border border-midnight-light/50 bg-soul-900/40 p-5 md:p-6">
