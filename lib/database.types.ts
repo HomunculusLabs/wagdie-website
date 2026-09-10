@@ -501,6 +501,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       lore_map_links: {
         Row: {
@@ -524,6 +525,7 @@ export interface Database {
           created_by?: string
           created_at?: string
         }
+        Relationships: []
       }
     }
     Views: {
