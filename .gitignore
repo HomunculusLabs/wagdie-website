@@ -22,7 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files - ignore ALL .env* files, re-include examples
+.env*
+!*.example
 .env*.local
 .env
 .env.remote
