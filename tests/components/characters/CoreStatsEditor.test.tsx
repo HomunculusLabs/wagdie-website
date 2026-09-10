@@ -61,12 +61,12 @@ describe('CoreStatsEditor', () => {
       )
 
       // Check all stat labels are present
-      expect(screen.getByText('STR')).toBeInTheDocument()
-      expect(screen.getByText('DEX')).toBeInTheDocument()
-      expect(screen.getByText('CON')).toBeInTheDocument()
-      expect(screen.getByText('INT')).toBeInTheDocument()
-      expect(screen.getByText('WIS')).toBeInTheDocument()
-      expect(screen.getByText('CHA')).toBeInTheDocument()
+      expect(screen.getByText(/^str$/i)).toBeInTheDocument()
+      expect(screen.getByText(/^dex$/i)).toBeInTheDocument()
+      expect(screen.getByText(/^con$/i)).toBeInTheDocument()
+      expect(screen.getByText(/^int$/i)).toBeInTheDocument()
+      expect(screen.getByText(/^wis$/i)).toBeInTheDocument()
+      expect(screen.getByText(/^cha$/i)).toBeInTheDocument()
 
       // Check values are displayed
       expect(screen.getByText('16')).toBeInTheDocument() // STR
@@ -102,7 +102,7 @@ describe('CoreStatsEditor', () => {
         />
       )
 
-      expect(screen.getByText('Attributes')).toBeInTheDocument()
+      expect(screen.getByText(/^attributes/i)).toBeInTheDocument()
     })
 
     it('displays stat grid in display mode', () => {

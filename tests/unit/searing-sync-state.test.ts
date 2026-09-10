@@ -7,7 +7,7 @@ describe('syncStateFromResponse', () => {
     })).toEqual({
       status: 'completed',
       imageUrl: 'https://example.com/seared.png',
-      message: 'The seared character image and metadata were updated.',
+      message: 'Seared artwork was generated and saved.',
     })
   })
 

@@ -1,3 +1,14 @@
+
+/**
+ * SKIPPED SUITE (2026-09-10, P0-1 re-baseline): this suite jest.mocks the very
+ * service it claims to performance-test, then asserts behaviors it never
+ * configures on those mocks (e.g. expects loadAsset called by a loadAssets
+ * stub that returns undefined; asserts result.cached which nothing sets).
+ * It tests its own mocks, not the codebase. The mock-hoisting fix
+ * (global jest instead of @jest/globals jest) is kept for the record.
+ * Rewrite against the real service (see asset-lifecycle.test.ts for the
+ * working pattern) if perf coverage is wanted.
+ */
 /**
  * Asset Loading Performance Tests
  *
@@ -9,7 +20,11 @@
  * - Preloading effectiveness
  */
 
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+// NOTE: `jest` is used from the injected global (NOT @jest/globals) so that
+// jest.mock(...) calls are hoisted above the static imports below. Importing
+// jest from @jest/globals disables hoisting, silently loading REAL modules.
+
 
 // Mock the asset loading service
 jest.mock('@/lib/services/asset-loading-service', () => {
@@ -75,7 +90,7 @@ import { AssetLoadingService } from '@/lib/services/asset-loading-service';
 import { getAssetCache } from '@/lib/services/asset-cache';
 import { getAssetOptimizer } from '@/lib/utils/asset-optimization';
 
-describe('Asset Loading Performance', () => {
+describe.skip('Asset Loading Performance (SKIPPED: self-mocking suite, assertions unconfigured)', () => {
   let assetLoadingService: AssetLoadingService;
   let mockCache: any;
   let mockOptimizer: any;
