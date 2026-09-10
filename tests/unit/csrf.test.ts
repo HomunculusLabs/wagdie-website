@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Tests for CSRF protection
  * Tests T033 [US4] - Token generation, validation, and bypass logic
  */

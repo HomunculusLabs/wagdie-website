@@ -3,11 +3,17 @@
  *
  * Tests the complete asset loading flow from map components
  * through the service layer to actual asset loading.
+ *
+ * SKIPPED SUITE (2026-09-10, P0-1 re-baseline): this suite tests the Leaflet-era
+ * architecture — it mocks @/hooks/useIconFactory, which was deleted in the
+ * Leaflet→Phaser map migration (c55a4bf4). The hook no longer exists anywhere
+ * in the codebase, so the suite cannot even load. Rewrite against the Phaser
+ * MapScene asset pipeline if integration coverage is wanted again.
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
-describe('Map Asset Loading Integration', () => {
+describe.skip('Map Asset Loading Integration (SKIPPED: Leaflet-era, mocks deleted useIconFactory hook)', () => {
   let mockImageConstructor: jest.Mock;
   let mockUseIconFactory: jest.MockedFunction<any>;
 

@@ -1,3 +1,12 @@
+
+/**
+ * SKIPPED SUITE (2026-09-10, P0-1 re-baseline): mocks AssetPerformanceMonitor
+ * with an API that never existed on the real class (startMeasure, getMetrics,
+ * recordLoadTime — real methods are recordAssetLoad, generateReport, etc.).
+ * The suite verifies fabricated mock data, not production behavior. The
+ * fake-timer fix (doNotFake performance) is kept for the record. Rewrite
+ * against the real AssetPerformanceMonitor if perf coverage is wanted.
+ */
 /**
  * Load Time Monitoring Tests
  *
@@ -5,7 +14,11 @@
  * ensuring performance targets are met and metrics are accurate.
  */
 
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+// NOTE: `jest` is used from the injected global (NOT @jest/globals) so that
+// jest.mock(...) calls are hoisted above the static imports below. Importing
+// jest from @jest/globals disables hoisting, silently loading REAL modules.
+
 
 // Mock performance monitoring utilities
 jest.mock('@/lib/utils/asset-performance', () => {
@@ -44,13 +57,15 @@ Object.defineProperty(global, 'performance', {
 
 import { getAssetPerformanceMonitor } from '@/lib/utils/asset-performance';
 
-describe('Load Time Monitoring', () => {
+describe.skip('Load Time Monitoring (SKIPPED: mocks nonexistent monitor API)', () => {
   let performanceMonitor: any;
   let mockPerformance: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
+    // Do not fake `performance` — modern fake timers replace global.performance,
+    // destroying the jest.fn() mocks installed at module scope above.
+    jest.useFakeTimers({ doNotFake: ['performance'] });
 
     performanceMonitor = getAssetPerformanceMonitor();
     mockPerformance = global.performance;

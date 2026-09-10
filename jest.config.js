@@ -35,7 +35,13 @@ const config = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
+    // Archived/stale suites kept for reference only (leaflet-era + TODO integration)
+    '<rootDir>/tests/archive/',
     '<rootDir>/tests/TODO-',
+    // Playwright-runner specs: they need a live server/browser and the Playwright
+    // test runner, not jest. Run with `npx playwright test` instead.
+    '<rootDir>/tests/e2e/map-with-assets\\.spec\\.ts$',
+    '<rootDir>/tests/e2e/responsive-map\\.spec\\.ts$',
   ],
 
   // Transform ignore patterns - don't transform node_modules except react-leaflet

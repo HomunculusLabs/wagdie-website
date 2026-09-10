@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Integration tests for CSRF protection on character update endpoint
  * Tests T034 [US4] - CSRF protection on state-changing endpoints
  */

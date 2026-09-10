@@ -132,7 +132,7 @@ describe('DerivedStatsEditor', () => {
         />
       )
 
-      expect(screen.getByText('HP')).toBeInTheDocument()
+      expect(screen.getByText(/^hp$/i)).toBeInTheDocument()
     })
 
     it('shows AC label', () => {
@@ -145,7 +145,7 @@ describe('DerivedStatsEditor', () => {
         />
       )
 
-      expect(screen.getByText('AC')).toBeInTheDocument()
+      expect(screen.getByText(/^ac$/i)).toBeInTheDocument()
     })
 
     it('shows Speed label with ft suffix', () => {
@@ -158,7 +158,7 @@ describe('DerivedStatsEditor', () => {
         />
       )
 
-      expect(screen.getByText('Speed')).toBeInTheDocument()
+      expect(screen.getByText(/^speed$/i)).toBeInTheDocument()
       expect(screen.getByText('ft')).toBeInTheDocument()
     })
 
