@@ -1,0 +1,46 @@
+# Minimal CI: typecheck + lint block, tests allowed to fail while the
+# test-suite reconciliation (P0) is still landing on the integration branch.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: typecheck + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: bun run lint
+
+  test:
+    name: tests (non-blocking)
+    runs-on: ubuntu-latest
+    # TODO(WAGDIE Improvement Plan): test-suite reconciliation is still in
+    # flight on the integration branch (p0-integrate) — flip this to a
+    # required job (remove continue-on-error) once `bun run test` is green
+    # on main.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Test
+        run: bun run test
