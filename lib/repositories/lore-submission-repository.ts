@@ -22,6 +22,7 @@ import {
 import type { Database, Json } from '@/lib/database.types';
 import type { CanonStatus, CanonizationStageId, CanonizationStep, CanonizationStepStatus } from '@/lib/lore/types';
 import { canonStatuses, canonizationStageIds } from '@/lib/lore/types';
+import { rowToThumbnail, type LoreSubmissionThumbnailRow, type LoreThumbnail } from '@/lib/lore/submissions/thumbnail';
 
 export interface LoreSubmissionAdminListFilters {
   status?: LoreSubmissionStatus;
@@ -319,6 +320,38 @@ function linkInsertRows(submissionId: string, links: NormalizedLoreSubmissionLin
   }));
 }
 
+function thumbnailInsertRow(submissionId: string, thumbnail: LoreThumbnail): Database['public']['Tables']['lore_submission_thumbnails']['Insert'] {
+  switch (thumbnail.kind) {
+    case 'token':
+      return {
+        submission_id: submissionId,
+        kind: 'token',
+        token_id: thumbnail.tokenId,
+        map_location_id: null,
+        custom_image_url: null,
+        custom_image_attribution: null,
+      };
+    case 'map_location':
+      return {
+        submission_id: submissionId,
+        kind: 'map_location',
+        token_id: null,
+        map_location_id: thumbnail.mapLocationId,
+        custom_image_url: null,
+        custom_image_attribution: null,
+      };
+    case 'custom':
+      return {
+        submission_id: submissionId,
+        kind: 'custom',
+        token_id: null,
+        map_location_id: null,
+        custom_image_url: thumbnail.imageUrl,
+        custom_image_attribution: thumbnail.attribution ?? null,
+      };
+  }
+}
+
 async function fetchRequiredDetail(repository: LoreSubmissionRepository, submissionId: string, context: string): Promise<LoreSubmissionDetailDto> {
   const detail = await repository.findDetail(submissionId);
   if (!detail) throw new Error(`${context}: updated row was not found after transaction`);
@@ -341,6 +374,9 @@ export class LoreSubmissionRepository {
 
     throwOnError(error, 'Failed to create lore submission');
     if (!submissionId) throw new Error('Failed to create lore submission: no row returned');
+    if (input.thumbnail) {
+      await this.replaceThumbnail(submissionId, input.thumbnail);
+    }
     return fetchRequiredDetail(this, submissionId, 'Failed to create lore submission');
   }
 
@@ -366,6 +402,9 @@ export class LoreSubmissionRepository {
 
     throwOnError(error, 'Failed to create and publish lore submission');
     if (!submissionId) throw new Error('Failed to create and publish lore submission: no row returned');
+    if (input.thumbnail) {
+      await this.replaceThumbnail(submissionId, input.thumbnail);
+    }
     return fetchRequiredDetail(this, submissionId, 'Failed to create and publish lore submission');
   }
 
@@ -384,12 +423,13 @@ export class LoreSubmissionRepository {
     const submission = await this.findById(submissionId);
     if (!submission) return null;
 
-    const [links, reviews] = await Promise.all([
+    const [links, reviews, thumbnail] = await Promise.all([
       this.listLinks(submissionId),
       this.listReviews(submissionId),
+      this.findThumbnail(submissionId),
     ]);
 
-    return { submission, links, reviews };
+    return { submission, links, reviews, thumbnail };
   }
 
   async listForSubmitter(submitterAddress: string): Promise<LoreSubmission[]> {
@@ -545,6 +585,9 @@ export class LoreSubmissionRepository {
 
     throwOnError(error, 'Failed to revise lore submission');
     if (!updatedSubmissionId) return null;
+    if (input.thumbnail) {
+      await this.replaceThumbnail(submissionId, input.thumbnail);
+    }
     return fetchRequiredDetail(this, updatedSubmissionId, 'Failed to revise lore submission');
   }
 
@@ -571,6 +614,9 @@ export class LoreSubmissionRepository {
 
     throwOnError(error, 'Failed to revise and publish lore submission');
     if (!updatedSubmissionId) return null;
+    if (input.thumbnail) {
+      await this.replaceThumbnail(submissionId, input.thumbnail);
+    }
     return fetchRequiredDetail(this, updatedSubmissionId, 'Failed to revise and publish lore submission');
   }
 
@@ -584,6 +630,35 @@ export class LoreSubmissionRepository {
 
     throwOnError(error, 'Failed to list lore submission links');
     return (data ?? []).map(toLink);
+  }
+
+  async findThumbnail(submissionId: string): Promise<LoreThumbnail | null> {
+    const { data, error } = await getClient()
+      .from('lore_submission_thumbnails')
+      .select('*')
+      .eq('submission_id', submissionId)
+      .maybeSingle();
+
+    throwOnError(error, 'Failed to fetch lore submission thumbnail');
+    return data ? rowToThumbnail(data as LoreSubmissionThumbnailRow) : null;
+  }
+
+  async replaceThumbnail(submissionId: string, thumbnail: LoreThumbnail): Promise<LoreThumbnail | null> {
+    const client = getClient();
+    const deleteResult = await client
+      .from('lore_submission_thumbnails')
+      .delete()
+      .eq('submission_id', submissionId);
+    throwOnError(deleteResult.error, 'Failed to replace lore submission thumbnail');
+
+    const { data, error } = await client
+      .from('lore_submission_thumbnails')
+      .upsert(thumbnailInsertRow(submissionId, thumbnail))
+      .select('*')
+      .maybeSingle();
+
+    throwOnError(error, 'Failed to save lore submission thumbnail');
+    return data ? rowToThumbnail(data as LoreSubmissionThumbnailRow) : null;
   }
 
   async replaceLinks(submissionId: string, links: NormalizedLoreSubmissionLinkInput[]): Promise<LoreSubmissionLink[]> {

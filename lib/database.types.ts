@@ -470,6 +470,63 @@ export interface Database {
         Update: { id?: string; slug?: string; kind?: string; title?: string; summary?: string; body?: string; season_id?: string | null; location_ids?: string[]; character_ids?: string[]; entity_refs?: Json; occurred_at?: string | null; published_at?: string | null; timeline_order?: number; canon?: Json; source_ids?: string[]; media_ids?: string[] | null; tags?: string[]; keywords?: string[]; is_published?: boolean; created_at?: string; updated_at?: string }
         Relationships: []
       }
+      lore_submission_thumbnails: {
+        Row: {
+          submission_id: string
+          kind: string
+          token_id: string | null
+          map_location_id: string | null
+          custom_image_url: string | null
+          custom_image_attribution: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          submission_id: string
+          kind: string
+          token_id?: string | null
+          map_location_id?: string | null
+          custom_image_url?: string | null
+          custom_image_attribution?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          submission_id?: string
+          kind?: string
+          token_id?: string | null
+          map_location_id?: string | null
+          custom_image_url?: string | null
+          custom_image_attribution?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lore_map_links: {
+        Row: {
+          id: string
+          lore_location_slug: string
+          map_location_id: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lore_location_slug: string
+          map_location_id: string
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lore_location_slug?: string
+          map_location_id?: string
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

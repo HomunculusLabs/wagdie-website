@@ -65,7 +65,9 @@ describe('LoreSubmissionPublishControls', () => {
     fireEvent.change(screen.getByLabelText(/action note/i), {
       target: { value: 'Accepted into canon.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^canonize$/i }));
+    // Button labels use the human-readable names from 78ee0889; the endpoint
+    // path still uses the raw action names.
+    fireEvent.click(screen.getByRole('button', { name: /promote to canon/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith('http://localhost/api/admin/lore/submissions/sub-1/canonize', expect.objectContaining({
@@ -79,8 +81,8 @@ describe('LoreSubmissionPublishControls', () => {
     render(<LoreSubmissionPublishControls detail={makeDetail('submitted')} onUpdated={jest.fn()} />);
 
     expect(screen.queryByRole('button', { name: /publish community lore/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^canonize$/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /decanonize/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /unpublish/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /promote to canon/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /return to community/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /hide community lore/i })).toBeDisabled();
   });
 });

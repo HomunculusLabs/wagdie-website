@@ -45,7 +45,8 @@ describe('LoreCanonizationAdminContainer', () => {
 
     expect((await screen.findAllByText(event.title)).length).toBeGreaterThan(0);
 
-    fireEvent.change(screen.getByLabelText('Editor canon note'), {
+    // Label renamed in 78ee0889 from "Editor canon note".
+    fireEvent.change(screen.getByLabelText('Base event canon note'), {
       target: { value: 'Draft admin note' },
     });
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));

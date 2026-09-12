@@ -70,12 +70,15 @@ describe('buildLoreCharacterArchive', () => {
       filtered: false,
     });
 
+    // Default sort is 'date': recency of latest appearance first (alpha-2's
+    // latest is timelineOrder 30, beta's is 10), then title tiebreak (name,
+    // token, id) for the zero-appearance entries.
     expect(result.items.map((item) => item.character.id)).toEqual([
       'alpha-2',
+      'beta',
       'alpha-9',
       'alpha-a',
       'alpha-z',
-      'beta',
       'zero',
     ]);
     expect(result.items.find((item) => item.character.id === 'beta')).toMatchObject({

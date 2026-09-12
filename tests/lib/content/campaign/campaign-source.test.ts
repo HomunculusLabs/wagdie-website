@@ -221,7 +221,7 @@ describe('dark fantasy campaign content source', () => {
 
   it('integrates the campaign guide into canonical GM knowledge', () => {
     expect(DARK_FANTASY_CAMPAIGN_GUIDE_DOCUMENT.id).toBe('canonical:dark-fantasy-campaign-source-guide');
-    expect(GAME_MASTER_CANONICAL_CONTENT.contentVersion).toBe('2026-05-31.1');
+    expect(GAME_MASTER_CANONICAL_CONTENT.contentVersion).toBe('2026-05-31.2');
     expect(GAME_MASTER_CANONICAL_CONTENT.knowledge).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: 'canonical:dark-fantasy-campaign-source-guide',

@@ -5,6 +5,7 @@ import {
   type LoreSubmissionLinkType,
   type NormalizedLoreSubmissionLinkInput,
 } from '@/types/lore-submission';
+import { loreThumbnailSchema } from './thumbnail';
 
 export const LORE_SUBMISSION_LIMITS = {
   titleMin: 3,
@@ -275,6 +276,7 @@ export const loreSubmissionCreateSchema = z.object({
         return z.NEVER;
       }
     }),
+  thumbnail: loreThumbnailSchema.optional(),
 });
 
 export type LoreSubmissionCreateInput = z.input<typeof loreSubmissionCreateSchema>;

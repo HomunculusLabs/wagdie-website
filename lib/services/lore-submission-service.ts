@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { isAdmin } from '@/lib/auth/admin';
 import { getActiveLoreBaseDataset } from '@/lib/lore/base-query';
 import type { LoreBaseDataset } from '@/lib/lore/base-dataset';
+import { getSupabaseAdmin } from '@/lib/supabase';
 import {
   normalizeLoreSubmissionWalletAddress,
   verifyLoreSubmissionTokenOwnership,
@@ -181,6 +182,7 @@ export class LoreSubmissionService {
     const submitterAddress = normalizeAddressOrThrow(walletAddress);
     const input = parseCreateInput(body);
     await this.ensureTokenOwnership(input.tokenId, submitterAddress);
+    await this.ensureThumbnailAllowed(input, submitterAddress);
     await this.ensureCreateAbuseControls(input, submitterAddress);
 
     const dataset = await this.loadBaseDataset();
@@ -478,9 +480,61 @@ export class LoreSubmissionService {
   }
 
   private async ensureTokenOwnership(tokenId: string, walletAddress: string): Promise<void> {
+    // Admins may publish against tokens missing from the local ownership index.
+    if (isAdmin(walletAddress)) return;
+
     const ownership = await this.ownershipVerifier!({ tokenId, walletAddress });
     if (!ownership.owns) {
       throw new LoreSubmissionForbiddenError(`Wallet does not own token ${tokenId} (${ownership.reason})`);
+    }
+  }
+
+  /**
+   * Thumbnail policy:
+   * - token: must be a token the submitter owns (reuse ownership verifier);
+   *   admins are exempt so they can feature any token's art, mirroring the
+   *   admin exemption in ensureTokenOwnership
+   * - map_location: must reference an existing map location (existence check)
+   * - custom: URL only, no ownership requirement (attribution optional)
+   */
+  private async ensureThumbnailAllowed(input: CreateLoreSubmissionInput, walletAddress: string): Promise<void> {
+    const thumbnail = input.thumbnail;
+    if (!thumbnail) return;
+
+    if (thumbnail.kind === 'token') {
+      if (isAdmin(walletAddress)) return;
+
+      const ownership = await this.ownershipVerifier!({
+        tokenId: thumbnail.tokenId,
+        walletAddress,
+      });
+      if (!ownership.owns) {
+        throw new LoreSubmissionForbiddenError(
+          `Thumbnail token ${thumbnail.tokenId} is not owned by this wallet (${ownership.reason})`,
+        );
+      }
+      return;
+    }
+
+    if (thumbnail.kind === 'map_location') {
+      const client = getSupabaseAdmin();
+      if (!client) throw new Error('Supabase admin client not configured');
+
+      const { data, error } = await client
+        .from('locations')
+        .select('id')
+        .eq('id', thumbnail.mapLocationId)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(`Failed to validate thumbnail location: ${error.message}`);
+      }
+      if (!data) {
+        throw new LoreSubmissionValidationError(
+          'Thumbnail map location not found',
+          [`Map location "${thumbnail.mapLocationId}" does not exist`],
+        );
+      }
     }
   }
 

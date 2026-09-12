@@ -36,6 +36,10 @@ describe('LoreTimeline effective source rendering', () => {
     );
 
     expect(screen.queryByText(source.title)).not.toBeInTheDocument();
-    expect(screen.getByText('No source attribution records attached.')).toBeInTheDocument();
+    // Since the Adobe XD alignment (fe650224), the sources section is hidden
+    // entirely when no route-provided sources exist — the component must not
+    // resolve the event's static sourceIds on its own.
+    expect(screen.queryByText(/source attribution records attached/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/source records?/i)).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Tests for rate limiting
  * Tests T022 [US3] - Rate limit sliding window, reset, and fail-open behavior
  */
@@ -119,10 +123,16 @@ describe('RateLimiter', () => {
         failOpen: true,
       })
 
-      // Simulate storage failure by making the map throw
-      ;(brokenLimiter as any).store.get = jest.fn(() => {
-        throw new Error('Storage unavailable')
-      })
+      // Simulate storage failure by making the store throw.
+      // `store` is a plain private field (no getter), so jest.spyOn(..., 'get')
+      // cannot be used — swap in a throwing Map-shaped object instead.
+      const throwingStore = {
+        get: () => { throw new Error('Storage unavailable') },
+        set: () => { throw new Error('Storage unavailable') },
+        delete: () => { throw new Error('Storage unavailable') },
+        has: () => { throw new Error('Storage unavailable') },
+      } as unknown as Map<string, unknown>
+      ;(brokenLimiter as unknown as { store: Map<string, unknown> }).store = throwingStore
 
       // Should still allow the request (fail-open)
       const result = brokenLimiter.check('127.0.0.1')

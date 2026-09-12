@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Integration tests for rate limiting on auth endpoints
  * Tests T023 [US3] - Rate limiting on auth endpoints
  */

@@ -99,9 +99,11 @@ describe('syncStakingStateToDb', () => {
 
     const outcome = await syncStakingStateToDb({ tokenId: 7, action: 'unstake' })
 
+    // Since the readApiRaw migration (9c93f237), JSON parse failures surface as
+    // ApiError with the fallback message, not the raw parser message.
     expect(outcome).toEqual({
       ok: false,
-      message: 'Failed to sync staking state for #7: Unexpected token < in JSON',
+      message: 'Failed to sync staking state for #7: Request failed (200)',
       results: [],
       retryable: true,
     })
