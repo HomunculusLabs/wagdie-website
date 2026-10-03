@@ -1,13 +1,12 @@
-import { CHARACTERS_TABLE } from '@/lib/db/tables';
+import { BaseError, ContractFunctionRevertedError, createPublicClient, fallback, http, zeroAddress } from 'viem';
+import { mainnet } from 'viem/chains';
+import { getContractAddresses } from '@/lib/contracts/addresses';
+import { wagdieABI } from '@/lib/contracts/abis/wagdie';
+import { wagdieWorldABI } from '@/lib/contracts/abis/wagdie-world';
 
 export type TokenOwnershipReason =
-  | 'owned'
-  | 'staked'
-  | 'not_owner'
-  | 'not_found'
-  | 'invalid_token_id'
-  | 'invalid_address'
-  | 'client_unavailable';
+  | 'owned' | 'staked' | 'not_owner' | 'not_found'
+  | 'invalid_token_id' | 'invalid_address' | 'rpc_unavailable';
 
 export interface TokenOwnershipCheckResult {
   tokenId: number | null;
@@ -18,31 +17,9 @@ export interface TokenOwnershipCheckResult {
   stakerAddress: string | null;
 }
 
-type CharacterOwnershipRow = {
-  token_id: number;
-  owner_address: string | null;
-  staker_address?: string | null;
-};
-
-type SupabaseMaybeSingleResult = Promise<{
-  data: unknown;
-  error: { message: string } | null;
-}>;
-
-export type TokenOwnershipSupabaseClient = {
-  from: (table: string) => {
-    select: (columns: string) => {
-      eq: (column: string, value: number) => {
-        maybeSingle: () => SupabaseMaybeSingleResult;
-      };
-    };
-  };
-};
-
 export interface VerifyTokenOwnershipOptions {
   tokenId: string | number;
   walletAddress: string;
-  supabaseClient?: TokenOwnershipSupabaseClient | null;
   minTokenId?: number;
   maxTokenId?: number;
 }
@@ -84,92 +61,82 @@ function resultForInvalid(reason: 'invalid_token_id' | 'invalid_address'): Token
   };
 }
 
-function addressesMatch(left: string | null | undefined, right: string): boolean {
-  return left?.toLowerCase() === right;
+function getLiveOwnershipClient() {
+  // Only the server may resolve private RPC configuration. No DB or ownership cache.
+  if (typeof window !== 'undefined') throw new Error('Server-only ownership verification');
+  const alchemyKey = process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  const rpcUrl = process.env.HTTP_RPC_URL || process.env.RPC_URL || process.env.ETH_RPC_URL ||
+    process.env.MAINNET_RPC_URL || process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+    process.env.ALCHEMY_RPC_URL || process.env.NEXT_PUBLIC_ALCHEMY_RPC_URL ||
+    (alchemyKey ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}` : 'https://ethereum.publicnode.com');
+  return createPublicClient({
+    chain: mainnet,
+    cacheTime: 0,
+    transport: fallback([...new Set([rpcUrl, 'https://ethereum.publicnode.com', 'https://rpc.flashbots.net'])]
+      .map(url => http(url, { timeout: 5000, retryCount: 0 })), { retryCount: 0 }),
+  });
 }
 
-async function getDefaultOwnershipClient(): Promise<TokenOwnershipSupabaseClient | null> {
-  const { getSupabaseAdmin } = await import('@/lib/supabase');
-  return getSupabaseAdmin() as TokenOwnershipSupabaseClient | null;
+function isNonexistentToken(error: unknown): boolean {
+  if (!(error instanceof BaseError)) return false;
+  const revert = error.walk(cause => cause instanceof ContractFunctionRevertedError);
+  // Do not interpret a timeout, generic revert or undecodable response as a missing NFT.
+  return revert instanceof ContractFunctionRevertedError &&
+    (revert.reason === 'ERC721: owner query for nonexistent token' ||
+      revert.reason === 'ERC721: invalid token ID' ||
+      revert.data?.errorName === 'ERC721NonexistentToken');
 }
 
 export async function verifyLoreSubmissionTokenOwnership(
   options: VerifyTokenOwnershipOptions
 ): Promise<TokenOwnershipCheckResult> {
-  const tokenId = parseLoreSubmissionTokenId(options.tokenId, {
-    minTokenId: options.minTokenId,
-    maxTokenId: options.maxTokenId,
-  });
+  const tokenId = parseLoreSubmissionTokenId(options.tokenId, options);
   if (tokenId === null) return resultForInvalid('invalid_token_id');
-
   const walletAddress = normalizeLoreSubmissionWalletAddress(options.walletAddress);
   if (walletAddress === null) return resultForInvalid('invalid_address');
 
-  const supabase = options.supabaseClient ?? await getDefaultOwnershipClient();
-  if (!supabase) {
-    return {
-      tokenId,
-      walletAddress,
-      owns: false,
-      reason: 'client_unavailable',
-      ownerAddress: null,
-      stakerAddress: null,
-    };
+  let ownerAddress: string | null = null;
+  let stakerAddress: string | null = null;
+  const result = (reason: TokenOwnershipReason): TokenOwnershipCheckResult => ({
+    tokenId, walletAddress, owns: reason === 'owned' || reason === 'staked', reason,
+    ownerAddress, stakerAddress,
+  });
+
+  try {
+    const client = getLiveOwnershipClient();
+    // Lore's WAGDIE collection is on Ethereum mainnet, never a wallet-selected chain.
+    if (await client.getChainId() !== mainnet.id) return result('rpc_unavailable');
+    const addresses = getContractAddresses(mainnet.id);
+    // Pin both reads to one fresh block to avoid combining pre/post-unstake state.
+    const blockNumber = await client.getBlockNumber({ cacheTime: 0 });
+    let owner: string;
+    try {
+      owner = await client.readContract({
+        address: addresses.wagdie, abi: wagdieABI, functionName: 'ownerOf',
+        args: [BigInt(tokenId)], blockNumber,
+      });
+    } catch (error) {
+      return result(isNonexistentToken(error) ? 'not_found' : 'rpc_unavailable');
+    }
+    ownerAddress = normalizeLoreSubmissionWalletAddress(owner);
+    if (!ownerAddress || ownerAddress === zeroAddress) return result('rpc_unavailable');
+
+    if (ownerAddress !== addresses.wagdieWorld.toLowerCase()) {
+      return result(ownerAddress === walletAddress ? 'owned' : 'not_owner');
+    }
+
+    // Custody alone is not ownership: World records the beneficiary in WagdieInfo.owner,
+    // NOT the location owner, an operator approval, or the cached staker_address column.
+    const info = await client.readContract({
+      address: addresses.wagdieWorld, abi: wagdieWorldABI, functionName: 'wagdieIdToInfo',
+      args: [tokenId], blockNumber,
+    });
+    stakerAddress = normalizeLoreSubmissionWalletAddress(info.owner);
+    if (!stakerAddress || typeof info.locationIdCur !== 'bigint') return result('rpc_unavailable');
+    return result(info.locationIdCur > 0n && stakerAddress !== zeroAddress &&
+      stakerAddress === walletAddress && walletAddress !== ownerAddress ? 'staked' : 'not_owner');
+  } catch {
+    // Never leak RPC URLs/API keys through error bodies or log raw provider errors.
+    return result('rpc_unavailable');
   }
-
-  const { data, error } = await supabase
-    .from(CHARACTERS_TABLE)
-    .select('token_id, owner_address, staker_address')
-    .eq('token_id', tokenId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`Failed to verify token ownership: ${error.message}`);
-  }
-
-  if (!data) {
-    return {
-      tokenId,
-      walletAddress,
-      owns: false,
-      reason: 'not_found',
-      ownerAddress: null,
-      stakerAddress: null,
-    };
-  }
-
-  const row = data as CharacterOwnershipRow;
-  const ownerAddress = row.owner_address?.toLowerCase() ?? null;
-  const stakerAddress = row.staker_address?.toLowerCase() ?? null;
-
-  if (addressesMatch(ownerAddress, walletAddress)) {
-    return {
-      tokenId,
-      walletAddress,
-      owns: true,
-      reason: 'owned',
-      ownerAddress,
-      stakerAddress,
-    };
-  }
-
-  if (addressesMatch(stakerAddress, walletAddress)) {
-    return {
-      tokenId,
-      walletAddress,
-      owns: true,
-      reason: 'staked',
-      ownerAddress,
-      stakerAddress,
-    };
-  }
-
-  return {
-    tokenId,
-    walletAddress,
-    owns: false,
-    reason: 'not_owner',
-    ownerAddress,
-    stakerAddress,
-  };
 }

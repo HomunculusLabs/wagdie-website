@@ -20,6 +20,14 @@ import {
   loreSubmissionService,
 } from '@/lib/services/lore-submission-service';
 
+it('maps ownership infrastructure failure to a retryable 503 without exposing RPC details', async () => {
+  const { handleLoreSubmissionApiError } = await import('@/app/api/lore/submissions/shared');
+  const { LoreSubmissionOwnershipUnavailableError } = await import('@/lib/services/lore-submission-service');
+  const response = handleLoreSubmissionApiError(new LoreSubmissionOwnershipUnavailableError(), 'Failed');
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({ error: expect.stringContaining('temporarily unavailable') });
+});
+
 jest.mock('@/lib/api/auth', () => ({
   requireAuth: jest.fn(),
   requireAdmin: jest.fn(),
@@ -132,6 +140,21 @@ describe('lore submission API routes', () => {
 
     expect(response.status).toBe(401);
     expect(loreSubmissionService.listForSubmitter).not.toHaveBeenCalled();
+  });
+
+  it('rejects unauthenticated POST before ownership or publication', async () => {
+    (requireAuth as jest.Mock).mockResolvedValueOnce(NextResponse.json({ error: 'Not authenticated' }, { status: 401 }));
+    const response = await COMMUNITY_POST(jsonRequest('http://localhost/api/lore/submissions', 'POST', { tokenId: '6334' }, '203.0.113.30'));
+    expect(response.status).toBe(401);
+    expect(loreSubmissionService.createSubmission).not.toHaveBeenCalled();
+  });
+
+  it('returns 503 for a live ownership outage on authenticated POST', async () => {
+    const { LoreSubmissionOwnershipUnavailableError } = await import('@/lib/services/lore-submission-service');
+    (loreSubmissionService.createSubmission as jest.Mock).mockRejectedValueOnce(new LoreSubmissionOwnershipUnavailableError());
+    const response = await COMMUNITY_POST(jsonRequest('http://localhost/api/lore/submissions', 'POST', { tokenId: '6334', walletAddress: 'untrusted-body' }, '203.0.113.31'));
+    expect(response.status).toBe(503);
+    expect(loreSubmissionService.createSubmission).toHaveBeenCalledWith(expect.any(Object), '0xUser');
   });
 
   it('maps validation errors from community submission routes', async () => {

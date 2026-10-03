@@ -1,5 +1,6 @@
 import {
   LoreSubmissionForbiddenError,
+  LoreSubmissionOwnershipUnavailableError,
   LoreSubmissionService,
   LoreSubmissionValidationError,
 } from '@/lib/services/lore-submission-service';
@@ -271,26 +272,93 @@ describe('lore thumbnail service policy', () => {
     expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
   });
 
-  it('exempts admins from thumbnail token ownership', async () => {
-    jest.mocked(isAdmin).mockReturnValue(true);
-    const repository = createRepository();
-    const ownershipVerifier = jest.fn(async () => ({ owns: false, reason: 'not_owner' }));
+  describe.each(['create', 'revise'] as const)('%s token thumbnail authorization', (operation) => {
+    describe.each([false, true])('admin=%s', (adminWallet) => {
+      it.each(['owned', 'not_owner', 'rpc_unavailable', 'client_unavailable'])(
+        'enforces live thumbnail ownership with result %s before saving', async (reason) => {
+          jest.mocked(isAdmin).mockReturnValue(adminWallet);
+          const address = adminWallet ? admin : wallet;
+          const repository = createRepository({
+            findById: jest.fn(async () => submission({
+              status: 'changes_requested',
+              submitter_address: address,
+            })),
+          });
+          const ownershipVerifier = jest.fn(async ({ tokenId }: { tokenId: string; walletAddress: string }) => ({
+            owns: tokenId === '42' || reason === 'owned',
+            reason: tokenId === '42' ? 'owned' : reason,
+          }));
+          const service = new LoreSubmissionService(repository, {
+            ownershipVerifier,
+            loreBaseDatasetLoader: loadStaticDataset,
+          });
+          const payload = validPayload({ kind: 'token', tokenId: '7' });
+          const result = operation === 'create'
+            ? service.createSubmission(payload, address.toUpperCase().replace('0X', '0x'))
+            : service.reviseSubmission(submission().id, payload, address.toUpperCase().replace('0X', '0x'));
+          const save = operation === 'create'
+            ? repository.createPublishedSubmission
+            : repository.revisePublishedSubmission;
+
+          if (reason === 'owned') {
+            await expect(result).resolves.toEqual(expect.any(Object));
+            expect(save).toHaveBeenCalledTimes(1);
+            expect(save.mock.calls[0][operation === 'create' ? 0 : 1]).toEqual(
+              expect.objectContaining({ thumbnail: { kind: 'token', tokenId: '7' } }),
+            );
+          } else {
+            await expect(result).rejects.toBeInstanceOf(reason === 'not_owner'
+              ? LoreSubmissionForbiddenError
+              : LoreSubmissionOwnershipUnavailableError);
+            expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
+            expect(repository.revisePublishedSubmission).not.toHaveBeenCalled();
+            expect(loadStaticDataset).not.toHaveBeenCalled();
+          }
+          expect(ownershipVerifier.mock.calls.map(([options]) => options)).toEqual([
+            { tokenId: '42', walletAddress: address },
+            { tokenId: '7', walletAddress: address },
+          ]);
+        },
+      );
+    });
+
+    it('also verifies a thumbnail using the submission token', async () => {
+      const repository = createRepository({
+        findById: jest.fn(async () => submission({ status: 'changes_requested' })),
+      });
+      const ownershipVerifier = jest.fn(async () => ({ owns: true, reason: 'owned' }));
+      const service = new LoreSubmissionService(repository, {
+        ownershipVerifier,
+        loreBaseDatasetLoader: loadStaticDataset,
+      });
+      const payload = validPayload({ kind: 'token', tokenId: '42' });
+      if (operation === 'create') await service.createSubmission(payload, wallet);
+      else await service.reviseSubmission(submission().id, payload, wallet);
+      expect(ownershipVerifier).toHaveBeenCalledTimes(2);
+      expect(ownershipVerifier).toHaveBeenNthCalledWith(2, { tokenId: '42', walletAddress: wallet });
+    });
+  });
+
+  it('rechecks an unchanged thumbnail on revision after its ownership transfers', async () => {
+    const repository = createRepository({
+      findById: jest.fn(async () => submission({ status: 'changes_requested' })),
+    });
+    let ownsThumbnail = true;
+    const ownershipVerifier = jest.fn(async ({ tokenId }: { tokenId: string }) => ({
+      owns: tokenId === '42' || ownsThumbnail,
+      reason: tokenId === '42' || ownsThumbnail ? 'owned' : 'not_owner',
+    }));
     const service = new LoreSubmissionService(repository, {
       ownershipVerifier,
       loreBaseDatasetLoader: loadStaticDataset,
     });
-
-    await expect(service.createSubmission(
-      validPayload({ kind: 'token', tokenId: '6666' }),
-      admin,
-    )).resolves.toEqual(expect.any(Object));
-
-    expect(ownershipVerifier).not.toHaveBeenCalled();
-    expect(repository.createPublishedSubmission).toHaveBeenCalledWith(
-      expect.objectContaining({ thumbnail: { kind: 'token', tokenId: '6666' } }),
-      admin,
-      expect.any(Object),
-    );
+    const payload = validPayload({ kind: 'token', tokenId: '7' });
+    await service.createSubmission(payload, wallet);
+    ownsThumbnail = false;
+    await expect(service.reviseSubmission(submission().id, payload, wallet))
+      .rejects.toBeInstanceOf(LoreSubmissionForbiddenError);
+    expect(ownershipVerifier.mock.calls.map(([options]) => options.tokenId)).toEqual(['42', '7', '42', '7']);
+    expect(repository.revisePublishedSubmission).not.toHaveBeenCalled();
   });
 
   it('rejects map_location thumbnails referencing an unknown location id', async () => {

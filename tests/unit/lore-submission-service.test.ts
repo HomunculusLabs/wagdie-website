@@ -220,7 +220,7 @@ describe('LoreSubmissionService', () => {
     expect(repository.updateStatusConditional).not.toHaveBeenCalled();
   });
 
-  it('allows admins to revise their lore without owning the token', async () => {
+  it('still verifies ownership when admins revise their lore', async () => {
     jest.mocked(isAdmin).mockReturnValue(true);
     const repository = createRepository({
       findById: jest.fn(async () => submission({
@@ -238,10 +238,10 @@ describe('LoreSubmissionService', () => {
       'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
       validPayload({ title: 'A Revised Bell Rings' }),
       admin,
-    )).resolves.toEqual(expect.any(Object));
+    )).rejects.toBeInstanceOf(LoreSubmissionForbiddenError);
 
-    expect(ownershipVerifier).not.toHaveBeenCalled();
-    expect(repository.revisePublishedSubmission).toHaveBeenCalled();
+    expect(ownershipVerifier).toHaveBeenCalledWith({ tokenId: '42', walletAddress: admin });
+    expect(repository.revisePublishedSubmission).not.toHaveBeenCalled();
   });
 
   it('rejects submissions when the connected wallet does not own the token', async () => {
@@ -252,7 +252,7 @@ describe('LoreSubmissionService', () => {
     await expect(service.createSubmission(validPayload(), wallet)).rejects.toBeInstanceOf(LoreSubmissionForbiddenError);
   });
 
-  it('allows admins to publish lore without owning the token', async () => {
+  it('still verifies ownership when admins publish lore', async () => {
     jest.mocked(isAdmin).mockReturnValue(true);
     const repository = createRepository();
     const ownershipVerifier = jest.fn(async () => ({ owns: false, reason: 'not_owner' }));
@@ -261,14 +261,23 @@ describe('LoreSubmissionService', () => {
       loreBaseDatasetLoader: loadStaticDataset,
     });
 
-    await expect(service.createSubmission(validPayload(), admin)).resolves.toEqual(expect.any(Object));
+    await expect(service.createSubmission(validPayload(), admin)).rejects.toBeInstanceOf(LoreSubmissionForbiddenError);
 
-    expect(ownershipVerifier).not.toHaveBeenCalled();
-    expect(repository.createPublishedSubmission).toHaveBeenCalledWith(
-      expect.objectContaining({ tokenId: '42' }),
-      admin,
-      expect.any(Object),
-    );
+    expect(ownershipVerifier).toHaveBeenCalledWith({ tokenId: '42', walletAddress: admin });
+    expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes RPC outages from ownership denial and never writes', async () => {
+    const repository = createRepository();
+    const service = new LoreSubmissionService(repository, {
+      ownershipVerifier: jest.fn(async () => ({ owns: false, reason: 'rpc_unavailable' })),
+    });
+    await expect(service.createSubmission(validPayload(), wallet)).rejects.toMatchObject({
+      name: 'LoreSubmissionOwnershipUnavailableError',
+    });
+    expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
+    expect(repository.createSubmission).not.toHaveBeenCalled();
+
   });
 
   it('fails duplicate active submissions predictably', async () => {

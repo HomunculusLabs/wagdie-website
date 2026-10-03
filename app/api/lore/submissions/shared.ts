@@ -14,6 +14,7 @@ import {
   LoreSubmissionConflictError,
   LoreSubmissionForbiddenError,
   LoreSubmissionNotFoundError,
+  LoreSubmissionOwnershipUnavailableError,
   LoreSubmissionRateLimitError,
   LoreSubmissionValidationError,
 } from '@/lib/services/lore-submission-service';
@@ -63,6 +64,10 @@ export function handleLoreSubmissionApiError(
 ): NextResponse<ApiResponse> {
   if (error instanceof LoreSubmissionValidationError) {
     return jsonBadRequest(error.message, error.details);
+  }
+
+  if (error instanceof LoreSubmissionOwnershipUnavailableError) {
+    return jsonError(error.message, 503);
   }
 
   if (error instanceof LoreSubmissionForbiddenError) {

@@ -70,6 +70,13 @@ export class LoreSubmissionForbiddenError extends Error {
   }
 }
 
+export class LoreSubmissionOwnershipUnavailableError extends Error {
+  constructor() {
+    super('Live blockchain ownership verification is temporarily unavailable. Please try again.');
+    this.name = 'LoreSubmissionOwnershipUnavailableError';
+  }
+}
+
 export class LoreSubmissionConflictError extends Error {
   constructor(message: string) {
     super(message);
@@ -242,6 +249,7 @@ export class LoreSubmissionService {
     }
 
     await this.ensureTokenOwnership(input.tokenId, submitterAddress);
+    await this.ensureThumbnailAllowed(input, submitterAddress);
 
     const dataset = await this.loadBaseDataset();
     const enrichedInput = enrichCreateInputWithLoreRefs(input, dataset);
@@ -480,10 +488,10 @@ export class LoreSubmissionService {
   }
 
   private async ensureTokenOwnership(tokenId: string, walletAddress: string): Promise<void> {
-    // Admins may publish against tokens missing from the local ownership index.
-    if (isAdmin(walletAddress)) return;
-
     const ownership = await this.ownershipVerifier!({ tokenId, walletAddress });
+    if (ownership.reason === 'rpc_unavailable' || ownership.reason === 'client_unavailable') {
+      throw new LoreSubmissionOwnershipUnavailableError();
+    }
     if (!ownership.owns) {
       throw new LoreSubmissionForbiddenError(`Wallet does not own token ${tokenId} (${ownership.reason})`);
     }
@@ -491,9 +499,8 @@ export class LoreSubmissionService {
 
   /**
    * Thumbnail policy:
-   * - token: must be a token the submitter owns (reuse ownership verifier);
-   *   admins are exempt so they can feature any token's art, mirroring the
-   *   admin exemption in ensureTokenOwnership
+   * - token: must pass live ownership verification, including for admins;
+   *   RPC/client outages use the same retryable error as submission tokens
    * - map_location: must reference an existing map location (existence check)
    * - custom: URL only, no ownership requirement (attribution optional)
    */
@@ -502,17 +509,7 @@ export class LoreSubmissionService {
     if (!thumbnail) return;
 
     if (thumbnail.kind === 'token') {
-      if (isAdmin(walletAddress)) return;
-
-      const ownership = await this.ownershipVerifier!({
-        tokenId: thumbnail.tokenId,
-        walletAddress,
-      });
-      if (!ownership.owns) {
-        throw new LoreSubmissionForbiddenError(
-          `Thumbnail token ${thumbnail.tokenId} is not owned by this wallet (${ownership.reason})`,
-        );
-      }
+      await this.ensureTokenOwnership(thumbnail.tokenId, walletAddress);
       return;
     }
 
