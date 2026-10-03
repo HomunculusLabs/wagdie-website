@@ -315,7 +315,7 @@ describe('lore thumbnail service policy', () => {
             expect(loadStaticDataset).not.toHaveBeenCalled();
           }
           expect(ownershipVerifier.mock.calls.map(([options]) => options)).toEqual([
-            { tokenId: '42', walletAddress: address },
+            ...(!adminWallet ? [{ tokenId: '42', walletAddress: address }] : []),
             { tokenId: '7', walletAddress: address },
           ]);
         },
@@ -339,9 +339,25 @@ describe('lore thumbnail service policy', () => {
     });
   });
 
-  it('rechecks an unchanged thumbnail on revision after its ownership transfers', async () => {
+  it.each(['create', 'revise'] as const)('rejects admin %s with unowned primary-token art', async (operation) => {
+    jest.mocked(isAdmin).mockReturnValue(true);
+    const repository = createRepository({ findById: jest.fn(async () => submission({ submitter_address: admin, status: 'changes_requested' })) });
+    const ownershipVerifier = jest.fn(async () => ({ owns: false, reason: 'not_owner' }));
+    const service = new LoreSubmissionService(repository, { ownershipVerifier, loreBaseDatasetLoader: loadStaticDataset });
+    const payload = validPayload({ kind: 'token', tokenId: '42' });
+    const result = operation === 'create' ? service.createSubmission(payload, admin) : service.reviseSubmission(submission().id, payload, admin);
+    await expect(result).rejects.toBeInstanceOf(LoreSubmissionForbiddenError);
+    expect(ownershipVerifier).toHaveBeenCalledTimes(1);
+    expect(ownershipVerifier).toHaveBeenCalledWith({ tokenId: '42', walletAddress: admin });
+    expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
+    expect(repository.revisePublishedSubmission).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('rechecks a transferred thumbnail on revision for admin=%s', async (adminWallet) => {
+    jest.mocked(isAdmin).mockReturnValue(adminWallet);
+    const address = adminWallet ? admin : wallet;
     const repository = createRepository({
-      findById: jest.fn(async () => submission({ status: 'changes_requested' })),
+      findById: jest.fn(async () => submission({ status: 'changes_requested', submitter_address: address })),
     });
     let ownsThumbnail = true;
     const ownershipVerifier = jest.fn(async ({ tokenId }: { tokenId: string }) => ({
@@ -353,11 +369,11 @@ describe('lore thumbnail service policy', () => {
       loreBaseDatasetLoader: loadStaticDataset,
     });
     const payload = validPayload({ kind: 'token', tokenId: '7' });
-    await service.createSubmission(payload, wallet);
+    await service.createSubmission(payload, address);
     ownsThumbnail = false;
-    await expect(service.reviseSubmission(submission().id, payload, wallet))
+    await expect(service.reviseSubmission(submission().id, payload, address))
       .rejects.toBeInstanceOf(LoreSubmissionForbiddenError);
-    expect(ownershipVerifier.mock.calls.map(([options]) => options.tokenId)).toEqual(['42', '7', '42', '7']);
+    expect(ownershipVerifier.mock.calls.map(([options]) => options.tokenId)).toEqual(adminWallet ? ['7', '7'] : ['42', '7', '42', '7']);
     expect(repository.revisePublishedSubmission).not.toHaveBeenCalled();
   });
 

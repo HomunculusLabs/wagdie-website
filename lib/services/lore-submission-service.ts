@@ -188,7 +188,7 @@ export class LoreSubmissionService {
   async createSubmission(body: unknown, walletAddress: string): Promise<LoreSubmissionDetailDto> {
     const submitterAddress = normalizeAddressOrThrow(walletAddress);
     const input = parseCreateInput(body);
-    await this.ensureTokenOwnership(input.tokenId, submitterAddress);
+    await this.ensureLoreAuthoringAllowed(input.tokenId, submitterAddress);
     await this.ensureThumbnailAllowed(input, submitterAddress);
     await this.ensureCreateAbuseControls(input, submitterAddress);
 
@@ -202,7 +202,7 @@ export class LoreSubmissionService {
       throw new LoreSubmissionValidationError('Invalid lore references', referenceErrors);
     }
 
-    // Lifecycle policy: valid token-owner submissions are auto-public community lore.
+    // Lifecycle policy: valid owner or admin submissions are auto-public community lore.
     // Admin tools moderate, curate, hide, and canonize after publication.
     const submissionId = randomUUID();
     const publishedAt = new Date().toISOString();
@@ -248,7 +248,7 @@ export class LoreSubmissionService {
       ]);
     }
 
-    await this.ensureTokenOwnership(input.tokenId, submitterAddress);
+    await this.ensureLoreAuthoringAllowed(input.tokenId, submitterAddress);
     await this.ensureThumbnailAllowed(input, submitterAddress);
 
     const dataset = await this.loadBaseDataset();
@@ -485,6 +485,11 @@ export class LoreSubmissionService {
 
     if (!result) throw new LoreSubmissionConflictError('Submission was changed before it could be published');
     return result;
+  }
+
+  private async ensureLoreAuthoringAllowed(tokenId: string, walletAddress: string): Promise<void> {
+    if (isAdmin(walletAddress)) return;
+    await this.ensureTokenOwnership(tokenId, walletAddress);
   }
 
   private async ensureTokenOwnership(tokenId: string, walletAddress: string): Promise<void> {

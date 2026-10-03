@@ -13,10 +13,15 @@ import { POST as ADMIN_PUBLISH } from '@/app/api/admin/lore/submissions/[submiss
 import { POST as ADMIN_REVIEW } from '@/app/api/admin/lore/submissions/[submissionId]/review/route';
 import { POST as ADMIN_UNPUBLISH } from '@/app/api/admin/lore/submissions/[submissionId]/unpublish/route';
 import { requireAdmin, requireAuth } from '@/lib/api/auth';
+import { ADMIN_WALLETS, isAdmin } from '@/lib/auth/admin';
+import { getSession } from '@/lib/auth/session';
+import { getStaticLoreBaseDataset } from '@/lib/lore/base-dataset';
+import type { LoreSubmissionRepository } from '@/lib/repositories/lore-submission-repository';
 import { revalidatePath } from 'next/cache';
 import {
   LoreSubmissionConflictError,
   LoreSubmissionValidationError,
+  LoreSubmissionService,
   loreSubmissionService,
 } from '@/lib/services/lore-submission-service';
 
@@ -31,12 +36,18 @@ it('maps ownership infrastructure failure to a retryable 503 without exposing RP
 jest.mock('@/lib/api/auth', () => ({
   requireAuth: jest.fn(),
   requireAdmin: jest.fn(),
-  isAuthError: (result: unknown) => result instanceof NextResponse,
+  isAuthError: (result: unknown) => jest.requireActual('@/lib/api/auth').isAuthError(result),
 }));
 
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
 }));
+
+jest.mock('@/lib/auth/session', () => ({ getSession: jest.fn() }));
+jest.mock('@/lib/auth/admin', () => {
+  const actual = jest.requireActual('@/lib/auth/admin');
+  return { ...actual, isAdmin: jest.fn(actual.isAdmin) };
+});
 
 jest.mock('@/lib/services/lore-submission-service', () => {
   const actual = jest.requireActual('@/lib/services/lore-submission-service');
@@ -307,5 +318,98 @@ describe('lore submission API routes', () => {
     expect(response.status).toBe(409);
     expect(loreSubmissionService.publishSubmission).toHaveBeenCalledWith('sub-1', '0xAdmin', 'ship it');
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe('lore authoring session authority through the real service', () => {
+  const admin = ADMIN_WALLETS[0];
+  const wallet = '0xabcdef0000000000000000000000000000000001';
+  const payload = {
+    tokenId: '42',
+    title: 'A Fallen Bell Rings',
+    summary: 'A community account of a strange bell echoing after the searing.',
+    bodyMarkdown: 'A bell rang beneath the ash.',
+  };
+  const realAuth = jest.requireActual<typeof import('@/lib/api/auth')>('@/lib/api/auth');
+
+  beforeEach(() => jest.clearAllMocks());
+
+  function bridgeService(address: string | undefined, reason = 'not_owner', submitter = address) {
+    jest.mocked(getSession).mockResolvedValue({ address } as Awaited<ReturnType<typeof getSession>>);
+    jest.mocked(requireAuth).mockImplementationOnce(realAuth.requireAuth);
+    const existing = { id: 'sub-1', token_id: '42', submitter_address: submitter, status: 'changes_requested' };
+    const result = { submission: { ...existing, status: 'public', published_kind: 'community' }, links: [], reviews: [] };
+    const repository = {
+      findById: jest.fn(async () => existing),
+      findOpenBySubmitterAndToken: jest.fn(async () => null),
+      countRecentBySubmitter: jest.fn(async () => 0),
+      slugExists: jest.fn(async () => false),
+      createPublishedSubmission: jest.fn(async () => result),
+      revisePublishedSubmission: jest.fn(async () => result),
+    };
+    const ownershipVerifier = jest.fn(async () => ({ owns: false, reason }));
+    const service = new LoreSubmissionService(repository as unknown as LoreSubmissionRepository, {
+      ownershipVerifier,
+      loreBaseDatasetLoader: async () => getStaticLoreBaseDataset(),
+    });
+    jest.mocked(loreSubmissionService.createSubmission).mockImplementationOnce(service.createSubmission.bind(service));
+    jest.mocked(loreSubmissionService.reviseSubmission).mockImplementationOnce(service.reviseSubmission.bind(service));
+    return { repository, ownershipVerifier };
+  }
+
+  // Drop the unused operation's one-shot implementation before the next case.
+  afterEach(() => {
+    jest.mocked(loreSubmissionService.createSubmission).mockReset();
+    jest.mocked(loreSubmissionService.reviseSubmission).mockReset();
+  });
+
+  it('creates lore for an unowned token from an authenticated admin session', async () => {
+    const { repository, ownershipVerifier } = bridgeService(admin);
+    const response = await COMMUNITY_POST(jsonRequest('http://localhost/api/lore/submissions', 'POST', payload, '203.0.113.201'));
+    expect(response.status).toBe(201);
+    expect(isAdmin).toHaveBeenCalledWith(admin);
+    await expect(response.json()).resolves.toMatchObject({ success: true, data: { submission: { status: 'public', published_kind: 'community' } } });
+    expect(ownershipVerifier).not.toHaveBeenCalled();
+    expect(repository.createPublishedSubmission).toHaveBeenCalledWith(expect.any(Object), admin, expect.any(Object));
+  });
+
+  it.each([
+    { session: wallet, reason: 'not_owner', thumbnail: undefined, status: 403 },
+    { session: wallet, reason: 'rpc_unavailable', thumbnail: undefined, status: 503 },
+    { session: admin, reason: 'not_owner', thumbnail: { kind: 'token', tokenId: '42' }, status: 403 },
+    { session: admin, reason: 'rpc_unavailable', thumbnail: { kind: 'token', tokenId: '7' }, status: 503 },
+  ])('keeps session $session / $reason / thumbnail $thumbnail restricted', async ({ session, reason, thumbnail, status }) => {
+    const { repository, ownershipVerifier } = bridgeService(session, reason);
+    const response = await COMMUNITY_POST(jsonRequest('http://localhost/api/lore/submissions', 'POST', {
+      ...payload, thumbnail, isAdmin: true, walletAddress: admin, submitterAddress: admin,
+    }, `203.0.113.${status === 403 ? 202 : 203}`));
+    expect(response.status).toBe(status);
+    expect(isAdmin).toHaveBeenCalledWith(session);
+    expect(ownershipVerifier).toHaveBeenCalledWith({ tokenId: thumbnail?.tokenId ?? '42', walletAddress: session });
+    expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])('allows admin revision only of their own requested changes (own=%s)', async (own) => {
+    const { repository, ownershipVerifier } = bridgeService(admin, 'not_owner', own ? admin : wallet);
+    const response = await COMMUNITY_DETAIL_PATCH(
+      jsonRequest('http://localhost/api/lore/submissions/sub-1', 'PATCH', payload, '203.0.113.204'), routeContext(),
+    );
+    expect(response.status).toBe(own ? 200 : 403);
+    if (own) {
+      await expect(response.json()).resolves.toMatchObject({ success: true, data: { submission: { status: 'public', published_kind: 'community' } } });
+    }
+    expect(ownershipVerifier).not.toHaveBeenCalled();
+    expect(repository.revisePublishedSubmission).toHaveBeenCalledTimes(own ? 1 : 0);
+  });
+
+  it.each(['POST', 'PATCH'])('requires a session before %s even when the body claims admin authority', async (method) => {
+    const { repository, ownershipVerifier } = bridgeService(undefined);
+    const request = jsonRequest('http://localhost/api/lore/submissions/sub-1', method, { ...payload, isAdmin: true, walletAddress: admin }, '203.0.113.205');
+    const response = method === 'POST' ? await COMMUNITY_POST(request) : await COMMUNITY_DETAIL_PATCH(request, routeContext());
+    expect(response.status).toBe(401);
+    expect(isAdmin).not.toHaveBeenCalled();
+    expect(ownershipVerifier).not.toHaveBeenCalled();
+    expect(repository.createPublishedSubmission).not.toHaveBeenCalled();
+    expect(repository.revisePublishedSubmission).not.toHaveBeenCalled();
   });
 });
